@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TaleWorlds.Core;
+using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 
 namespace PersistentEmpires.Views.ViewsVM.FactionManagement
@@ -41,6 +42,7 @@ namespace PersistentEmpires.Views.ViewsVM.FactionManagement
 
             return null;
         }
+
         private bool TryParseBanner(string bannerKey)
         {
             string[] array = bannerKey.Split('.');
@@ -99,6 +101,13 @@ namespace PersistentEmpires.Views.ViewsVM.FactionManagement
             }
             return true;
         }
+
+        public override void RefreshValues()
+        {
+            base.RefreshValues();
+            BannerCode = "";
+        }
+
         public bool CanApplyValue()
         {
             if (this._bannerCode == "")
@@ -123,6 +132,15 @@ namespace PersistentEmpires.Views.ViewsVM.FactionManagement
         public void OnCancel()
         {
             this._onCancel();
+        }
+
+        public void OnPaste()
+        {
+            var _tmp = Input.GetClipboardText();
+            if (!string.IsNullOrEmpty(_tmp))
+            {
+                BannerCode = _tmp;
+            }
         }
 
         public void OnApply()

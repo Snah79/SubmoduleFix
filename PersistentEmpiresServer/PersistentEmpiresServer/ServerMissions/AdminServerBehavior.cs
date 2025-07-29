@@ -1,10 +1,12 @@
-﻿using Org.BouncyCastle.Asn1.X509;
+﻿using NetworkMessages.FromServer;
+using Org.BouncyCastle.Asn1.X509;
 using PersistentEmpiresLib;
 using PersistentEmpiresLib.Database.DBEntities;
 using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
+using PersistentEmpiresLib.SceneScripts;
 using PersistentEmpiresSave.Database.Repositories;
 using System;
 using System.Collections.Generic;
@@ -39,7 +41,48 @@ namespace PersistentEmpiresServer.ServerMissions
         public delegate void BanUnPlayerDelegate(string AdminId, string PlayerId);
         public static event BanUnPlayerDelegate OnUnBanPlayer;
 
+        // Admin invisibility system
+        public Dictionary<NetworkCommunicator, bool> InvisibleAdmins = new Dictionary<NetworkCommunicator, bool>();
+
         public static AdminServerBehavior Instance { get; private set; }
+
+        protected override void HandleLateNewClientAfterSynchronized(NetworkCommunicator networkPeer)
+        {
+            base.OnPlayerConnectedToServer(networkPeer);
+
+            var invisibleAdmins = InvisibleAdmins.Where(x => x.Value == true).Select(x=> x.Key).ToList();
+
+            foreach(var admin in invisibleAdmins)
+            {
+                if(admin.ControlledAgent != null)
+                {
+                    ToggleVisibility(admin.ControlledAgent, true, networkPeer);
+                }
+            }
+        }
+        
+        public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
+        {
+            base.OnAgentRemoved(affectedAgent, affectorAgent, agentState, blow);
+
+            // Clean up invisibility state when agent is removed
+            NetworkCommunicator peer = affectedAgent?.MissionPeer?.GetNetworkPeer();
+            if (peer != null && InvisibleAdmins.ContainsKey(peer))
+            {
+                InvisibleAdmins[peer] = false;
+            }
+        }
+
+        public override void OnPlayerDisconnectedFromServer(NetworkCommunicator networkPeer)
+        {
+            base.OnPlayerDisconnectedFromServer(networkPeer);
+
+            // Clean up invisibility state when agent is removed
+            if (networkPeer != null && InvisibleAdmins.ContainsKey(networkPeer))
+            {
+                InvisibleAdmins.Remove(networkPeer);
+            }
+        }
 
         public string BanFilePath()
         {
@@ -205,6 +248,7 @@ namespace PersistentEmpiresServer.ServerMissions
                 networkMessageHandlerRegisterer.Register<RequestTpToPosition>(HandleRequestTpToPositionFromClient);
                 networkMessageHandlerRegisterer.Register<RequestRespawn>(HandleRequestRespawn);
                 networkMessageHandlerRegisterer.Register<FactionAdminAssignLord>(this.HandleFactionAdminAssignLord);
+                networkMessageHandlerRegisterer.Register<RequestToggleInvisibility>(this.HandleRequestToggleInvisibility);
             }
         }
 
@@ -720,5 +764,126 @@ namespace PersistentEmpiresServer.ServerMissions
 
             return true;
         }
+
+        public bool HandleRequestToggleInvisibility(NetworkCommunicator admin, RequestToggleInvisibility message)
+        {
+            PersistentEmpireRepresentative persistentEmpireRepresentative = admin.GetComponent<PersistentEmpireRepresentative>();
+            if (!persistentEmpireRepresentative.IsAdmin)
+            {
+                return false;
+            }
+
+            if (admin.ControlledAgent == null || !admin.ControlledAgent.IsActive()) 
+            {
+                InformationComponent.Instance.SendMessage("You must be spawned to use invisibility",
+                    new Color(1f, 0f, 0f).ToUnsignedInteger(), admin);
+                return false;
+            }
+
+            if (InvisibleAdmins.ContainsKey(admin) && InvisibleAdmins[admin])
+            {
+                MakeAdminVisible(admin);
+            }
+            else
+            {
+                MakeAdminInvisible(admin);
+            }
+
+            return true;
+        }
+
+        private void MakeAdminInvisible(NetworkCommunicator admin)
+        {
+            if (InvisibleAdmins.ContainsKey(admin) && InvisibleAdmins[admin])
+            {
+                InformationComponent.Instance.SendMessage("You are already invisible",
+                    new Color(1f, 1f, 0f).ToUnsignedInteger(), admin);
+                return;
+            }
+
+            InvisibleAdmins[admin] = true;
+
+            // Make agent invisible to other players
+            foreach (NetworkCommunicator peer in GameNetwork.NetworkPeers)
+            {
+                //if (peer != admin && peer.IsConnectionActive)
+                if (peer.IsConnectionActive)
+                {
+                    PersistentEmpireRepresentative rep = peer.GetComponent<PersistentEmpireRepresentative>();
+                    //if (rep != null && !rep.IsAdmin) // Only hide from non-admins
+                    {
+                        // Set agent's visibility to false for this peer
+                        if (admin.ControlledAgent != null)
+                        {
+                            ToggleVisibility(admin.ControlledAgent, false, peer);
+                        }
+                    }
+                }
+            }
+
+            // Make agent immune to damage while invisible
+            if (admin.ControlledAgent != null)
+            {
+                admin.ControlledAgent.SetMortalityState(Agent.MortalityState.Immortal);
+            }
+
+            InformationComponent.Instance.SendMessage("You are now invisible to players (other admins can still see you)",
+                new Color(0f, 1f, 0f).ToUnsignedInteger(), admin);
+
+            LoggerHelper.LogAnAction(admin, LogAction.PlayerBecomesGodlike, null, new object[] { "Admin became invisible" });
+        }
+
+        private void ToggleVisibility(Agent controlledAgent, bool visible, NetworkCommunicator peer)
+        {
+            GameNetwork.BeginModuleEventAsServer(peer);
+            GameNetwork.WriteMessage(new ToggleVisibilityForAgent(controlledAgent, visible));
+            GameNetwork.EndModuleEventAsServer();
+
+            controlledAgent.AgentVisuals.LazyUpdateAgentRendererData();
+        }
+
+        private void MakeAdminVisible(NetworkCommunicator admin)
+        {
+            if (!InvisibleAdmins.ContainsKey(admin) || !InvisibleAdmins[admin])
+            {
+                InformationComponent.Instance.SendMessage("You are already visible",
+                    new Color(1f, 1f, 0f).ToUnsignedInteger(), admin);
+                return;
+            }
+
+            InvisibleAdmins[admin] = false;
+
+            // Make agent visible to all players again
+            if (admin.ControlledAgent != null)
+            {
+                foreach (NetworkCommunicator peer in GameNetwork.NetworkPeers)
+                {
+                    //if (peer != admin && peer.IsConnectionActive)
+                    if (peer.IsConnectionActive)
+                    {
+                        PersistentEmpireRepresentative rep = peer.GetComponent<PersistentEmpireRepresentative>();
+                        //if (rep != null && !rep.IsAdmin) // Only hide from non-admins
+                        {
+                            // Set agent's visibility to false for this peer
+                            if (admin.ControlledAgent != null)
+                            {
+                                ToggleVisibility(admin.ControlledAgent, true, peer);
+                            }
+                        }
+                    }
+                }
+                admin.ControlledAgent.SetMortalityState(Agent.MortalityState.Mortal);
+            }
+
+            InformationComponent.Instance.SendMessage("You are now visible to all players",
+                new Color(0f, 1f, 0f).ToUnsignedInteger(), admin);
+
+            LoggerHelper.LogAnAction(admin, LogAction.PlayerBecomesGodlike, null, new object[] { "Admin became visible" });
+        }
+
+        public bool IsAdminInvisible(NetworkCommunicator admin)
+        {
+            return InvisibleAdmins.ContainsKey(admin) && InvisibleAdmins[admin];
+        }        
     }
 }

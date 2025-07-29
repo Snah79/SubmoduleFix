@@ -42,7 +42,7 @@ namespace PersistentEmpires.Views.Views
                         {
                             var chatLogWidget = tmp.RootWidget.AllChildren.ToList().Where(x => x.Id == "ChatLogWidget").FirstOrDefault();
                             if (chatLogWidget != null)
-                            {
+                                {
                                 if (focusedLayer.Input.IsKeyDown(InputKey.LeftControl))
                                 {
                                     if (focusedLayer.Input.IsKeyDown(InputKey.LeftAlt))

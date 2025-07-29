@@ -75,7 +75,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();
-            this.AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
+            AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
 #if SERVER
             CanUseSuicide = ConfigManager.GetBoolConfig("CanUseSuicide", true);
 #endif
@@ -84,16 +84,16 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             AdminTps.Clear();
             base.OnRemoveBehavior();
-            this.AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
+            AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
         }
 
         public void AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode mode)
         {
             GameNetwork.NetworkMessageHandlerRegisterer networkMessageHandlerRegisterer = new GameNetwork.NetworkMessageHandlerRegisterer(mode);
-            if (GameNetwork.IsClient)
-            {
-                networkMessageHandlerRegisterer.Register<AuthorizeAsAdmin>(this.HandleAuthorizeAsAdminFromServer);
-            }
+#if CLIENT
+            networkMessageHandlerRegisterer.Register<AuthorizeAsAdmin>(HandleAuthorizeAsAdminFromServer);
+            networkMessageHandlerRegisterer.Register<ToggleVisibilityForAgent>(HandleToggleVisibilityForAgent);
+#endif
         }
 
         private void HandleAuthorizeAsAdminFromServer(AuthorizeAsAdmin message)
@@ -101,6 +101,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             GameNetwork.MyPeer.GetComponent<PersistentEmpireRepresentative>().IsAdmin = true;
         }
 
+        private void HandleToggleVisibilityForAgent(ToggleVisibilityForAgent message)
+        {
+            message.Agent.AgentVisuals.SetVisible(message.Visible);
+            message.Agent.AgentVisuals.LazyUpdateAgentRendererData();
+        }
 
         internal static void Register(AdminTp adminTp)
         {

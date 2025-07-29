@@ -7,8 +7,6 @@ namespace PersistentEmpiresLib.NetworkMessages.Client
     [DefineGameNetworkMessageTypeForMod(GameNetworkMessageSendType.FromClient)]
     public sealed class RequestBecameGodlike : GameNetworkMessage
     {
-
-
         public RequestBecameGodlike()
         {
 
@@ -608,6 +606,40 @@ namespace PersistentEmpiresLib.NetworkMessages.Client
         protected override void OnWrite()
         {
             GameNetworkMessage.WriteVec3ToPacket(Position, CompressionMission.OrderPositionCompressionInfo);
+        }
+    }
+
+    [DefineGameNetworkMessageTypeForMod(GameNetworkMessageSendType.FromClient)]
+    public sealed class RequestToggleInvisibility : GameNetworkMessage
+    {
+        public bool MakeInvisible;
+
+        public RequestToggleInvisibility() { }
+        public RequestToggleInvisibility(bool makeInvisible)
+        {
+            MakeInvisible = makeInvisible;
+        }
+
+        protected override MultiplayerMessageFilter OnGetLogFilter()
+        {
+            return MultiplayerMessageFilter.Administration;
+        }
+
+        protected override string OnGetLogFormat()
+        {
+            return "Received RequestToggleInvisibility";
+        }
+
+        protected override bool OnRead()
+        {
+            bool result = true;
+            MakeInvisible = GameNetworkMessage.ReadBoolFromPacket(ref result);
+            return result;
+        }
+
+        protected override void OnWrite()
+        {
+            GameNetworkMessage.WriteBoolToPacket(MakeInvisible);
         }
     }
 }

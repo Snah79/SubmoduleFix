@@ -51,6 +51,7 @@
 	<string id="EscapeMenuFaction" text="Manage Your Faction" />
 	<string id="EscapeMenuPollLord" text="Poll A Lord" />
 	<string id="EscapeMenUnban" text="Unban player" />
+	<string id="EscapeMenToggleInvisible" text="Toggle invisible" />
 	<!--PEMoneyChestView-->
 	<string id="PEMoneyChestViewError1" text="You can't do this action while dead" />
 	<string id="PEMoneyChestViewError2" text="You can't deposit 0 amount" />

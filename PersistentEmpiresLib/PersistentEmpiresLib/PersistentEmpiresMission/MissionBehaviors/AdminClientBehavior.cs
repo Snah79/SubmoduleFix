@@ -5,6 +5,7 @@ using PersistentEmpiresLib.SceneScripts;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -104,6 +105,14 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         internal static void Register(AdminTp adminTp)
         {
             AdminTps.Add(adminTp);
+        }
+
+        public void ToggleInvisible()
+        {
+            var message = new RequestToggleInvisibility();
+            GameNetwork.BeginModuleEventAsClient();
+            GameNetwork.WriteMessage(message);
+            GameNetwork.EndModuleEventAsClient();
         }
     }
 }

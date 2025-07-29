@@ -612,12 +612,12 @@ namespace PersistentEmpiresLib.NetworkMessages.Client
     [DefineGameNetworkMessageTypeForMod(GameNetworkMessageSendType.FromClient)]
     public sealed class RequestToggleInvisibility : GameNetworkMessage
     {
-        public bool MakeInvisible;
+        public bool IsVisible;
 
         public RequestToggleInvisibility() { }
-        public RequestToggleInvisibility(bool makeInvisible)
+        public RequestToggleInvisibility(bool isVivible)
         {
-            MakeInvisible = makeInvisible;
+            IsVisible = isVivible;
         }
 
         protected override MultiplayerMessageFilter OnGetLogFilter()
@@ -633,13 +633,13 @@ namespace PersistentEmpiresLib.NetworkMessages.Client
         protected override bool OnRead()
         {
             bool result = true;
-            MakeInvisible = GameNetworkMessage.ReadBoolFromPacket(ref result);
+            IsVisible = GameNetworkMessage.ReadBoolFromPacket(ref result);
             return result;
         }
 
         protected override void OnWrite()
         {
-            GameNetworkMessage.WriteBoolToPacket(MakeInvisible);
+            GameNetworkMessage.WriteBoolToPacket(IsVisible);
         }
     }
 }

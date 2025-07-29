@@ -42,7 +42,8 @@ namespace PersistentEmpiresServer.ServerMissions
         public static event BanUnPlayerDelegate OnUnBanPlayer;
 
         // Admin invisibility system
-        public Dictionary<NetworkCommunicator, bool> InvisibleAdmins = new Dictionary<NetworkCommunicator, bool>();
+        public List<NetworkCommunicator> InvisibleAdmins = new List<NetworkCommunicator>();
+        private object _invisibleAdminsLock = new object();
 
         public static AdminServerBehavior Instance { get; private set; }
 
@@ -71,26 +72,17 @@ namespace PersistentEmpiresServer.ServerMissions
                 GameNetwork.EndModuleEventAsServer();
             }
 
-            var invisibleAdmins = InvisibleAdmins.Where(x => x.Value == true).Select(x => x.Key).ToList();
-
-            foreach (var admin in invisibleAdmins)
+            lock (_invisibleAdminsLock)
             {
-                if (admin.ControlledAgent != null)
+                var invisibleAdmins = InvisibleAdmins.ToList();
+
+                foreach (var admin in invisibleAdmins)
                 {
-                    ToggleVisibility(admin.ControlledAgent, true, networkPeer);
+                    if (admin.ControlledAgent != null)
+                    {
+                        ToggleVisibility(admin.ControlledAgent, true, networkPeer);
+                    }
                 }
-            }
-        }
-        
-        public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
-        {
-            base.OnAgentRemoved(affectedAgent, affectorAgent, agentState, blow);
-
-            // Clean up invisibility state when agent is removed
-            NetworkCommunicator peer = affectedAgent?.MissionPeer?.GetNetworkPeer();
-            if (peer != null && InvisibleAdmins.ContainsKey(peer))
-            {
-                InvisibleAdmins[peer] = false;
             }
         }
 
@@ -98,10 +90,13 @@ namespace PersistentEmpiresServer.ServerMissions
         {
             base.OnPlayerDisconnectedFromServer(networkPeer);
 
-            // Clean up invisibility state when agent is removed
-            if (networkPeer != null && InvisibleAdmins.ContainsKey(networkPeer))
+            lock(_invisibleAdminsLock)
             {
-                InvisibleAdmins.Remove(networkPeer);
+                // Clean up invisibility state when agent is removed
+                if (InvisibleAdmins.Contains(networkPeer))
+                {
+                    InvisibleAdmins.Remove(networkPeer);
+                }
             }
         }
 
@@ -776,7 +771,7 @@ namespace PersistentEmpiresServer.ServerMissions
                 return false;
             }
 
-            if (InvisibleAdmins.ContainsKey(admin) && InvisibleAdmins[admin])
+            if (message.IsVisible)
             {
                 MakeAdminVisible(admin);
             }
@@ -790,15 +785,20 @@ namespace PersistentEmpiresServer.ServerMissions
 
         private void MakeAdminInvisible(NetworkCommunicator admin)
         {
-            if (InvisibleAdmins.ContainsKey(admin) && InvisibleAdmins[admin])
+            lock (_invisibleAdminsLock)
             {
-                InformationComponent.Instance.SendMessage("You are already invisible",
-                    new Color(1f, 1f, 0f).ToUnsignedInteger(), admin);
-                return;
+                if (InvisibleAdmins.Contains(admin))
+                {
+                    InformationComponent.Instance.SendMessage("You are already invisible",
+                        new Color(1f, 1f, 0f).ToUnsignedInteger(), admin);
+                    return;
+                }
+                else
+                {
+                    InvisibleAdmins.Add(admin);
+                }
             }
-
-            InvisibleAdmins[admin] = true;
-
+            
             // Make agent invisible to other players
             foreach (NetworkCommunicator peer in GameNetwork.NetworkPeers)
             {
@@ -823,7 +823,7 @@ namespace PersistentEmpiresServer.ServerMissions
                 admin.ControlledAgent.SetMortalityState(Agent.MortalityState.Immortal);
             }
 
-            InformationComponent.Instance.SendMessage("You are now invisible to players (other admins can still see you)",
+            InformationComponent.Instance.SendMessage("You are now invisible to all players",
                 new Color(0f, 1f, 0f).ToUnsignedInteger(), admin);
 
             LoggerHelper.LogAnAction(admin, LogAction.PlayerBecomesGodlike, null, new object[] { "Admin became invisible" });
@@ -840,21 +840,19 @@ namespace PersistentEmpiresServer.ServerMissions
 
         private void MakeAdminVisible(NetworkCommunicator admin)
         {
-            if (!InvisibleAdmins.ContainsKey(admin) || !InvisibleAdmins[admin])
+            lock (_invisibleAdminsLock)
             {
-                InformationComponent.Instance.SendMessage("You are already visible",
-                    new Color(1f, 1f, 0f).ToUnsignedInteger(), admin);
-                return;
+                if (InvisibleAdmins.Contains(admin))
+                {
+                    InvisibleAdmins.Remove(admin);
+                }
             }
-
-            InvisibleAdmins[admin] = false;
 
             // Make agent visible to all players again
             if (admin.ControlledAgent != null)
             {
                 foreach (NetworkCommunicator peer in GameNetwork.NetworkPeers)
                 {
-                    //if (peer != admin && peer.IsConnectionActive)
                     if (peer.IsConnectionActive)
                     {
                         PersistentEmpireRepresentative rep = peer.GetComponent<PersistentEmpireRepresentative>();
@@ -875,11 +873,6 @@ namespace PersistentEmpiresServer.ServerMissions
                 new Color(0f, 1f, 0f).ToUnsignedInteger(), admin);
 
             LoggerHelper.LogAnAction(admin, LogAction.PlayerBecomesGodlike, null, new object[] { "Admin became visible" });
-        }
-
-        public bool IsAdminInvisible(NetworkCommunicator admin)
-        {
-            return InvisibleAdmins.ContainsKey(admin) && InvisibleAdmins[admin];
-        }        
+        }   
     }
 }

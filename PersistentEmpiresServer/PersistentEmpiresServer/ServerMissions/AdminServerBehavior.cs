@@ -48,13 +48,34 @@ namespace PersistentEmpiresServer.ServerMissions
 
         protected override void HandleLateNewClientAfterSynchronized(NetworkCommunicator networkPeer)
         {
-            base.OnPlayerConnectedToServer(networkPeer);
-
-            var invisibleAdmins = InvisibleAdmins.Where(x => x.Value == true).Select(x=> x.Key).ToList();
-
-            foreach(var admin in invisibleAdmins)
+            base.HandleLateNewClientAfterSynchronized(networkPeer);
+            if (networkPeer.IsConnectionActive == false || networkPeer.IsNetworkActive == false) return;
+            if (GameNetwork.IsClientOrReplay) return;
+            if (IsPlayerBanned(networkPeer))
             {
-                if(admin.ControlledAgent != null)
+                InformationComponent.Instance.SendAnnouncementToPlayer("You are banned from the server. Please refer to discord server for information", networkPeer, Colors.Red.ToUnsignedInteger());
+                InformationComponent.Instance.SendMessage("You are banned from the server. Please refer to discord server for information", Color.ConvertStringToColor("#d32f2fff").ToUnsignedInteger(), networkPeer);
+                Task.Delay(3000).ContinueWith(_ =>
+                {
+                    if (networkPeer != null && networkPeer.IsConnectionActive)
+                    {
+                        DedicatedCustomServerSubModule.Instance.DedicatedCustomGameServer.KickPlayer(networkPeer.VirtualPlayer.Id, false);
+                    }
+                });
+            }
+            if (IsPlayerAdmin(networkPeer))
+            {
+                networkPeer.GetComponent<PersistentEmpireRepresentative>().IsAdmin = true;
+                GameNetwork.BeginModuleEventAsServer(networkPeer);
+                GameNetwork.WriteMessage(new AuthorizeAsAdmin());
+                GameNetwork.EndModuleEventAsServer();
+            }
+
+            var invisibleAdmins = InvisibleAdmins.Where(x => x.Value == true).Select(x => x.Key).ToList();
+
+            foreach (var admin in invisibleAdmins)
+            {
+                if (admin.ControlledAgent != null)
                 {
                     ToggleVisibility(admin.ControlledAgent, true, networkPeer);
                 }
@@ -129,32 +150,7 @@ namespace PersistentEmpiresServer.ServerMissions
                 return false;
             }
         }
-
-        protected override void HandleLateNewClientAfterSynchronized(NetworkCommunicator networkPeer)
-        {
-            base.HandleLateNewClientAfterSynchronized(networkPeer);
-            if (networkPeer.IsConnectionActive == false || networkPeer.IsNetworkActive == false) return;
-            if (GameNetwork.IsClientOrReplay) return;
-            if (IsPlayerBanned(networkPeer))
-            {
-                InformationComponent.Instance.SendAnnouncementToPlayer("You are banned from the server. Please refer to discord server for information", networkPeer, Colors.Red.ToUnsignedInteger());
-                InformationComponent.Instance.SendMessage("You are banned from the server. Please refer to discord server for information", Color.ConvertStringToColor("#d32f2fff").ToUnsignedInteger(), networkPeer);
-                Task.Delay(3000).ContinueWith(_ =>
-                {
-                    if (networkPeer != null && networkPeer.IsConnectionActive)
-                    {
-                        DedicatedCustomServerSubModule.Instance.DedicatedCustomGameServer.KickPlayer(networkPeer.VirtualPlayer.Id, false);
-                    }
-                });
-            }
-            if (IsPlayerAdmin(networkPeer))
-            {
-                networkPeer.GetComponent<PersistentEmpireRepresentative>().IsAdmin = true;
-                GameNetwork.BeginModuleEventAsServer(networkPeer);
-                GameNetwork.WriteMessage(new AuthorizeAsAdmin());
-                GameNetwork.EndModuleEventAsServer();
-            }
-        }
+        
         public bool IsPlayerAdmin(NetworkCommunicator player)
         {
             if (!File.Exists(AdminPlayerFilePath())) return false;

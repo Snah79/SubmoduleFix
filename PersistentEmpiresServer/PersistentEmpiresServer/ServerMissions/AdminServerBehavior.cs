@@ -90,7 +90,7 @@ namespace PersistentEmpiresServer.ServerMissions
         {
             base.OnPlayerDisconnectedFromServer(networkPeer);
 
-            lock(_invisibleAdminsLock)
+            lock (_invisibleAdminsLock)
             {
                 // Clean up invisibility state when agent is removed
                 if (InvisibleAdmins.Contains(networkPeer))
@@ -108,7 +108,7 @@ namespace PersistentEmpiresServer.ServerMissions
         {
             return ModuleHelper.GetModuleFullPath(Main.ModuleName) + this.AdminFile;
         }
-        
+
         public void BanPlayer(NetworkCommunicator player, int seconds)
         {
             long bannedUntil = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + seconds;
@@ -140,12 +140,12 @@ namespace PersistentEmpiresServer.ServerMissions
 
                 return true;
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 return false;
             }
         }
-        
+
         public bool IsPlayerAdmin(NetworkCommunicator player)
         {
             if (!File.Exists(AdminPlayerFilePath())) return false;
@@ -247,7 +247,7 @@ namespace PersistentEmpiresServer.ServerMissions
         {
             try
             {
-                if(networkCommunicator.ControlledAgent == null)
+                if (networkCommunicator.ControlledAgent == null)
                 {
                     return true;
                 }
@@ -378,7 +378,7 @@ namespace PersistentEmpiresServer.ServerMissions
             factionsBehavior.SetFactionLord(message.TargetPlayer, message.TargetFactionId);
             return true;
         }
-        
+
         private bool HandleRequestItemSpawn(NetworkCommunicator player, RequestItemSpawn message)
         {
             PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
@@ -490,7 +490,7 @@ namespace PersistentEmpiresServer.ServerMissions
 
             if (OnUnBanPlayer == null)
             {
-                if(UnBanPlayer(message.PlayerId))
+                if (UnBanPlayer(message.PlayerId))
                 {
                     LoggerHelper.LogAnAction(admin, LogAction.PlayerBansPlayer, null, new object[] { message.PlayerId });
                     InformationComponent.Instance.SendMessage("Player was unbanned", new Color(0f, 0f, 1f).ToUnsignedInteger(), admin);
@@ -504,10 +504,10 @@ namespace PersistentEmpiresServer.ServerMissions
             {
                 OnUnBanPlayer(message.AdminId, message.PlayerId);
             }
-            
+
             return true;
         }
-        
+
         public bool HandleRequestKickFromClient(NetworkCommunicator admin, RequestKick message)
         {
             PersistentEmpireRepresentative persistentEmpireRepresentative = admin.GetComponent<PersistentEmpireRepresentative>();
@@ -707,10 +707,10 @@ namespace PersistentEmpiresServer.ServerMissions
                 return false;
             }
             admin.ControlledAgent.TeleportToPosition(message.Position);
-            
+
             return true;
         }
-        
+
         public bool HandleRequestHealFromClient(NetworkCommunicator admin, RequestHeal message)
         {
             PersistentEmpireRepresentative persistentEmpireRepresentative = admin.GetComponent<PersistentEmpireRepresentative>();
@@ -764,21 +764,33 @@ namespace PersistentEmpiresServer.ServerMissions
                 return false;
             }
 
-            if (admin.ControlledAgent == null || !admin.ControlledAgent.IsActive()) 
+            if (admin.ControlledAgent == null || !admin.ControlledAgent.IsActive())
             {
                 InformationComponent.Instance.SendMessage("You must be spawned to use invisibility",
                     new Color(1f, 0f, 0f).ToUnsignedInteger(), admin);
                 return false;
             }
 
-            if (message.IsVisible)
+            if (admin.IsAdmin)
             {
-                MakeAdminVisible(admin);
+                var rep = admin.GetComponent<PersistentEmpireRepresentative>();
+                if (rep != null && rep.IsAdmin)
+                {
+                    if (message.IsVisible)
+                    {
+                        MakeAdminVisible(admin);
+                    }
+                    else
+                    {
+                        MakeAdminInvisible(admin);
+                    }
+
+                    return true;
+                }
             }
-            else
-            {
-                MakeAdminInvisible(admin);
-            }
+
+            InformationComponent.Instance.SendMessage("You are not admin!",
+                new Color(1f, 0f, 0f).ToUnsignedInteger(), admin);
 
             return true;
         }
@@ -805,7 +817,7 @@ namespace PersistentEmpiresServer.ServerMissions
                 //if (peer != admin && peer.IsConnectionActive)
                 if (peer.IsConnectionActive)
                 {
-                    PersistentEmpireRepresentative rep = peer.GetComponent<PersistentEmpireRepresentative>();
+                    //PersistentEmpireRepresentative rep = peer.GetComponent<PersistentEmpireRepresentative>();
                     //if (rep != null && !rep.IsAdmin) // Only hide from non-admins
                     {
                         // Set agent's visibility to false for this peer

@@ -17,6 +17,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public delegate void AdminPanelClick();
         public event AdminPanelClick OnAdminPanelClick;
         public static List<AdminTp> AdminTps = new List<AdminTp>();
+        public static bool IsVisible = true;
 #if SERVER
         public static bool CanUseSuicide = true;
 #endif
@@ -75,6 +76,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();
+            IsVisible = true;
             AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
 #if SERVER
             CanUseSuicide = ConfigManager.GetBoolConfig("CanUseSuicide", true);
@@ -83,6 +85,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public override void OnRemoveBehavior()
         {
             AdminTps.Clear();
+            IsVisible = true;
             base.OnRemoveBehavior();
             AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
         }
@@ -114,7 +117,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public void ToggleInvisible()
         {
-            var message = new RequestToggleInvisibility();
+            IsVisible = !IsVisible;
+            var message = new RequestToggleInvisibility(IsVisible);
             GameNetwork.BeginModuleEventAsClient();
             GameNetwork.WriteMessage(message);
             GameNetwork.EndModuleEventAsClient();

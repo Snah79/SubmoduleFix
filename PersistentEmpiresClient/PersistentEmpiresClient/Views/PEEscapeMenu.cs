@@ -149,7 +149,9 @@ namespace PersistentEmpires.Views.Views
 
             if (_persistentEmpireRepresentative != null && _persistentEmpireRepresentative.IsAdmin)
             {
-                list.Add(new EscapeMenuItemVM(GameTexts.FindText("EscapeMenToggleInvisible", null), delegate (object o)
+                //
+                var text = AdminClientBehavior.IsVisible ? GameTexts.FindText("EscapeMenBecomeInvisible", null) : GameTexts.FindText("EscapeMenBecomeVisible", null);
+                list.Add(new EscapeMenuItemVM(text, delegate (object o)
                 {
                     base.OnEscapeMenuToggled(false);
                     this._adminBehavior.ToggleInvisible();

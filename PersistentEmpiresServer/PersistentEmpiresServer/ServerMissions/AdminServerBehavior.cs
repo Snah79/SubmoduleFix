@@ -771,22 +771,19 @@ namespace PersistentEmpiresServer.ServerMissions
                 return false;
             }
 
-            if (admin.IsAdmin)
-            {
                 var rep = admin.GetComponent<PersistentEmpireRepresentative>();
-                if (rep != null && rep.IsAdmin)
+            if (rep != null && rep.IsAdmin)
+            {
+                if (message.IsVisible)
                 {
-                    if (message.IsVisible)
-                    {
-                        MakeAdminVisible(admin);
-                    }
-                    else
-                    {
-                        MakeAdminInvisible(admin);
-                    }
-
-                    return true;
+                    MakeAdminVisible(admin);
                 }
+                else
+                {
+                    MakeAdminInvisible(admin);
+                }
+
+                return true;
             }
 
             InformationComponent.Instance.SendMessage("You are not admin!",

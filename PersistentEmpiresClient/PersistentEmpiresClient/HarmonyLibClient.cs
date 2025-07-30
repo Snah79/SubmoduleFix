@@ -101,10 +101,14 @@ namespace PersistentEmpiresClient
             original = typeof(GameNetworkMessage).GetMethod("WriteBannerCodeToPacket", BindingFlags.Public | BindingFlags.Static);
             prefix = typeof(PatchReadBannerCodeFromPacket).GetMethod("PrefixWriteBannerCodeToPacket", BindingFlags.Public | BindingFlags.Static);
             HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
+            Debug.Print("** Persistent Harmony ** Patched [GameNetwork::WriteBannerCodeToPacket]", 0, Debug.DebugColor.Yellow);
 
             original = typeof(GameNetworkMessage).GetMethod("ReadBannerCodeFromPacket", BindingFlags.Public | BindingFlags.Static);
             prefix = typeof(PatchReadBannerCodeFromPacket).GetMethod("PrefixReadBannerCodeFromPacket", BindingFlags.Public | BindingFlags.Static);
             HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
+            Debug.Print("** Persistent Harmony ** Patched [GameNetwork::ReadBannerCodeFromPacket]", 0, Debug.DebugColor.Yellow);
+
+            Debug.Print("** Persistent Harmony ** Done", 0, Debug.DebugColor.Yellow);
         }
         public static void Create()
         {

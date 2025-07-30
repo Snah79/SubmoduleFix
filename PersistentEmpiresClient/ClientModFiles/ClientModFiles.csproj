@@ -8,6 +8,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Properties\**" />
+	  <EmbeddedResource Remove="Properties\**" />
+	  <None Remove="Properties\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Folder Include="GUI\Brushes\" />
 		<Folder Include="GUI\Prefabs\PEMessageLog\" />
 		<Folder Include="GUI\SpriteParts\" />

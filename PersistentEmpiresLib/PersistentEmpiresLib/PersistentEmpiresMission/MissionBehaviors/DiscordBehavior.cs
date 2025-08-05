@@ -120,6 +120,12 @@ namespace PersistentEmpiresServer.ServerMissions
                             {
                                 new
                                 {
+                                    name = "UTC Date",
+                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    inline = false,
+                                },
+                                new
+                                {
                                     name = "Player name",
                                     value = dbLog.IssuerPlayerName,
                                     inline = false,
@@ -178,6 +184,12 @@ namespace PersistentEmpiresServer.ServerMissions
                             color = int.Parse(ColorRed, System.Globalization.NumberStyles.HexNumber),
                             fields = new List<object>
                             {
+                                new
+                                {
+                                    name = "UTC Date",
+                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    inline = false,
+                                },
                                 new
                                 {
                                     name = "Message",
@@ -253,6 +265,12 @@ namespace PersistentEmpiresServer.ServerMissions
                         fields = new List<object>
                         {
                             new
+                                {
+                                    name = "UTC Date",
+                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    inline = false,
+                                },
+                            new
                             {
                                 name = "Exception",
                                 value = ex,
@@ -286,10 +304,20 @@ namespace PersistentEmpiresServer.ServerMissions
                         title = message,
                         //description = message,
                         color = int.Parse(color, System.Globalization.NumberStyles.HexNumber),
+                        fields = new List<object>
+                        {
+                            new
+                                {
+                                    name = "UTC Date",
+                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    inline = false,
+                                },
+                        },
                         author = new
                         {
                             name = "Server Status",
                         },
+
                     },
                 }
             };
@@ -317,6 +345,15 @@ namespace PersistentEmpiresServer.ServerMissions
                         title = "Admin chat",
                         description = message,
                         color = int.Parse(ColorGreen, System.Globalization.NumberStyles.HexNumber),
+                        fields = new List<object>
+                        {
+                            new
+                                {
+                                    name = "UTC Date",
+                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    inline = false,
+                                },
+                        },
                         author = new
                         {
                             name = player.VirtualPlayer?.UserName,
@@ -349,6 +386,15 @@ namespace PersistentEmpiresServer.ServerMissions
                         title = "Admin message",
                         description = message,
                         color = int.Parse(ColorRed, System.Globalization.NumberStyles.HexNumber),
+                        fields = new List<object>
+                        {
+                            new
+                                {
+                                    name = "UTC Date",
+                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    inline = false,
+                                },
+                        },
                         author = new
                         {
                             name = user,

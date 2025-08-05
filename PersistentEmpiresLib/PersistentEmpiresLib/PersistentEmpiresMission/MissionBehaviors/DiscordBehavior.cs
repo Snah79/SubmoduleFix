@@ -121,7 +121,7 @@ namespace PersistentEmpiresServer.ServerMissions
                                 new
                                 {
                                     name = "UTC Date",
-                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    value = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                                     inline = false,
                                 },
                                 new
@@ -187,7 +187,7 @@ namespace PersistentEmpiresServer.ServerMissions
                                 new
                                 {
                                     name = "UTC Date",
-                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    value = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                                     inline = false,
                                 },
                                 new
@@ -267,7 +267,7 @@ namespace PersistentEmpiresServer.ServerMissions
                             new
                                 {
                                     name = "UTC Date",
-                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    value = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                                     inline = false,
                                 },
                             new
@@ -309,7 +309,7 @@ namespace PersistentEmpiresServer.ServerMissions
                             new
                                 {
                                     name = "UTC Date",
-                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    value = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                                     inline = false,
                                 },
                         },
@@ -350,7 +350,7 @@ namespace PersistentEmpiresServer.ServerMissions
                             new
                                 {
                                     name = "UTC Date",
-                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    value = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                                     inline = false,
                                 },
                         },
@@ -391,7 +391,7 @@ namespace PersistentEmpiresServer.ServerMissions
                             new
                                 {
                                     name = "UTC Date",
-                                    value = DateTime.UtcNow.ToLongTimeString(),
+                                    value = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                                     inline = false,
                                 },
                         },

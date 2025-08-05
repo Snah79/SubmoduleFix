@@ -1,5 +1,6 @@
 ﻿using PersistentEmpires.Views.Views.AdminPanel;
 using PersistentEmpires.Views.ViewsVM.AdminPanel;
+using PersistentEmpiresLib;
 using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
+using TaleWorlds.MountAndBlade.ViewModelCollection.EscapeMenu;
 
 namespace PersistentEmpires.Views.Views
 {
@@ -107,6 +109,19 @@ namespace PersistentEmpires.Views.Views
             {
                 CloseAdminPanel();
                 Mission.GetMissionBehavior<PEAdminTeleportView>().OnOpen();
+            }));
+
+            var text = AdminClientBehavior.IsVisible ? GameTexts.FindText("EscapeMenBecomeInvisible", null) : GameTexts.FindText("EscapeMenBecomeVisible", null);
+            menuItemVm.Add(new PEAdminMenuItemVM(text, () =>
+            {
+                CloseAdminPanel();
+                _adminBehavior.ToggleInvisible();
+            }));
+
+            menuItemVm.Add(new PEAdminMenuItemVM(GameTexts.FindText("EscapeMenUnban", null), () =>
+            {
+                CloseAdminPanel();
+                _adminBehavior.HandleUnbanPlayerClick();
             }));
 
             return menuItemVm;

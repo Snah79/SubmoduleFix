@@ -147,24 +147,24 @@ namespace PersistentEmpires.Views.Views
             //    }
             //}, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
 
-            if (_persistentEmpireRepresentative != null && _persistentEmpireRepresentative.IsAdmin)
-            {
-                //
-                var text = AdminClientBehavior.IsVisible ? GameTexts.FindText("EscapeMenBecomeInvisible", null) : GameTexts.FindText("EscapeMenBecomeVisible", null);
-                list.Add(new EscapeMenuItemVM(text, delegate (object o)
-                {
-                    base.OnEscapeMenuToggled(false);
-                    this._adminBehavior.ToggleInvisible();
+            //if (_persistentEmpireRepresentative != null && _persistentEmpireRepresentative.IsAdmin)
+            //{
+            //    //
+            //    var text = AdminClientBehavior.IsVisible ? GameTexts.FindText("EscapeMenBecomeInvisible", null) : GameTexts.FindText("EscapeMenBecomeVisible", null);
+            //    list.Add(new EscapeMenuItemVM(text, delegate (object o)
+            //    {
+            //        base.OnEscapeMenuToggled(false);
+            //        this._adminBehavior.ToggleInvisible();
 
-                }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+            //    }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
 
-                list.Add(new EscapeMenuItemVM(GameTexts.FindText("EscapeMenUnban", null), delegate (object o)
-                {
-                    base.OnEscapeMenuToggled(false);
-                    this._adminBehavior.HandleUnbanPlayerClick();
+            //    list.Add(new EscapeMenuItemVM(GameTexts.FindText("EscapeMenUnban", null), delegate (object o)
+            //    {
+            //        base.OnEscapeMenuToggled(false);
+            //        this._adminBehavior.HandleUnbanPlayerClick();
 
-                }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
-            }
+            //    }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+            //}
 
             list.Add(new EscapeMenuItemVM(new TextObject("{=InGwtrWt}Quit", null), delegate (object o)
             {

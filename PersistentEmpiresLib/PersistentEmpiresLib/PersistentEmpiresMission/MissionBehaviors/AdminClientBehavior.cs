@@ -120,11 +120,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             if(peer != null)
             {
-                var component = peer.GetComponent<MissionPeer>();
-                var visual = component.GetAgentVisualForPeer(0);
-                visual.SetClothingColors(BannerManager.GetColor(message.PrimaryColor), BannerManager.GetColor(message.SecondaryColor));
-                var tmp2 = visual.GetIsFemale();
-                visual.Refresh(false, visual.GetCopyAgentVisualsData(), false);
+                peer.ControlledAgent.SetClothingColor1(BannerManager.GetColor(message.PrimaryColor));
+                peer.ControlledAgent.SetClothingColor2(BannerManager.GetColor(message.SecondaryColor));
+                AgentHelpers.ResetAgentMesh(peer.ControlledAgent);
             }
         }
 

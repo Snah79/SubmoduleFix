@@ -143,6 +143,7 @@ namespace PersistentEmpires.Views.Views
                 list.Add(new EscapeMenuItemVM(new TextObject("Change colors", null), delegate (object o)
                 {
                     ExecuteChangeColor();
+                    base.OnEscapeMenuToggled(false);
                 }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
             }
             //list.Add(new EscapeMenuItemVM(new TextObject("Respawn", null), delegate (object o)

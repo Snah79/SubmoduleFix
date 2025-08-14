@@ -14,6 +14,8 @@ using TaleWorlds.MountAndBlade.Source.Missions;
 using TaleWorlds.MountAndBlade.ViewModelCollection.EscapeMenu;
 using PersistentEmpiresLib.Helpers;
 using PersistentEmpires.Views.Views;
+using TaleWorlds.Core.ViewModelCollection.Information;
+using System.Linq;
 
 namespace PersistentEmpires.Views.Views
 {
@@ -136,6 +138,13 @@ namespace PersistentEmpires.Views.Views
                     InformationManager.ShowInquiry(inquiry);
                 }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
             }
+            if (_persistentEmpireRepresentative != null && _persistentEmpireRepresentative.CanUseChangeColors)
+            {
+                list.Add(new EscapeMenuItemVM(new TextObject("Change colors", null), delegate (object o)
+                {
+                    ExecuteChangeColor();
+                }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+            }
             //list.Add(new EscapeMenuItemVM(new TextObject("Respawn", null), delegate (object o)
             //{
             //    base.OnEscapeMenuToggled(false);
@@ -195,5 +204,77 @@ namespace PersistentEmpires.Views.Views
             }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
             return list;
         }
+        
+        private static List<InquiryElement> InquiryElements = SetUpColorList();
+        private static int? choosenPrimaryColor = null;
+        private static int? choosenSecondaryColor = null;
+
+        private static List<InquiryElement> SetUpColorList()
+        {
+            var tmp = new List<InquiryElement>();
+
+            for (int i = 0; i < 194; i++)
+            {
+                tmp.Add(new InquiryElement(i, $"{i}", new ImageIdentifier(Banner.CreateOneColoredEmptyBanner(i))));
+            }
+
+            return tmp;
+        }
+
+        private void ExecuteChangeColor()
+        {
+            if (InquiryElements == null)
+            {
+                SetUpColorList();
+            }
+
+            MBInformationManager.ShowMultiSelectionInquiry(
+                new MultiSelectionInquiryData("Choose color"
+                    , "Choose primary color for current character"
+                    , InquiryElements
+                    , true
+                    , 1
+                    , 1
+                    , "Next"
+                    , "Cancel"
+                    , DoSelectPrimary
+                    , DoCancelAction));
+        }
+
+        private void DoCancelAction(List<InquiryElement> list)
+        {
+            choosenPrimaryColor = null;
+            choosenSecondaryColor = null;
+        }
+
+        private void DoSelectPrimary(List<InquiryElement> list)
+        {
+            choosenPrimaryColor = (int)list.FirstOrDefault().Identifier;
+
+            MBInformationManager.ShowMultiSelectionInquiry(
+                new MultiSelectionInquiryData("Choose color"
+                    , "Choose secondary color for current character"
+                    , InquiryElements
+                    , true
+                    , 1
+                    , 1
+                    , "Next"
+                    , "Cancel"
+                    , DoSelectSecondary
+                    , DoCancelAction));
+        }
+
+        private void DoSelectSecondary(List<InquiryElement> list)
+        {
+            choosenSecondaryColor = (int)list.FirstOrDefault().Identifier;
+            var message = new ChangeCustomColors(choosenPrimaryColor.Value, choosenSecondaryColor.Value);
+
+            GameNetwork.BeginModuleEventAsClient();
+            GameNetwork.WriteMessage(message);
+            GameNetwork.EndModuleEventAsClient();
+
+            choosenPrimaryColor = null;
+            choosenSecondaryColor = null;
+        }
     }
-}
+} 

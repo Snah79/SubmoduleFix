@@ -240,6 +240,7 @@ namespace PersistentEmpiresServer.ServerMissions
                 networkMessageHandlerRegisterer.Register<RequestRespawn>(HandleRequestRespawn);
                 networkMessageHandlerRegisterer.Register<FactionAdminAssignLord>(this.HandleFactionAdminAssignLord);
                 networkMessageHandlerRegisterer.Register<RequestToggleInvisibility>(this.HandleRequestToggleInvisibility);
+                networkMessageHandlerRegisterer.Register<ChangeCustomColors>(HandleChangeCustomColors);
             }
         }
 
@@ -792,6 +793,17 @@ namespace PersistentEmpiresServer.ServerMissions
             return true;
         }
 
+        public bool HandleChangeCustomColors(NetworkCommunicator networkCommunicator, ChangeCustomColors message)
+        {
+            var broadcastChangeCustomColors = new BroadcastChangeCustomColors(networkCommunicator.VirtualPlayer?.Id.ToString(), message.PrimaryColor, message.SecondaryColor);
+
+            GameNetwork.BeginBroadcastModuleEvent();
+            GameNetwork.WriteMessage(broadcastChangeCustomColors);
+            GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
+
+            return true;
+        }
+        
         private void MakeAdminInvisible(NetworkCommunicator admin)
         {
             lock (_invisibleAdminsLock)

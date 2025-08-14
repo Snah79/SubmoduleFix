@@ -20,6 +20,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static bool IsVisible = true;
 #if SERVER
         public static bool CanUseSuicide = true;
+        public static bool CanUseChangeColor = true;
 #endif
 
         public void HandleAdminPanelClick()
@@ -80,6 +81,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
 #if SERVER
             CanUseSuicide = ConfigManager.GetBoolConfig("CanUseSuicide", true);
+            CanUseChangeColor = ConfigManager.GetBoolConfig("CanUseChangeColor", true);
 #endif
         }
         public override void OnRemoveBehavior()

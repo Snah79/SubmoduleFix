@@ -642,4 +642,44 @@ namespace PersistentEmpiresLib.NetworkMessages.Client
             GameNetworkMessage.WriteBoolToPacket(IsVisible);
         }
     }
+
+    [DefineGameNetworkMessageTypeForMod(GameNetworkMessageSendType.FromClient)]
+    public sealed class ChangeCustomColors : GameNetworkMessage
+    {
+        public int PrimaryColor { get; set; }
+        public int SecondaryColor { get; set; }
+
+        public ChangeCustomColors() { }
+        public ChangeCustomColors(int primaryColor, int secondaryColor)
+        {
+            PrimaryColor = primaryColor;
+            SecondaryColor = secondaryColor;
+        }
+
+        protected override MultiplayerMessageFilter OnGetLogFilter()
+        {
+            return MultiplayerMessageFilter.Administration;
+        }
+
+        protected override string OnGetLogFormat()
+        {
+            return "Received ChangeCustomColors";
+        }
+
+        protected override bool OnRead()
+        {
+            bool result = true;
+
+            PrimaryColor = ReadIntFromPacket(new CompressionInfo.Integer(-1, int.MaxValue, true), ref result);
+            SecondaryColor = ReadIntFromPacket(new CompressionInfo.Integer(-1, int.MaxValue, true), ref result);
+            
+            return result;
+        }
+
+        protected override void OnWrite()
+        {
+            WriteIntToPacket(PrimaryColor, new CompressionInfo.Integer(-1, int.MaxValue, true));
+            WriteIntToPacket(SecondaryColor, new CompressionInfo.Integer(-1, int.MaxValue, true));
+        }
+    }
 }

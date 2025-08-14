@@ -12,8 +12,9 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
         public bool CanUseLordPoll;
         public bool CanUseDiplomacy;
         public bool CanUseSuicide;
+        public bool CanUseChangeColors;
         public SyncMember() { }
-        public SyncMember(NetworkCommunicator peer, int factionIndex, bool isMarshall, bool canUseLordPoll, bool canUseDiplomacy, bool canUseSuicide)
+        public SyncMember(NetworkCommunicator peer, int factionIndex, bool isMarshall, bool canUseLordPoll, bool canUseDiplomacy, bool canUseSuicide, bool canUseChangeColors)
         {
             Peer = peer;
             FactionIndex = factionIndex;
@@ -21,6 +22,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
             CanUseLordPoll = canUseLordPoll;
             CanUseDiplomacy = canUseDiplomacy;
             CanUseSuicide = canUseSuicide;
+            CanUseChangeColors = canUseChangeColors;
         }
         protected override MultiplayerMessageFilter OnGetLogFilter()
         {
@@ -41,6 +43,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
             CanUseLordPoll = GameNetworkMessage.ReadBoolFromPacket(ref result);
             CanUseDiplomacy = GameNetworkMessage.ReadBoolFromPacket(ref result);
             CanUseSuicide = GameNetworkMessage.ReadBoolFromPacket(ref result);
+            CanUseChangeColors = GameNetworkMessage.ReadBoolFromPacket(ref result);
             return result;
         }
 
@@ -52,6 +55,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
             GameNetworkMessage.WriteBoolToPacket(CanUseLordPoll);
             GameNetworkMessage.WriteBoolToPacket(CanUseDiplomacy);
             GameNetworkMessage.WriteBoolToPacket(CanUseSuicide);
+            GameNetworkMessage.WriteBoolToPacket(CanUseChangeColors);
         }
     }
 }

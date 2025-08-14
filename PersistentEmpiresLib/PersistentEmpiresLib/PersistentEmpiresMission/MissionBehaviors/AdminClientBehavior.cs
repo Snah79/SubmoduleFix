@@ -4,6 +4,7 @@ using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.SceneScripts;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using TaleWorlds.Core;
@@ -98,6 +99,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 #if CLIENT
             networkMessageHandlerRegisterer.Register<AuthorizeAsAdmin>(HandleAuthorizeAsAdminFromServer);
             networkMessageHandlerRegisterer.Register<ToggleVisibilityForAgent>(HandleToggleVisibilityForAgent);
+            networkMessageHandlerRegisterer.Register<BroadcastChangeCustomColors>(HandleBroadcastChangeCustomColors);
 #endif
         }
 
@@ -110,6 +112,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             message.Agent.AgentVisuals.SetVisible(message.Visible);
             message.Agent.AgentVisuals.LazyUpdateAgentRendererData();
+        }
+
+        private void HandleBroadcastChangeCustomColors(BroadcastChangeCustomColors message)
+        {
+            var peer = GameNetwork.NetworkPeers.Where(x => x.VirtualPlayer.Id.ToString() == message.PlayerUserId).FirstOrDefault();
+
+            if(peer != null)
+            {
+                var component = peer.GetComponent<MissionPeer>();
+                var visual = component.GetAgentVisualForPeer(0);
+                visual.SetClothingColors(BannerManager.GetColor(message.PrimaryColor), BannerManager.GetColor(message.SecondaryColor));
+                var tmp2 = visual.GetIsFemale();
+                visual.Refresh(false, visual.GetCopyAgentVisualsData(), false);
+            }
         }
 
         internal static void Register(AdminTp adminTp)

@@ -1,6 +1,7 @@
 ﻿using PersistentEmpiresClient;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using TaleWorlds.DotNet;
 using TaleWorlds.Engine;
@@ -32,14 +33,48 @@ namespace PersistentEmpires.Views
 
         }
 
-
         private static void HandleExceptionalExit(object sender, UnhandledExceptionEventArgs args)
         {
-            Exception e = (Exception)args.ExceptionObject;
+            var exception = args.ExceptionObject as Exception;
+            var message = $"Exception{Environment.NewLine}" +
+                $"Sender: {sender?.ToString()}{Environment.NewLine}" +
+                $"Exception: {(exception != null ? exception.ToLogString() : args.ExceptionObject?.ToString())}";
+
+            try
+            {
+                var path = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\"));
+
+                path += $"Error_{DateTime.Now.ToString("yyyyMMdd_hhmmss")}.txt";
+                using (FileStream fs = File.Create(path))
+                {
+                    using (var sw = new StreamWriter(fs))
+                    {
+                        sw.Write(message);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+
+            }
         }
 
         public static void Dispose()
         {
+        }
+    }
+
+    internal static class ExceptionExtensions
+    {
+        internal static string ToLogString(this Exception ex)
+        {
+            var message = $"Message: {ex.Message}{Environment.NewLine}" +
+                $"Stack: {ex.StackTrace}{Environment.NewLine}" +
+                $"InnerException: {ex.InnerException}{Environment.NewLine}" +
+                $"Data: {ex.Data}{Environment.NewLine}" +
+                $"Source: {ex.Source}";
+
+            return message;
         }
     }
 }

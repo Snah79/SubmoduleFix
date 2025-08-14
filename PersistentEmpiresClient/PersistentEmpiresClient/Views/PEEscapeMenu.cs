@@ -267,7 +267,7 @@ namespace PersistentEmpires.Views.Views
         private void DoSelectSecondary(List<InquiryElement> list)
         {
             choosenSecondaryColor = (int)list.FirstOrDefault().Identifier;
-            var message = new ChangeCustomColors(GameNetwork.MyPeer?.VirtualPlayer?.ToPlayerId(), choosenPrimaryColor.Value, choosenSecondaryColor.Value);
+            var message = new ChangeCustomColors(choosenPrimaryColor.Value, choosenSecondaryColor.Value);
 
             GameNetwork.BeginModuleEventAsClient();
             GameNetwork.WriteMessage(message);

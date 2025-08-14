@@ -36,12 +36,21 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
         public void SendMessage(String text, uint color, NetworkCommunicator player)
         {
+            if (string.IsNullOrEmpty(text))
+            {
+                throw new Exception("SendMessage is null");
+            }
             GameNetwork.BeginModuleEventAsServer(player);
             GameNetwork.WriteMessage(new PEInformationMessage(text, color));
             GameNetwork.EndModuleEventAsServer();
         }
         public void BroadcastMessage(String text, uint color)
         {
+            if(string.IsNullOrEmpty(text))
+            {
+                throw new Exception("BroadcastMessage is null");
+            }
+
             GameNetwork.BeginBroadcastModuleEvent();
             GameNetwork.WriteMessage(new PEInformationMessage(text, color));
             GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);

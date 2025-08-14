@@ -70,7 +70,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             PersistentEmpireRepresentative persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
             Faction f = persistentEmpireRepresentative.GetFaction();
-            if (message.Message.StartsWith("!") && f != null && (f.lordId == networkPeer.VirtualPlayer.ToPlayerId() || f.marshalls.Contains(networkPeer.VirtualPlayer.ToPlayerId())))
+            if (f != null && (f.lordId == networkPeer.VirtualPlayer.ToPlayerId() || f.marshalls.Contains(networkPeer.VirtualPlayer.ToPlayerId())))
             {
                 string updated = message.Message.Substring(1);
 
@@ -81,6 +81,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                         InformationComponent.Instance.SendQuickInformationToPlayer("[" + networkPeer.UserName + "] " + updated, n, Colors.Red.ToUnsignedInteger());
                     }
                 }
+
+                LoggerHelper.LogAnAction(networkPeer, LogAction.PlayerMessageTeam, null, new object[] {f});
 
                 return false;
             }

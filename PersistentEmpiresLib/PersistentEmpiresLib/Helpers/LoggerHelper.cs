@@ -31,6 +31,7 @@ namespace PersistentEmpiresLib.Helpers
         public static readonly string PlayerClassChange = "PlayerClassChange"; // Done
         public static readonly string FactionLordChanged = "FactionLordChanged";// Done
         public static readonly string FactionDeclaredWar = "FactionDeclaredWar"; // Done
+        public static readonly string PlayerMessageTeam = "PlayerMessageTeam"; // Done
         public static readonly string FactionMadePeace = "FactionMadePeace";// Done
         public static readonly string PlayerOpensChest = "PlayerOpensChest";// Done
         public static readonly string PlayerClosesChest = "PlayerClosesChest"; // Done
@@ -269,6 +270,8 @@ namespace PersistentEmpiresLib.Helpers
                     return $"{FormatLogForPlayer(issuer, dateTime)} Teleported to position {oParams[0]}";
                 case nameof(LogAction.Wounds):
                     return $"{FormatLogForPlayer(issuer, dateTime)} {oParams[0]}";
+                case nameof(LogAction.PlayerMessageTeam):
+                    return $"{FormatLogForPlayer(issuer, dateTime)} sended message to {((Faction)oParams[0])?.name ?? "Unknown"}";
                 default:
                     return actionType;
             }

@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using PersistentEmpiresLib.Database.DBEntities;
+using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts;
 using PersistentEmpiresLib.SceneScripts.Extensions;
@@ -30,7 +31,7 @@ namespace PersistentEmpiresSave.Database.Repositories
                 CurrentTier = upgradeableBuilding.CurrentTier,
                 IsUpgrading = upgradeableBuilding.IsUpgrading,
                 MissionObjectHash = upgradeableBuilding.GetMissionObjectHash(),
-                PlayerId = upgradeableBuilding._buildedByPlayerId,
+                PlayerId = upgradeableBuilding._buildedByPlayerId.EncodeSpecialMariaDbChars(),
             };
         }
 
@@ -102,7 +103,7 @@ namespace PersistentEmpiresSave.Database.Repositories
                 Debug.Print("[Save Module] GetAllUpgradeableBuildingsByPlayerId");
                 return DBConnection.Connection.Query<DBUpgradeableBuilding>("SELECT * FROM UpgradeableBuildings WHERE PlayerId = @PlayerId", new 
                 {
-                    PlayerId = playerId
+                    PlayerId = playerId.EncodeSpecialMariaDbChars()
                 });
             }
             catch (Exception ex)

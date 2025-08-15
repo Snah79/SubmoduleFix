@@ -6,5 +6,6 @@
         public string MissionObjectHash { get; set; }
         public bool IsUpgrading { get; set; }
         public int CurrentTier { get; set; }
+        public string PlayerId{ get; set; }
     }
 }

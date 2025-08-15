@@ -4,10 +4,12 @@ using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts;
 using PersistentEmpiresLib.SceneScripts.Extensions;
 using PersistentEmpiresServer.ServerMissions;
+using RestSharp.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Library;
+using TaleWorlds.PlayerServices;
 
 namespace PersistentEmpiresSave.Database.Repositories
 {
@@ -27,7 +29,8 @@ namespace PersistentEmpiresSave.Database.Repositories
             {
                 CurrentTier = upgradeableBuilding.CurrentTier,
                 IsUpgrading = upgradeableBuilding.IsUpgrading,
-                MissionObjectHash = upgradeableBuilding.GetMissionObjectHash()
+                MissionObjectHash = upgradeableBuilding.GetMissionObjectHash(),
+                PlayerId = upgradeableBuilding._buildedByPlayerId,
             };
         }
 
@@ -45,7 +48,7 @@ namespace PersistentEmpiresSave.Database.Repositories
             {
                 Debug.Print("[Save Module] CREATE UPGRADEABLE BUILDING TO DB(" + upgradeableBuilding != null ? " " + upgradeableBuilding.GetMissionObjectHash() : " UPGRADEABLE BUILDING MARKET IS NULL !)");
                 DBUpgradeableBuilding db = CreateDBUpgradeableBuilding(upgradeableBuilding);
-                string insertSql = "INSERT INTO UpgradeableBuildings (MissionObjectHash, CurrentTier, IsUpgrading) VALUES (@MissionObjectHash, @CurrentTier, @IsUpgrading)";
+                string insertSql = "INSERT INTO UpgradeableBuildings (MissionObjectHash, CurrentTier, IsUpgrading, PlayerId) VALUES (@MissionObjectHash, @CurrentTier, @IsUpgrading, @PlayerId)";
                 DBConnection.Connection.Execute(insertSql, db);
                 Debug.Print("[Save Module] CREATED UPGRADEABLE BUILDING TO DB(" + upgradeableBuilding != null ? " " + upgradeableBuilding.GetMissionObjectHash() : " UPGRADEABLE BUILDING MARKET IS NULL !)");
                 return db;
@@ -64,7 +67,7 @@ namespace PersistentEmpiresSave.Database.Repositories
             {
                 Debug.Print("[Save Module] UPDATE UPGRADEABLE BUILDING TO DB(" + upgradeableBuilding != null ? " " + upgradeableBuilding.GetMissionObjectHash() : " UPGRADEABLE BUILDING MARKET IS NULL !)");
                 DBUpgradeableBuilding db = CreateDBUpgradeableBuilding(upgradeableBuilding);
-                string insertSql = "UPDATE UpgradeableBuildings SET CurrentTier = @CurrentTier, IsUpgrading = @IsUpgrading WHERE MissionObjectHash = @MissionObjectHash";
+                string insertSql = "UPDATE UpgradeableBuildings SET CurrentTier = @CurrentTier, IsUpgrading = @IsUpgrading, PlayerId = @PlayerId WHERE MissionObjectHash = @MissionObjectHash";
                 DBConnection.Connection.Execute(insertSql, db);
                 Debug.Print("[Save Module] UPDATED UPGRADEABLE BUILDING TO DB(" + upgradeableBuilding != null ? " " + upgradeableBuilding.GetMissionObjectHash() : " UPGRADEABLE BUILDING MARKET IS NULL !)");
                 return db;
@@ -83,6 +86,24 @@ namespace PersistentEmpiresSave.Database.Repositories
             {
                 Debug.Print("[Save Module] GET ALL UPGRADEABLE BUILDINGS");
                 return DBConnection.Connection.Query<DBUpgradeableBuilding>("SELECT * FROM UpgradeableBuildings");
+            }
+            catch (Exception ex)
+            {
+                DiscordBehavior.NotifyException(ex);
+
+                return null;
+            }
+        }
+
+        public static IEnumerable<DBUpgradeableBuilding> GetAllUpgradeableBuildingsByPlayerId(string playerId)
+        {
+            try
+            {
+                Debug.Print("[Save Module] GetAllUpgradeableBuildingsByPlayerId");
+                return DBConnection.Connection.Query<DBUpgradeableBuilding>("SELECT * FROM UpgradeableBuildings WHERE PlayerId = @PlayerId", new 
+                {
+                    PlayerId = playerId
+                });
             }
             catch (Exception ex)
             {

@@ -118,7 +118,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             var peer = GameNetwork.NetworkPeers.Where(x => x.VirtualPlayer.Id.ToString() == message.PlayerUserId).FirstOrDefault();
 
-            if(peer != null)
+            if(peer != null && peer.ControlledAgent != null)
             {
                 peer.ControlledAgent.SetClothingColor1(BannerManager.GetColor(message.PrimaryColor));
                 peer.ControlledAgent.SetClothingColor2(BannerManager.GetColor(message.SecondaryColor));

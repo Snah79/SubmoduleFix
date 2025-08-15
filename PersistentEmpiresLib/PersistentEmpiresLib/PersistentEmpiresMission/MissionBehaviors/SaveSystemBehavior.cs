@@ -49,6 +49,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public delegate IEnumerable<DBUpgradeableBuilding> GetAllUpgradeableBuildings();
         public delegate DBUpgradeableBuilding GetUpgradeableBuilding(PE_UpgradeableBuildings upgradeableBuildings);
         public delegate DBUpgradeableBuilding CreateOrSaveUpgradebleBuilding(PE_UpgradeableBuildings upgradeableBuildings);
+        public delegate string GetErrorMessageForNewUpgradebleBuilding(PE_UpgradeableBuildings upgradeableBuildings);
+        
         /* Stockpile Markets */
         public delegate IEnumerable<DBStockpileMarket> GetAllStockpileMarkets();
         public delegate DBStockpileMarket GetStockpileMarket(PE_StockpileMarket stockpileMarket);
@@ -107,6 +109,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static event GetAllUpgradeableBuildings OnGetAllUpgradeableBuildings;
         public static event GetUpgradeableBuilding OnGetUpgradeableBuilding;
         public static event CreateOrSaveUpgradebleBuilding OnCreateOrSaveUpgradebleBuilding;
+        public static event GetErrorMessageForNewUpgradebleBuilding OnGetErrorMessageForNewUpgradebleBuilding;
+        
         /* Stockpile Markets */
         public static event GetAllStockpileMarkets OnGetAllStockpileMarkets;
         public static event GetStockpileMarket OnGetStockpileMarket;
@@ -239,6 +243,17 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
         
+        public static string HandleGetErrorMessageForNewUpgradebleBuilding(PE_UpgradeableBuildings building)
+        {
+            if (OnGetErrorMessageForNewUpgradebleBuilding != null)
+            {
+                var result = OnGetErrorMessageForNewUpgradebleBuilding(building);
+                return result;
+            }
+
+            return string.Empty;
+        }
+
         public static DBUpgradeableBuilding HandleCreateOrSaveUpgradebleBuilding(PE_UpgradeableBuildings building)
         {
             Debug.Print("[Save System] Is OnCreateOrSaveUpgradebleBuilding null ? " + (OnCreateOrSaveUpgradebleBuilding == null).ToString());

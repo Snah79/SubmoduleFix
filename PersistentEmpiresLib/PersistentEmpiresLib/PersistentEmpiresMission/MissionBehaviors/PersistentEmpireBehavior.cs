@@ -425,10 +425,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             ConfigManager.Initialize();
             this.agentLabelEnabled = ConfigManager.GetBoolConfig("AgentLabelEnabled", true);
 #endif
-
             int maxPlayer = MultiplayerOptions.OptionType.MaxNumberOfPlayers.GetIntValue(MultiplayerOptions.MultiplayerOptionsAccessMode.CurrentMapOptions);
             string serverName = MultiplayerOptions.OptionType.ServerName.GetStrValue(MultiplayerOptions.MultiplayerOptionsAccessMode.CurrentMapOptions);
-
 
             IEnumerable<DBUpgradeableBuilding> dbUpgradeables = SaveSystemBehavior.HandleGetAllUpgradeableBuildings();
             List<PE_UpgradeableBuildings> upgradeables = base.Mission.GetActiveEntitiesWithScriptComponentOfType<PE_UpgradeableBuildings>().Select(g => g.GetFirstScriptOfType<PE_UpgradeableBuildings>()).ToList();

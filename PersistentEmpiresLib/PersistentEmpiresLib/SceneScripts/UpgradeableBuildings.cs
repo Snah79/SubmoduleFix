@@ -6,7 +6,6 @@ using PersistentEmpiresLib.SceneScripts.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.AccessControl;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -341,7 +340,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     return false;
                 }
 
-                _buildedByPlayerId = $"{player.VirtualPlayer.Id.ToString()}_{player.VirtualPlayer?.UserName.EncodeSpecialMariaDbChars()}";
+                _buildedByPlayerId = player?.VirtualPlayer?.ToPlayerId();
                 this.IsUpgrading = true;
 
                 if (GameNetwork.IsServer)

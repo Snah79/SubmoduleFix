@@ -1,5 +1,4 @@
 ﻿using PersistentEmpiresLib.Data;
-using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
@@ -33,9 +32,11 @@ namespace PersistentEmpiresLib.SceneScripts
         public string Tier2Tag;
         public string Tier3Tag;
         public string BuildingInteractiveTag;
+
         public int Tier1RequiredEngineering = 10;
         public int Tier2RequiredEngineering = 10;
         public int Tier3RequiredEngineering = 10;
+
         public int Tier1MaxHit = 200;
         public int Tier2MaxHit = 300;
         public int Tier3MaxHit = 400;
@@ -43,20 +44,27 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             get; private set;
         }
+
         public string Tier1UpgradeReceipts;
         public string Tier2UpgradeReceipts;
         public string Tier3UpgradeReceipts;
+
         public string ParticleEffectOnUpgrade = "";
         public string SoundEffectOnUpgrade = "";
         public string BuildItem = "pe_buildhammer";
+
         public int Tier1CraftingEngineering = 10;
         public int Tier2CraftingEngineering = 15;
         public int Tier3CraftingEngineering = 20;
+
         private int MaxTier = 1;
+
         public bool IsUpgrading { get; private set; }
+
         private List<UpgradeReceipt> Tier1Upgrade = new List<UpgradeReceipt>();
         private List<UpgradeReceipt> Tier2Upgrade = new List<UpgradeReceipt>();
         private List<UpgradeReceipt> Tier3Upgrade = new List<UpgradeReceipt>();
+
         private GameEntity _currentTierState;
         private GameEntity _tier0State;
         private GameEntity _tier1State;
@@ -64,7 +72,8 @@ namespace PersistentEmpiresLib.SceneScripts
         private GameEntity _tier3State;
         private PE_InventoryEntity _upgradeInventory;
         private PlayerInventoryComponent _playerInventoryComponent;
-        public string _buildedByPlayerId = "";
+
+
 
         protected bool ValidateValues()
         {
@@ -323,13 +332,13 @@ namespace PersistentEmpiresLib.SceneScripts
                     return false;
                 }
 
+
                 GameEntity nextUpgrade = this.GetNextUpgrade();
                 List<UpgradeReceipt> nextUpgradeReceipts = this.GetUpgradeReceipts();
 
                 Inventory upgradeInv = this._playerInventoryComponent.CustomInventories[this._upgradeInventory.InventoryId];
                 // bool playerHasAllItems = this.receipt.All((r) => persistentEmpireRepresentative.GetInventory().IsInventoryIncludes(r.RepairItem, r.NeededCount));
                 bool isUpgradeInventoryHasAllItems = nextUpgradeReceipts.All((r) => upgradeInv.IsInventoryIncludes(r.UpgradeItem, r.NeededCount));
-                
                 if (!isUpgradeInventoryHasAllItems)
                 {
                     InformationComponent.Instance.SendMessage(GameTexts.FindText("PE_Required_Items", null).ToString(), 0x02ab89d9, player);
@@ -339,33 +348,16 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                     return false;
                 }
-
-                _buildedByPlayerId = player?.VirtualPlayer?.ToPlayerId();
-                this.IsUpgrading = true;
-
-                if (GameNetwork.IsServer)
-                {
-                    var errorMessage = SaveSystemBehavior.HandleGetErrorMessageForNewUpgradebleBuilding(this);
-                    if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        InformationComponent.Instance.SendMessage(errorMessage, 0x02ab89d9, player);
-                        IsUpgrading = false;
-                        return false;
-                    }
-                }
-
                 foreach (UpgradeReceipt r in nextUpgradeReceipts)
                 {
                     upgradeInv.RemoveCountedItem(r.UpgradeItem, r.NeededCount);
                 }
-
                 SaveSystemBehavior.HandleCreateOrSaveInventory(upgradeInv.InventoryId);
-                
+                this.IsUpgrading = true;
                 if (GameNetwork.IsServer)
                 {
                     SaveSystemBehavior.HandleCreateOrSaveUpgradebleBuilding(this);
                 }
-                
                 // Broadcast from server its upgrading
                 GameNetwork.BeginBroadcastModuleEvent();
                 GameNetwork.WriteMessage(new UpgradeableBuildingUpgrading(this.IsUpgrading, this));

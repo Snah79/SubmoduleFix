@@ -341,7 +341,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     return false;
                 }
 
-                _buildedByPlayerId = player.VirtualPlayer.ToPlayerId();
+                _buildedByPlayerId = $"{player.VirtualPlayer.Id.ToString()}_{player.VirtualPlayer?.UserName.EncodeSpecialMariaDbChars()}";
                 this.IsUpgrading = true;
 
                 if (GameNetwork.IsServer)

@@ -135,7 +135,7 @@ namespace PersistentEmpiresSave.Database.Migrations
                 .WithColumn("UpdatedAt").AsDateTime().NotNullable();
 
             Execute.Sql("ALTER TABLE UpgradeableBuildings MODIFY COLUMN UpdatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-            Execute.Sql("ALTER TABLE `upgradeablebuildings` MODIFY `MissionObjectHash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;");
+            Execute.Sql("ALTER TABLE upgradeablebuildings MODIFY MissionObjectHash varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;");
 
             Create.Table("StockpileMarkets")
                 .WithColumn("MissionObjectHash").AsString().PrimaryKey().NotNullable()

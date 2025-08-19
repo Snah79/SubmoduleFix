@@ -54,6 +54,17 @@ namespace PersistentEmpiresServer.ServerMissions
         private bool PatchGlobalChat_OnClientEventPlayerMessageAll(NetworkCommunicator networkPeer, PlayerMessageAll message)
         {
             PersistentEmpireRepresentative persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
+
+            if (persistentEmpireRepresentative != null && persistentEmpireRepresentative.IsAdmin)
+            {
+                InformationComponent.Instance.BroadcastMessage("(Admin) " + networkPeer.GetComponent<MissionPeer>().DisplayedName + ": " + message.Message, Color.ConvertStringToColor("#FDD835FF").ToUnsignedInteger());
+                return false;
+            }
+            else if (this.DisableGlobalChat)
+            {
+                return false;
+            }
+
             if (message.Message.StartsWith(CommandPrefix))
             {
                 string[] argsWithCommand = message.Message.Split(' ');
@@ -62,13 +73,8 @@ namespace PersistentEmpiresServer.ServerMissions
                 this.Execute(networkPeer, command, args);
                 return false;
             }
-            else if (persistentEmpireRepresentative != null && persistentEmpireRepresentative.IsAdmin)
-            {
-                InformationComponent.Instance.BroadcastMessage("(Admin) " + networkPeer.GetComponent<MissionPeer>().DisplayedName + ": " + message.Message, Color.ConvertStringToColor("#FDD835FF").ToUnsignedInteger());
-                return false;
-            }
             if (persistentEmpireRepresentative.IsAdmin || this.patreonRegistry.IsPlayerPatreon(networkPeer)) return true;
-            if (this.DisableGlobalChat) return false;
+            
             if (this.Muted.ContainsKey(networkPeer))
             {
                 InformationComponent.Instance.SendMessage("You are muted.", Colors.Red.ToUnsignedInteger(), networkPeer);

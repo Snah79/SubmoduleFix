@@ -70,9 +70,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             PersistentEmpireRepresentative persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
             Faction f = persistentEmpireRepresentative.GetFaction();
+            
             if (f != null && (f.lordId == networkPeer.VirtualPlayer.ToPlayerId() || f.marshalls.Contains(networkPeer.VirtualPlayer.ToPlayerId())))
             {
-                string updated = message.Message.Substring(1);
+                string updated = message.Message;
 
                 foreach (NetworkCommunicator n in f.members)
                 {

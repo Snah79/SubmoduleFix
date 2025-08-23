@@ -7,7 +7,6 @@ using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.SceneScripts;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;

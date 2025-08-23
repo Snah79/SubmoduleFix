@@ -40,11 +40,8 @@ namespace PersistentEmpiresServer
             Debug.Print("** Persistent Empires, Multiplayer Game Start Loading...");
 
             PersistentEmpiresGameMode.OnStartMultiplayerGame += MissionManager.OpenPersistentEmpires;
-
-            PatchGlobalChat.OnClientEventPlayerMessageTeam += FactionsBehavior.PatchGlobalChat_OnClientEventPlayerMessageTeam;
             PersistentEmpiresHarmonySubModule.OnRglExceptionThrown += SaveSystemBehavior.RglExceptionThrown;
             PatchGameNetwork.OnAddNewPlayerOnServer += SaveSystemBehavior.OnAddNewPlayerOnServer;
-
             AdminServerBehavior.OnIsPlayerBanned += DBBanRecordRepository.IsPlayerBanned;
             AdminServerBehavior.OnBanPlayer += DBBanRecordRepository.AdminServerBehavior_OnBanPlayer;
             AdminServerBehavior.OnUnBanPlayer += DBBanRecordRepository.AdminServerBehavior_OnUnBanPlayer;

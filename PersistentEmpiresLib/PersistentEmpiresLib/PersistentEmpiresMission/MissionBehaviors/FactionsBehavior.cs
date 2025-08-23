@@ -7,6 +7,7 @@ using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.SceneScripts;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -64,30 +65,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             this.MaxBannerLength = ConfigManager.GetIntConfig("MaxBannerLength", 100);
             CanUseDiplomacy = ConfigManager.GetBoolConfig("CanUseDiplomacy", true);
 #endif
-        }
-
-        public static bool PatchGlobalChat_OnClientEventPlayerMessageTeam(NetworkCommunicator networkPeer, PlayerMessageTeam message)
-        {
-            PersistentEmpireRepresentative persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
-            Faction f = persistentEmpireRepresentative.GetFaction();
-            
-            if (f != null && (f.lordId == networkPeer.VirtualPlayer.ToPlayerId() || f.marshalls.Contains(networkPeer.VirtualPlayer.ToPlayerId())))
-            {
-                string updated = message.Message;
-
-                foreach (NetworkCommunicator n in f.members)
-                {
-                    if (n.IsConnectionActive && n.IsNetworkActive)
-                    {
-                        InformationComponent.Instance.SendQuickInformationToPlayer("[" + networkPeer.UserName + "] " + updated, n, Colors.Red.ToUnsignedInteger());
-                    }
-                }
-
-                LoggerHelper.LogAnAction(networkPeer, LogAction.PlayerMessageTeam, null, new object[] {f});
-
-                return false;
-            }
-            return true;
         }
 
         public override void OnRemoveBehavior()

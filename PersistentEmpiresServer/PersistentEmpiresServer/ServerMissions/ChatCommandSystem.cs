@@ -1,6 +1,8 @@
 ﻿using NetworkMessages.FromClient;
 using PersistentEmpiresHarmony.Patches;
 using PersistentEmpiresLib;
+using PersistentEmpiresLib.Factions;
+using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresServer.ChatCommands.Commands;
 using System;
@@ -28,6 +30,7 @@ namespace PersistentEmpiresServer.ServerMissions
             Muted = new Dictionary<NetworkCommunicator, bool>();
             Instance = this;
             PatchGlobalChat.OnClientEventPlayerMessageAll += PatchGlobalChat_OnClientEventPlayerMessageAll;
+            PatchGlobalChat.OnClientEventPlayerMessageTeam += PatchGlobalChat_OnClientEventPlayerMessageTeam;
             LocalChatComponent localChat = base.Mission.GetMissionBehavior<LocalChatComponent>();
             localChat.OnPrefixHandleLocalChatFromClient += this.OnPrefixHandleLocalChatFromClient;
             patreonRegistry = base.Mission.GetMissionBehavior<PatreonRegistryBehavior>();
@@ -80,7 +83,49 @@ namespace PersistentEmpiresServer.ServerMissions
                 InformationComponent.Instance.SendMessage("You are muted.", Colors.Red.ToUnsignedInteger(), networkPeer);
                 return false;
             }
+
             return true;
+        }
+
+        private bool PatchGlobalChat_OnClientEventPlayerMessageTeam(NetworkCommunicator networkPeer, PlayerMessageTeam message)
+        {
+            PersistentEmpireRepresentative persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
+            Faction f = persistentEmpireRepresentative.GetFaction();
+
+            if (f != null)
+            {
+                if(f.lordId == networkPeer.VirtualPlayer.ToPlayerId() || f.marshalls.Contains(networkPeer.VirtualPlayer.ToPlayerId()))
+                {
+                    foreach (NetworkCommunicator n in f.members)
+                    {
+                        if (n.IsConnectionActive && n.IsNetworkActive)
+                        {
+                            InformationComponent.Instance.SendMessage(f.name + " [" + networkPeer.UserName + "]: " + message.Message, Colors.Red.ToUnsignedInteger(), networkPeer);
+                            InformationComponent.Instance.SendQuickInformationToPlayer("[" + f.name + "] " + message.Message, n, Colors.Red.ToUnsignedInteger());
+                        }
+                    }
+
+                    LoggerHelper.LogAnAction(networkPeer, LogAction.PlayerMessageTeam, null, new object[] { f, message.Message });
+                    
+                    return false;
+                }
+                else if (!DisableGlobalChat)
+                {
+                    foreach (NetworkCommunicator n in f.members)
+                    {
+                        if (n.IsConnectionActive && n.IsNetworkActive)
+                        {
+                            InformationComponent.Instance.SendMessage(f.name + " [" + networkPeer.UserName + "]: " + message.Message, Colors.Red.ToUnsignedInteger(), networkPeer);
+                        }
+                    }
+                    
+                    LoggerHelper.LogAnAction(networkPeer, LogAction.PlayerMessageTeam, null, new object[] { f, message.Message });
+                    
+                    return false;
+                }
+            }
+
+            return false;
         }
 
         public bool Execute(NetworkCommunicator networkPeer, string command, string[] args)

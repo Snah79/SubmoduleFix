@@ -271,7 +271,7 @@ namespace PersistentEmpiresLib.Helpers
                 case nameof(LogAction.Wounds):
                     return $"{FormatLogForPlayer(issuer, dateTime)} {oParams[0]}";
                 case nameof(LogAction.PlayerMessageTeam):
-                    return $"{FormatLogForPlayer(issuer, dateTime)} sended message to {((Faction)oParams[0])?.name ?? "Unknown"}";
+                    return $"{FormatLogForPlayer(issuer, dateTime)} sended faction message to {((Faction)oParams[0])?.name ?? "Unknown"}:{oParams[1]}";
                 default:
                     return actionType;
             }

@@ -1,15 +1,8 @@
-﻿using PersistentEmpiresLib.Data;
-using PersistentEmpiresLib.Factions;
-using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
-using PersistentEmpiresLib.SceneScripts.Interfaces;
-using System;
+﻿using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System.Collections.Generic;
 using System.Linq;
-using TaleWorlds.Core;
 using TaleWorlds.Engine;
-using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
-using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 
 namespace PersistentEmpiresLib.SceneScripts
@@ -43,7 +36,11 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             base.OnInit();
 
-            AdminClientBehavior.Register(new AdminTp(Id, GameEntity.GlobalPosition, Description));
+#if CLIENT
+            var component = Mission.Current.GetMissionBehavior<AdminClientBehavior>();
+
+            component?.Register(new AdminTp(Id, GameEntity.GlobalPosition, Description));
+#endif
         }
 
         protected bool ValidateValues()
@@ -75,7 +72,7 @@ namespace PersistentEmpiresLib.SceneScripts
         public Vec3 SpawnPosition;
 
         public string Description;
-        private Vec3 globalPosition;
+        //private Vec3 globalPosition;
 
         public AdminTp(int id, Vec3 globalPosition, string description)
         {

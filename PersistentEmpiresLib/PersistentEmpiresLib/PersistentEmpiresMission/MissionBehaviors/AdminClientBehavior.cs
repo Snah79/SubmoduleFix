@@ -17,11 +17,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
     {
         public delegate void AdminPanelClick();
         public event AdminPanelClick OnAdminPanelClick;
-        public static List<AdminTp> AdminTps = new List<AdminTp>();
         public static bool IsVisible = true;
 #if SERVER
         public static bool CanUseSuicide = true;
         public static bool CanUseChangeColor = true;
+#endif
+#if CLIENT
+        public static List<AdminTp> AdminTps = new List<AdminTp>();
 #endif
 
         public void HandleAdminPanelClick()
@@ -87,7 +89,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
         public override void OnRemoveBehavior()
         {
+#if CLIENT
             AdminTps.Clear();
+#endif
             IsVisible = true;
             base.OnRemoveBehavior();
             AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
@@ -126,10 +130,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
 
-        internal static void Register(AdminTp adminTp)
+#if CLIENT
+        internal void Register(AdminTp adminTp)
         {
             AdminTps.Add(adminTp);
         }
+#endif
 
         public void ToggleInvisible()
         {

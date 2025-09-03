@@ -184,7 +184,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     return;
                 }
 
-                if (trainingWeapons.Contains(affectorAgent.WieldedWeapon.Item?.StringId))
+                if (affectedAgent.Index != affectedAgent.Index && affectorAgent.IsHuman && trainingWeapons.Contains(affectorAgent.WieldedWeapon.Item?.StringId))
                 {
                     return;
                 }

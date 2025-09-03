@@ -51,42 +51,36 @@ namespace PersistentEmpiresLib.SceneScripts
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
             base.DescriptionMessage = descriptionMessage;
         }
-        
-        public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
+        protected override void OnTick(float currentFrameDeltaTime)
         {
-            //if (GameNetwork.IsServer && base.HasUser)
-            //{
-            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
-            //}
-#if SERVER
-            if (base.HasUser)
-            {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
-            }
-#endif
-            return base.GetTickRequirement();
+            this.OnTickParallel2(currentFrameDeltaTime);
         }
-
-        protected override void OnTick(float dt)
+        protected override void OnTickOccasionally(float currentFrameDeltaTime)
         {
-            base.OnTick(dt);
-            this.DoTick(dt);
+            this.OnTickParallel2(currentFrameDeltaTime);
         }
-
-        protected void DoTick(float dt)
+        protected override void OnTickParallel2(float dt)
         {
-#if SERVER
-            if (base.HasUser)
+            base.OnTickParallel2(dt);
+            if (GameNetwork.IsServer)
             {
-                if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                if (base.HasUser)
                 {
-                    base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
-                    GetTickRequirement();
+                    if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                    {
+                        base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
+                    }
                 }
             }
-#endif
         }
-
+        public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
+        {
+            if (GameNetwork.IsServer)
+            {
+                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+            }
+            return base.GetTickRequirement();
+        }
         public override string GetDescriptionText(GameEntity gameEntity = null)
         {
             return "Bed";

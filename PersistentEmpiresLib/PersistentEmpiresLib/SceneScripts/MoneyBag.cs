@@ -1,5 +1,4 @@
 ﻿using PersistentEmpiresLib.Helpers;
-using System;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
@@ -77,58 +76,45 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             return "Money Bag";
         }
-        
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
-            //if (GameNetwork.IsServer && base.HasUser)
-            //{
-            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
-            //}
-#if SERVER
-            if (base.HasUser)
+            if (GameNetwork.IsServer && base.HasUser)
             {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
+                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
             }
-#endif
             return base.GetTickRequirement();
         }
-
-        protected override void OnTick(float dt)
+        protected override void OnTickOccasionally(float currentFrameDeltaTime)
         {
-            base.OnTick(dt);
-            this.DoTick(dt);
+            this.OnTickParallel2(currentFrameDeltaTime);
         }
-
-        protected void DoTick(float dt)
-        {
-#if SERVER
-            if (base.HasUser)
-            {
-                ActionIndexCache currentAction = base.UserAgent.GetCurrentAction(this._usedChannelIndex);
-                if (currentAction == this._successActionIndex)
-                {
-                    base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
-                    GetTickRequirement();
-                }
-                else if (currentAction != this._progressActionIndex)
-                {
-                    base.UserAgent.StopUsingGameObjectMT(false);
-                    GetTickRequirement();
-                }
-            }
-#endif
-        }
-
         public void SetAmount(int amount)
         {
             this._amount = amount;
         }
-        
         public int GetAmount()
         {
             return this._amount;
         }
-
+        protected override void OnTickParallel2(float dt)
+        {
+            base.OnTickParallel2(dt);
+            if (GameNetwork.IsServer)
+            {
+                if (base.HasUser)
+                {
+                    ActionIndexCache currentAction = base.UserAgent.GetCurrentAction(this._usedChannelIndex);
+                    if (currentAction == this._successActionIndex)
+                    {
+                        base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
+                    }
+                    else if (currentAction != this._progressActionIndex)
+                    {
+                        base.UserAgent.StopUsingGameObjectMT(false);
+                    }
+                }
+            }
+        }
         public override void OnUse(Agent userAgent)
         {
             if (base.HasUser) return;

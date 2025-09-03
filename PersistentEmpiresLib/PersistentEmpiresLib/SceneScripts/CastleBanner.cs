@@ -45,39 +45,34 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
-            //if (GameNetwork.IsServer && base.HasUser)
-            //{
-            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
-            //}
-#if SERVER
-            if (base.HasUser)
+            /*if (GameNetwork.IsClientOrReplay && base.HasUser)
             {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
+                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+            }else*/
+            if (GameNetwork.IsServer && base.HasUser)
+            {
+                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
             }
-#endif
             return base.GetTickRequirement();
         }
-
-        protected override void OnTick(float dt)
+        protected override void OnTickOccasionally(float currentFrameDeltaTime)
         {
-            base.OnTick(dt);
-            this.DoTick(dt);
+            this.OnTickParallel2(currentFrameDeltaTime);
         }
-
-        protected void DoTick(float dt)
+        protected override void OnTickParallel2(float dt)
         {
-#if SERVER
-            if (base.HasUser)
+            base.OnTickParallel2(dt);
+            if (GameNetwork.IsServer)
             {
-                if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                if (base.HasUser)
                 {
-                    base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
-                    GetTickRequirement();
+                    if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                    {
+                        base.UserAgent.StopUsingGameObjectMT(true);
+                    }
                 }
             }
-#endif
         }
-
         public void UpdateBannerFromFaction()
         {
             if (GameNetwork.IsClient)

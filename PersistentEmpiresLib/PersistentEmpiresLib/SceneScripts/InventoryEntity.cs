@@ -94,33 +94,43 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
-            if (GameNetwork.IsServer)
-            {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
-            }
-            return base.GetTickRequirement();
-        }
-
-        protected override void OnTickOccasionally(float currentFrameDeltaTime)
-        {
-            this.OnTickParallel2(currentFrameDeltaTime);
-        }
-
-        protected override void OnTickParallel2(float dt)
-        {
-            base.OnTickParallel2(dt);
-
+            //if (GameNetwork.IsServer && base.HasUser)
+            //{
+            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+            //}
 #if SERVER
             if (base.HasUser)
             {
-                ActionIndexCache currentAction = base.UserAgent.GetCurrentAction(this._usedChannelIndex);
-                if (currentAction == this._successActionIndex)
+                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
+            }
+#endif
+            return base.GetTickRequirement();
+        }
+
+        protected override void OnTick(float dt)
+        {
+            base.OnTick(dt);
+            this.DoTick(dt);
+        }
+
+        protected void DoTick(float dt)
+        {
+#if SERVER
+            if (GameNetwork.IsServer)
+            {
+                if (base.HasUser)
                 {
-                    base.UserAgent.StopUsingGameObjectMT(true);
-                }
-                else if (currentAction != this._progressActionIndex)
-                {
-                    base.UserAgent.StopUsingGameObjectMT(false);
+                    ActionIndexCache currentAction = base.UserAgent.GetCurrentAction(this._usedChannelIndex);
+                    if (currentAction == this._successActionIndex)
+                    {
+                        base.UserAgent.StopUsingGameObjectMT(true);
+                        GetTickRequirement();
+                    }
+                    else if (currentAction != this._progressActionIndex)
+                    {
+                        base.UserAgent.StopUsingGameObjectMT(false);
+                        GetTickRequirement();
+                    }
                 }
             }
 #endif

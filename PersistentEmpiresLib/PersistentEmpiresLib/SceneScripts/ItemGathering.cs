@@ -70,45 +70,60 @@ namespace PersistentEmpiresLib.SceneScripts
                 Debug.Print(this.DropsItem + " CANNOT BE FOUND ON PE_ITEMGATHERING", 0, Debug.DebugColor.Red);
             }
         }
+        
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
-            /*if (GameNetwork.IsClientOrReplay && base.HasUser)
+            //if (GameNetwork.IsServer && base.HasUser)
+            //{
+            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+            //}
+#if SERVER
+            if (base.HasUser)
             {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
-            }*/
-            if (GameNetwork.IsServer)
-            {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
             }
+#endif
+            if(this.IsDestroyed)
+            {
+                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.TickOccasionally;
+            }
+
             return base.GetTickRequirement();
         }
-        protected override void OnTick(float currentFrameDeltaTime)
+
+        protected override void OnTick(float dt)
         {
-            this.OnTickParallel2(currentFrameDeltaTime);
+            base.OnTick(dt);
+            this.DoTick(dt);
         }
+
         protected override void OnTickOccasionally(float currentFrameDeltaTime)
         {
-            this.OnTickParallel2(currentFrameDeltaTime);
+            base.OnTickOccasionally(currentFrameDeltaTime);
+            this.DoTick(currentFrameDeltaTime);
         }
-        protected override void OnTickParallel2(float dt)
+
+        protected void DoTick(float dt)
         {
-            base.OnTickParallel2(dt);
-            if (GameNetwork.IsServer)
+#if SERVER
+            if (base.HasUser)
             {
                 if (base.HasUser)
                 {
                     if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                     {
                         base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
+                        GetTickRequirement();
                     }
                 }
             }
+#endif
             if (this.IsDestroyed && this.DestroyedAt + this.RespawnTime < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             {
                 this.UpdateIsDestroyed(false);
+                GetTickRequirement();
             }
         }
-
         public void UpdateIsDestroyed(bool isDestroyed)
         {
             if (!isDestroyed)
@@ -252,6 +267,5 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             return "Item Gathering";
         }
-
     }
 }

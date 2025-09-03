@@ -12,38 +12,31 @@ namespace PersistentEmpiresServer.ServerMissions
     public class AutoPayBehavior : MissionNetwork
     {
         private static bool AutoPayEnabled = false;
-        private static int AutoPayTime = 30;
+        private static int AutoPayTimeInSeconds = 1800;
         private static int AutoPayGold = 100;
         private static System.Timers.Timer AutoPayTimer = null;
-
+        private float _timer = 0f;
 
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();
 
             AutoPayEnabled = ConfigManager.GetBoolConfig("AutoPayEnabled", false);
-            AutoPayTime = ConfigManager.GetIntConfig("AutoPayTimeMinutes", 30);
+            AutoPayTimeInSeconds = ConfigManager.GetIntConfig("AutoPayTimeMinutes", 30) * 60;
             AutoPayGold = ConfigManager.GetIntConfig("AutoPayGold", 100);
+        }
 
+        public override void OnMissionTick(float dt)
+        {
             if (AutoPayEnabled)
             {
-                SetTimer();
+                _timer += dt;
+                if (_timer >= AutoPayTimeInSeconds)
+                {
+                    _timer = 0f;
+                    // Safe logic here, runs every 5 seconds
+                }
             }
-
-        }
-
-        public override void OnRemoveBehavior()
-        {
-            base.OnRemoveBehavior();
-            RemoveAutoTimer();
-        }
-
-        private static void SetTimer()
-        {
-            AutoPayTimer = new System.Timers.Timer(AutoPayTime * 60 * 1000);
-            AutoPayTimer.Elapsed += OnTimedEvent;
-            AutoPayTimer.AutoReset = true;
-            AutoPayTimer.Enabled = true;
         }
 
         private static void OnTimedEvent(Object source, ElapsedEventArgs e)
@@ -59,16 +52,10 @@ namespace PersistentEmpiresServer.ServerMissions
         private static void SendSendGoldToPeer(NetworkCommunicator networkPeer)
         {
             var representative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
-            var message = $"Autopay message: Amount of {AutoPayGold} have been added to your purse. Next payment in {AutoPayTime} minutes.";
+            var message = $"Autopay message: Amount of {AutoPayGold} have been added to your purse. Next payment in {AutoPayTimeInSeconds} minutes.";
             
             representative.GoldGain(AutoPayGold);
             InformationComponent.Instance.SendMessage(message, Colors.Yellow.ToUnsignedInteger(), networkPeer);
-        }
-
-        internal static void RemoveAutoTimer()
-        {
-            AutoPayTimer?.Stop();
-            AutoPayTimer?.Dispose();
         }
     }
 }

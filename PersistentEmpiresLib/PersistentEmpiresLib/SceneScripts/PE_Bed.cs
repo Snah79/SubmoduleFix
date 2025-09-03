@@ -51,36 +51,42 @@ namespace PersistentEmpiresLib.SceneScripts
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
             base.DescriptionMessage = descriptionMessage;
         }
-        protected override void OnTick(float currentFrameDeltaTime)
-        {
-            this.OnTickParallel2(currentFrameDeltaTime);
-        }
-        protected override void OnTickOccasionally(float currentFrameDeltaTime)
-        {
-            this.OnTickParallel2(currentFrameDeltaTime);
-        }
-        protected override void OnTickParallel2(float dt)
-        {
-            base.OnTickParallel2(dt);
-            if (GameNetwork.IsServer)
-            {
-                if (base.HasUser)
-                {
-                    if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
-                    {
-                        base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
-                    }
-                }
-            }
-        }
+        
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
-            if (GameNetwork.IsServer)
+            //if (GameNetwork.IsServer && base.HasUser)
+            //{
+            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+            //}
+#if SERVER
+            if (base.HasUser)
             {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
             }
+#endif
             return base.GetTickRequirement();
         }
+
+        protected override void OnTick(float dt)
+        {
+            base.OnTick(dt);
+            this.DoTick(dt);
+        }
+
+        protected void DoTick(float dt)
+        {
+#if SERVER
+            if (base.HasUser)
+            {
+                if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                {
+                    base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
+                    GetTickRequirement();
+                }
+            }
+#endif
+        }
+
         public override string GetDescriptionText(GameEntity gameEntity = null)
         {
             return "Bed";

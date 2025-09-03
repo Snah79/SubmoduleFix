@@ -45,34 +45,39 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
-            /*if (GameNetwork.IsClientOrReplay && base.HasUser)
+            //if (GameNetwork.IsServer && base.HasUser)
+            //{
+            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+            //}
+#if SERVER
+            if (base.HasUser)
             {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
-            }else*/
-            if (GameNetwork.IsServer && base.HasUser)
-            {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
             }
+#endif
             return base.GetTickRequirement();
         }
-        protected override void OnTickOccasionally(float currentFrameDeltaTime)
+
+        protected override void OnTick(float dt)
         {
-            this.OnTickParallel2(currentFrameDeltaTime);
+            base.OnTick(dt);
+            this.DoTick(dt);
         }
-        protected override void OnTickParallel2(float dt)
+
+        protected void DoTick(float dt)
         {
-            base.OnTickParallel2(dt);
-            if (GameNetwork.IsServer)
+#if SERVER
+            if (base.HasUser)
             {
-                if (base.HasUser)
+                if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                 {
-                    if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
-                    {
-                        base.UserAgent.StopUsingGameObjectMT(true);
-                    }
+                    base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
+                    GetTickRequirement();
                 }
             }
+#endif
         }
+
         public void UpdateBannerFromFaction()
         {
             if (GameNetwork.IsClient)

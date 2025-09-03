@@ -76,44 +76,52 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             return "Animal Spawner";
         }
+
         public void RemoveSpawnedAnimal(Agent animal)
         {
             this.SpawnedAnimals.Remove(animal);
         }
+
         public List<Receipt> GetDropReceipts()
         {
             return this.DropReceipt;
         }
+
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
-            /*if (GameNetwork.IsClientOrReplay && base.HasUser)
+            //if (GameNetwork.IsServer && base.HasUser)
+            //{
+            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+            //}
+#if SERVER
+            if (base.HasUser)
             {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
-            }*/
-            if (GameNetwork.IsServer && base.HasUser)
-            {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
             }
+#endif
             return base.GetTickRequirement();
         }
-        protected override void OnTickOccasionally(float currentFrameDeltaTime)
+
+        protected override void OnTick(float dt)
         {
-            this.OnTickParallel2(currentFrameDeltaTime);
+            base.OnTick(dt);
+            this.DoTick(dt);
         }
-        protected override void OnTickParallel2(float dt)
+
+        protected void DoTick(float dt)
         {
-            base.OnTickParallel2(dt);
-            if (GameNetwork.IsServer)
+#if SERVER
+            if (base.HasUser)
             {
-                if (base.HasUser)
+                if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                 {
-                    if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
-                    {
-                        base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
-                    }
+                    base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
+                    GetTickRequirement();
                 }
             }
+#endif
         }
+
         public override void OnUseStopped(Agent userAgent, bool isSuccessful, int preferenceIndex)
         {
             base.OnUseStopped(userAgent, isSuccessful, preferenceIndex);

@@ -1,5 +1,4 @@
-﻿using PersistentEmpiresLib.NetworkMessages.Client;
-using TaleWorlds.Library;
+﻿using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
 namespace PersistentEmpires.Views.ViewsVM

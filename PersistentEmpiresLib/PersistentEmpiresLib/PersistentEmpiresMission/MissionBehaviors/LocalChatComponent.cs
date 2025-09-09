@@ -33,7 +33,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             GameNetwork.NetworkMessageHandlerRegisterer networkMessageHandlerRegisterer = new GameNetwork.NetworkMessageHandlerRegisterer(mode);
             networkMessageHandlerRegisterer.Register<LocalMessage>(HandleLocalMessageFromClient);
             networkMessageHandlerRegisterer.Register<ShoutMessage>(HandleShoutMessageFromClient);
-            networkMessageHandlerRegisterer.Register<PlayerIsTypingMessage>(HandlePlayerIsTypingMessageFromClient);
         }
 
         private bool HandleLocalMessageFromClient(NetworkCommunicator player, LocalMessage message)
@@ -69,29 +68,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             return true;
         }
 
-        private bool HandlePlayerIsTypingMessageFromClient(NetworkCommunicator player, PlayerIsTypingMessage message)
-        {
-            if (player.ControlledAgent == null) return false;
-            
-            Vec3 position = player.ControlledAgent.Position;
-            
-            foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers)
-            {
-                if (otherPlayer.ControlledAgent == null) continue;
-            
-                Vec3 otherPlayerPosition = otherPlayer.ControlledAgent.Position;
-                float d = position.Distance(otherPlayerPosition);
-                
-                if (d < 30)
-                {
-                    GameNetwork.BeginModuleEventAsServer(otherPlayer);
-                    GameNetwork.WriteMessage(new PlayerIsTypingMessageServer(player));
-                    GameNetwork.EndModuleEventAsServer();
-                }
-            }
-            return true;
-        }
-        
         private bool HandleShoutMessageFromClient(NetworkCommunicator player, ShoutMessage message)
         {
             if (player.ControlledAgent == null) return false;
@@ -127,12 +103,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
 #endif
 #if CLIENT
-        public delegate void OnPlayerIsTypingMessageDelegate(NetworkCommunicator sender);
         public delegate void LocalChatMessageDelegate(NetworkCommunicator Sender, String Message, bool shout);
         public delegate void CustomBubbleMessageDelegate(NetworkCommunicator Sender, String Message, bool shout);
         public delegate void CustomBubbleMessageDelegate2(NetworkCommunicator Sender, String Message, string color);
 
-        public event OnPlayerIsTypingMessageDelegate OnPlayerIsTypingMessage;
         public event LocalChatMessageDelegate OnLocalChatMessage;
         public event CustomBubbleMessageDelegate OnCustomBubbleMessage;
         public event CustomBubbleMessageDelegate2 OnCustomBubbleMessage2;
@@ -155,7 +129,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             networkMessageHandlerRegisterer.Register<LocalMessageServer>(this.HandleLocalMessageFromServer);
             networkMessageHandlerRegisterer.Register<ShoutMessageServer>(this.HandleShoutMessageFromServer);
             networkMessageHandlerRegisterer.Register<CustomBubbleMessage>(this.HandleCustomBubbleMessageFromServer);
-            networkMessageHandlerRegisterer.Register<PlayerIsTypingMessageServer>(HandlePlayerIsTypingMessageServer);
         }
 
         private void HandleCustomBubbleMessageFromServer(CustomBubbleMessage message)
@@ -182,14 +155,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (this.OnLocalChatMessage != null)
             {
                 this.OnLocalChatMessage(message.Sender, message.Message, false);
-            }
-        }
-
-        private void HandlePlayerIsTypingMessageServer(PlayerIsTypingMessageServer message)
-        {
-            if (OnPlayerIsTypingMessage!= null)
-            {
-                OnPlayerIsTypingMessage(message.Sender);
             }
         }
 #endif        

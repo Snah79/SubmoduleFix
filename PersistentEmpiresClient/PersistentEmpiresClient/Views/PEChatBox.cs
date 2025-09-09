@@ -1,9 +1,7 @@
-﻿using PersistentEmpiresLib.NetworkMessages.Client;
-using System;
+﻿using System;
 using System.Linq;
 using TaleWorlds.GauntletUI;
 using TaleWorlds.InputSystem;
-using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
 using TaleWorlds.ScreenSystem;
 
@@ -25,14 +23,8 @@ namespace PersistentEmpires.Views.Views
             {
                 if (focusedLayer is TaleWorlds.Engine.GauntletUI.GauntletLayer layer)
                 {
-                    if (layer.MoviesAndDataSources[0].Item2 is TaleWorlds.MountAndBlade.ViewModelCollection.Multiplayer.MPChatVM mpChatVM)
+                    if (layer.MoviesAndDataSources[0].Item2 is TaleWorlds.MountAndBlade.ViewModelCollection.Multiplayer.MPChatVM)
                     {
-                        if(mpChatVM.IsTypingText)
-                        {
-                            GameNetwork.BeginModuleEventAsClient();
-                            GameNetwork.WriteMessage(new PlayerIsTypingMessage());
-                            GameNetwork.EndModuleEventAsClient();
-                        }
                         var tmp = layer.MoviesAndDataSources[0].Item1 as TaleWorlds.GauntletUI.Data.GeneratedGauntletMovie;
                         if (tmp == null) return;
                         try

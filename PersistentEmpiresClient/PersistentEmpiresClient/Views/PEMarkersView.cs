@@ -1,6 +1,5 @@
 ﻿using PersistentEmpires.Views.ViewsVM;
 using PersistentEmpiresLib.Factions;
-using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using TaleWorlds.Engine.GauntletUI;
 using TaleWorlds.MountAndBlade;
@@ -22,7 +21,6 @@ namespace PersistentEmpires.Views.Views
             base.MissionScreen.AddLayer(this._gauntletLayer);
             this.localChatComponent = base.Mission.GetMissionBehavior<LocalChatComponent>();
             this.moneyPouchBehavior = base.Mission.GetMissionBehavior<MoneyPouchBehavior>();
-            localChatComponent.OnPlayerIsTypingMessage += OnPlayerIsTypingMessage;
             this.localChatComponent.OnLocalChatMessage += this.OnLocalChatMessage;
             this.localChatComponent.OnCustomBubbleMessage += this.OnCustomBubbleMessage;
             this.localChatComponent.OnCustomBubbleMessage2 += this.OnCustomBubbleMessage2;
@@ -33,24 +31,14 @@ namespace PersistentEmpires.Views.Views
             this._peMapView = base.Mission.GetMissionBehavior<PEMapView>();
         }
 
-        private void OnPlayerIsTypingMessage(NetworkCommunicator Sender)
-        {
-            if (Sender.ControlledAgent == null || Sender.Equals(GameNetwork.MyPeer) || _peMapView.IsActive)
-            {
-                return;
-            }
-
-            _dataSource.NotifyTyping(Sender);
-        }
-
         private void OnCustomBubbleMessage(NetworkCommunicator Sender, string Message, bool shout)
         {
-            if (Sender.ControlledAgent == null || Sender.Equals(GameNetwork.MyPeer) || _peMapView.IsActive)
-            {
-                return;
-            }
+            if (Sender.ControlledAgent == null) return;
+            if (Sender.Equals(GameNetwork.MyPeer)) return;
+            if (this._peMapView.IsActive) return;
 
-            _dataSource.AddChatBubble(Sender, Message, "#ab47bcFF");
+
+            this._dataSource.AddChatBubble(Sender, Message, "#ab47bcFF");
         }
 
         public void OnCustomBubbleMessage2(NetworkCommunicator Sender, string Message, string color)

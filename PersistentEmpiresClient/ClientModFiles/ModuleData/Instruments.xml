@@ -42,7 +42,7 @@
 	<Instrument>
 		<ItemId>pe_violinII</ItemId>
 		<Animation>act_play_vielle_stand</Animation>
-		<MusicId>violin</MusicId>
+		<MusicId>violinII</MusicId>
 	</Instrument>
 	<Instrument>
 		<ItemId>pe_arabic</ItemId>

@@ -17,7 +17,6 @@
 		<Folder Include="GUI\Brushes\" />
 		<Folder Include="GUI\Prefabs\PEMessageLog\" />
 		<Folder Include="GUI\SpriteParts\" />
-		<Folder Include="ModuleSounds\" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -330,7 +329,7 @@
 		<None Update="ModuleSounds\violin.wav">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Update="ModuleSounds\violin1.WAV">
+		<None Update="ModuleSounds\violinII.WAV">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="SubModule.xml">

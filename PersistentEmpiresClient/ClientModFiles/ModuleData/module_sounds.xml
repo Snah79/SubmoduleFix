@@ -50,7 +50,7 @@
 		<module_sound name="medieval" sound_category="mission_ambient_3d_big" path="medieval.wav"/>
 		<module_sound name="medievalfanfare" sound_category="mission_ambient_3d_big" path="medievalfanfare.wav"/>
 		<module_sound name="violin" sound_category="mission_ambient_3d_big" path="violin.wav"/>
-		<module_sound name="violinII" sound_category="mission_ambient_3d_big" path="violin1.wav"/>
+		<module_sound name="violinII" sound_category="mission_ambient_3d_big" path="violinII.wav"/>
 		<module_sound name="arabic" sound_category="mission_ambient_3d_big" path="arabic.wav"/>
 	</module_sounds>
 

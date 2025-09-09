@@ -133,9 +133,12 @@ namespace PersistentEmpires.Views.Views
                 {
                     if (e.PropertyName == "WrittenText")
                     {
-                        GameNetwork.BeginModuleEventAsClient();
-                        GameNetwork.WriteMessage(new PlayerIsTypingMessage());
-                        GameNetwork.EndModuleEventAsClient();
+                        if(mpChatVM.WrittenText != e.Value)
+                        {
+                            GameNetwork.BeginModuleEventAsClient();
+                            GameNetwork.WriteMessage(new PlayerIsTypingMessage());
+                            GameNetwork.EndModuleEventAsClient();
+                        }
                     }
                 }
             }

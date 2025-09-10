@@ -21,7 +21,7 @@ namespace PersistentEmpires.Views.Views
         {
             base.OnMissionTick(dt);
             GameKey defendClick = HotKeyManager.GetCategory("CombatHotKeyCategory").GetGameKey("Defend");
-            if (base.MissionScreen.SceneLayer.Input.IsGameKeyPressed(defendClick.Id))
+            if (base.MissionScreen.SceneLayer.Input.IsGameKeyPressed(defendClick.Id) && !RequestedStartPlaying)
             {
                 this.RequestedStartPlaying = this._instrumentsBehavior.RequestStartPlaying();
                 _firstTime = true;

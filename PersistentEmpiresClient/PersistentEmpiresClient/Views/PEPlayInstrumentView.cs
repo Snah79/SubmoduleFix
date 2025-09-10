@@ -1,6 +1,8 @@
 ﻿using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
+using System.Linq;
 using TaleWorlds.InputSystem;
+using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
 
 namespace PersistentEmpires.Views.Views
@@ -37,8 +39,10 @@ namespace PersistentEmpires.Views.Views
                     IsPLaying = false;
                 }
             }
-            
-            if(IsPLaying && !canPlay)
+            else if (IsPLaying && GameNetwork.MyPeer?.ControlledAgent != null &&
+                    ((_instrumentsBehavior.AgentsPlayingSound.ContainsKey(GameNetwork.MyPeer.ControlledAgent)
+                    && GameNetwork.MyPeer.ControlledAgent.GetCurrentAction(0).Name == "act_none")
+                    || !canPlay))
             {
                 _instrumentsBehavior.RequestStopEat();
                 IsPLaying = false;

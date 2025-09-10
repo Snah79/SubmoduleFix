@@ -27,7 +27,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
     }
     public class InstrumentsBehavior : MissionNetwork
     {
-        private class PlayingAction
+        public class PlayingAction
         {
             public Agent PlayerAgent;
             public Instrument Instrument;
@@ -42,8 +42,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
 
         public List<Instrument> Instruments = new List<Instrument>();
-        private Dictionary<Agent, PlayingAction> AgentsPlaying = new Dictionary<Agent, PlayingAction>();
-        private Dictionary<Agent, SoundEvent> AgentsPlayingSound = new Dictionary<Agent, SoundEvent>();
+        public Dictionary<Agent, PlayingAction> AgentsPlaying = new Dictionary<Agent, PlayingAction>();
+        public Dictionary<Agent, SoundEvent> AgentsPlayingSound = new Dictionary<Agent, SoundEvent>();
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();

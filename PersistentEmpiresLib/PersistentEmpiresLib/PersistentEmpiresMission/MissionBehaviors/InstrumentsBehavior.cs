@@ -79,7 +79,14 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
 
-        public bool RequestStartPlaying()
+        public void RequestStartPlaying()
+        {
+            GameNetwork.BeginModuleEventAsClient();
+            GameNetwork.WriteMessage(new RequestStartPlaying());
+            GameNetwork.EndModuleEventAsClient();
+        }
+
+        public bool CanPlay()
         {
             Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
             if (myAgent == null) return false;
@@ -94,10 +101,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (instrument.Item == null) return false;
 
             if (myAgent.HasMount) return false;
-
-            GameNetwork.BeginModuleEventAsClient();
-            GameNetwork.WriteMessage(new RequestStartPlaying());
-            GameNetwork.EndModuleEventAsClient();
 
             return true;
         }

@@ -1,4 +1,5 @@
-﻿using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
+﻿using PersistentEmpiresLib.NetworkMessages.Client;
+using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using TaleWorlds.InputSystem;
 using TaleWorlds.MountAndBlade.View.MissionViews;
 
@@ -6,7 +7,7 @@ namespace PersistentEmpires.Views.Views
 {
     public class PEPlayInstrumentView : MissionView
     {
-        public bool RequestedStartPlaying = false;
+        public bool IsPLaying = false;
         private InstrumentsBehavior _instrumentsBehavior;
 
         public override void OnMissionScreenInitialize()
@@ -16,25 +17,31 @@ namespace PersistentEmpires.Views.Views
 
         }
 
-        private bool _firstTime = true;
         public override void OnMissionTick(float dt)
         {
             base.OnMissionTick(dt);
-            GameKey defendClick = HotKeyManager.GetCategory("CombatHotKeyCategory").GetGameKey("Defend");
-            if (base.MissionScreen.SceneLayer.Input.IsGameKeyPressed(defendClick.Id) && !RequestedStartPlaying)
+            
+            var canPlay = _instrumentsBehavior.CanPlay();
+            var defendClick = HotKeyManager.GetCategory("CombatHotKeyCategory").GetGameKey("Defend");
+                        
+            if (MissionScreen.SceneLayer.Input.IsGameKeyReleased(defendClick.Id) && canPlay)
             {
-                this.RequestedStartPlaying = this._instrumentsBehavior.RequestStartPlaying();
-                _firstTime = true;
-            }
-            else if (base.MissionScreen.SceneLayer.Input.IsGameKeyReleased(defendClick.Id) && this.RequestedStartPlaying)
-            {
-                if(_firstTime)
+                if(!IsPLaying)
                 {
-                    _firstTime = false;
-                    return;
+                    _instrumentsBehavior.RequestStartPlaying();
+                    IsPLaying = true;
                 }
-                this._instrumentsBehavior.RequestStopEat();
-                this.RequestedStartPlaying = false;
+                else
+                {
+                    _instrumentsBehavior.RequestStopEat();
+                    IsPLaying = false;
+                }
+            }
+            
+            if(IsPLaying && !canPlay)
+            {
+                _instrumentsBehavior.RequestStopEat();
+                IsPLaying = false;
             }
         }
     }

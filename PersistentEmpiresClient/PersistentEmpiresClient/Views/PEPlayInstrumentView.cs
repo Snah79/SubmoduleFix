@@ -16,6 +16,7 @@ namespace PersistentEmpires.Views.Views
 
         }
 
+        private bool _firstTime = true;
         public override void OnMissionTick(float dt)
         {
             base.OnMissionTick(dt);
@@ -23,9 +24,15 @@ namespace PersistentEmpires.Views.Views
             if (base.MissionScreen.SceneLayer.Input.IsGameKeyPressed(defendClick.Id))
             {
                 this.RequestedStartPlaying = this._instrumentsBehavior.RequestStartPlaying();
+                _firstTime = true;
             }
             else if (base.MissionScreen.SceneLayer.Input.IsGameKeyReleased(defendClick.Id) && this.RequestedStartPlaying)
             {
+                if(_firstTime)
+                {
+                    _firstTime = false;
+                    return;
+                }
                 this._instrumentsBehavior.RequestStopEat();
                 this.RequestedStartPlaying = false;
             }

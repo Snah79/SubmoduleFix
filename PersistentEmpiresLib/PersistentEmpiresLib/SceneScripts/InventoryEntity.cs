@@ -79,7 +79,6 @@ namespace PersistentEmpiresLib.SceneScripts
         private static readonly ActionIndexCache act_pickup_from_left_up_horseback_left_end = ActionIndexCache.Create("act_pickup_from_left_up_horseback_left_end");
         protected override bool LockUserFrames { get => false; }
         protected override bool LockUserPositions { get => false; }
-        public static PE_InventoryEntity _current;
 
         private string GenerateId()
         {
@@ -274,10 +273,6 @@ namespace PersistentEmpiresLib.SceneScripts
                 this.OpenInventory(userAgent);
 #endif
             }
-
-#if CLIENT
-            _current = this;
-#endif
         }
 
         public void OnEntityRemove()

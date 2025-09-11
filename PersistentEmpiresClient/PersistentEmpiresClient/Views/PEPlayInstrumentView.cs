@@ -18,7 +18,7 @@ namespace PersistentEmpires.Views.Views
             this._instrumentsBehavior = base.Mission.GetMissionBehavior<InstrumentsBehavior>();
 
         }
-
+#if CLIENT
         public override void OnMissionTick(float dt)
         {
             base.OnMissionTick(dt);
@@ -35,7 +35,7 @@ namespace PersistentEmpires.Views.Views
                 }
                 else
                 {
-                    _instrumentsBehavior.RequestStopEat();
+                    _instrumentsBehavior.RequestStopPlaying();
                     IsPLaying = false;
                 }
             }
@@ -44,9 +44,10 @@ namespace PersistentEmpires.Views.Views
                     && GameNetwork.MyPeer.ControlledAgent.GetCurrentAction(0).Name == "act_none")
                     || !canPlay))
             {
-                _instrumentsBehavior.RequestStopEat();
+                _instrumentsBehavior.RequestStopPlaying();
                 IsPLaying = false;
             }
         }
+#endif
     }
 }

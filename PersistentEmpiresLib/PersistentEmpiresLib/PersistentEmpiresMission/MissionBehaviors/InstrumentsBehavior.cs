@@ -61,6 +61,27 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             base.OnRemoveBehavior();
             this.AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
             this.Instruments.Clear();
+
+            foreach(var agent in AgentsPlayingSound.Keys)
+            {
+                if (AgentsPlayingSound[agent].IsPlaying())
+                {
+                    AgentsPlayingSound[agent].Stop();
+                }
+            }
+            AgentsPlayingSound.Clear();
+        }
+
+        private void AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode mode)
+        {
+            GameNetwork.NetworkMessageHandlerRegisterer networkMessageHandlerRegisterer = new GameNetwork.NetworkMessageHandlerRegisterer(mode);
+#if CLIENT
+            networkMessageHandlerRegisterer.Register<AgentPlayingInstrument>(this.HandleAgentPlayingInstrumentFromServer);
+#endif
+#if SERVER
+            networkMessageHandlerRegisterer.Register<RequestStartPlaying>(this.HandleRequestStartPlayingFromClient);
+            networkMessageHandlerRegisterer.Register<RequestStopPlaying>(this.HandleRequestStopPlayingFromClient);
+#endif
         }
 
         private void LoadInstruments(string moduleId)
@@ -79,38 +100,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
 
-        public void RequestStartPlaying()
-        {
-            GameNetwork.BeginModuleEventAsClient();
-            GameNetwork.WriteMessage(new RequestStartPlaying());
-            GameNetwork.EndModuleEventAsClient();
-        }
-
-        public bool CanPlay()
-        {
-            Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
-            if (myAgent == null) return false;
-
-            EquipmentIndex wieldedIndex = myAgent.GetWieldedItemIndex(Agent.HandIndex.OffHand);
-            if (wieldedIndex == EquipmentIndex.None) return false;
-
-            MissionWeapon equipment = myAgent.Equipment[wieldedIndex];
-            if (equipment.IsEmpty) return false;
-
-            Instrument instrument = this.Instruments.FirstOrDefault(f => f.Item != null && f.Item.StringId == equipment.Item.StringId);
-            if (instrument.Item == null) return false;
-
-            if (myAgent.HasMount) return false;
-
-            return true;
-        }
-
+#if SERVER
         private static int _counter = 0;
         public override void OnMissionTick(float dt)
         {
             base.OnMissionTick(dt);
-
-#if SERVER
+            
             if (++_counter < 10)
                 return;
             // Reset counter
@@ -123,8 +118,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     this.AgentsPlayingSound[key].SetPosition(key.Position);
                 }
             }
-#endif
         }
+
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
         {
 #if SERVER
@@ -135,70 +130,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 GameNetwork.WriteMessage(new AgentPlayingInstrument(affectedAgent, 0, false));
                 GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
                 this.AgentsPlaying.Remove(affectedAgent);
-            }
-#endif
-        }
-        public void RequestStopEat()
-        {
-            Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
-            if (myAgent == null) return;
-
-            GameNetwork.BeginModuleEventAsClient();
-            GameNetwork.WriteMessage(new RequestStopPlaying());
-            GameNetwork.EndModuleEventAsClient();
-
-        }
-
-        private void AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode mode)
-        {
-            GameNetwork.NetworkMessageHandlerRegisterer networkMessageHandlerRegisterer = new GameNetwork.NetworkMessageHandlerRegisterer(mode);
-            if (GameNetwork.IsClient)
-            {
-                networkMessageHandlerRegisterer.Register<AgentPlayingInstrument>(this.HandleAgentPlayingInstrumentFromServer);
-            }
-            else if (GameNetwork.IsServer)
-            {
-                networkMessageHandlerRegisterer.Register<RequestStartPlaying>(this.HandleRequestStartPlayingFromClient);
-                networkMessageHandlerRegisterer.Register<RequestStopPlaying>(this.HandleRequestStopPlayingFromClient);
-            }
-
-        }
-        private void StopAgentPlaying(Agent agent)
-        {
-            if (this.AgentsPlayingSound.ContainsKey(agent) == false) return;
-            if (this.AgentsPlayingSound[agent].IsValid && this.AgentsPlayingSound[agent].IsPlaying())
-            {
-                this.AgentsPlayingSound[agent].Stop();
-                AnimationSystemData animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_warrior"), agent.Character.GetStepSize(), false);
-                agent.SetActionSet(ref animationSystemData);
-                agent.SetActionChannel(0, ActionIndexCache.act_none, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
-            }
-            this.AgentsPlayingSound.Remove(agent);
-        }
-        private void PlayAgentSound(Agent agent, Instrument instrument)
-        {
-            SoundEvent eventRef = SoundEvent.CreateEvent(instrument.SoundIndex, base.Mission.Scene);//get a reference to sound and update parameters later.
-            eventRef.SetPosition(agent.Position);
-            eventRef.Play();
-            this.AgentsPlayingSound[agent] = eventRef;
-            AnimationSystemData animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_musician"), agent.Character.GetStepSize(), false);
-            agent.SetActionSet(ref animationSystemData);
-            agent.SetActionChannel(0, instrument.Animation, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
-        }
-        private void HandleAgentPlayingInstrumentFromServer(AgentPlayingInstrument message)
-        {
-            if (message.PlayerAgent == null || message.PlayerAgent.IsActive() == false) return;
-            if (message.IsPlaying)
-            {
-                this.StopAgentPlaying(message.PlayerAgent);
-                if (this.Instruments.Count > message.PlayingInstrumentIndex)
-                {
-                    this.PlayAgentSound(message.PlayerAgent, this.Instruments[message.PlayingInstrumentIndex]);
-                }
-            }
-            else
-            {
-                this.StopAgentPlaying(message.PlayerAgent);
             }
         }
 
@@ -216,6 +147,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             return true;
         }
+
         private bool HandleRequestStartPlayingFromClient(NetworkCommunicator peer, RequestStartPlaying message)
         {
             if (peer.ControlledAgent == null) return false;
@@ -237,5 +169,84 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             // peer.ControlledAgent.SetTargetPosition(peer.ControlledAgent.Position.AsVec2);
             return true;
         }
+#endif
+#if CLIENT
+        public bool CanPlay()
+        {
+            Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
+            if (myAgent == null) return false;
+
+            EquipmentIndex wieldedIndex = myAgent.GetWieldedItemIndex(Agent.HandIndex.OffHand);
+            if (wieldedIndex == EquipmentIndex.None) return false;
+
+            MissionWeapon equipment = myAgent.Equipment[wieldedIndex];
+            if (equipment.IsEmpty) return false;
+
+            Instrument instrument = this.Instruments.FirstOrDefault(f => f.Item != null && f.Item.StringId == equipment.Item.StringId);
+            if (instrument.Item == null) return false;
+
+            if (myAgent.HasMount) return false;
+
+            return true;
+        }
+
+        public void RequestStartPlaying()
+        {
+            GameNetwork.BeginModuleEventAsClient();
+            GameNetwork.WriteMessage(new RequestStartPlaying());
+            GameNetwork.EndModuleEventAsClient();
+        }
+
+        public void RequestStopPlaying()
+        {
+            Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
+            if (myAgent == null) return;
+
+            GameNetwork.BeginModuleEventAsClient();
+            GameNetwork.WriteMessage(new RequestStopPlaying());
+            GameNetwork.EndModuleEventAsClient();
+        }
+
+        private void HandleAgentPlayingInstrumentFromServer(AgentPlayingInstrument message)
+        {
+            if (message.PlayerAgent == null || message.PlayerAgent.IsActive() == false) return;
+            if (message.IsPlaying)
+            {
+                StopAgentPlaying(message.PlayerAgent);
+                if (Instruments.Count > message.PlayingInstrumentIndex)
+                {
+                    PlayAgentSound(message.PlayerAgent, this.Instruments[message.PlayingInstrumentIndex]);
+                }
+            }
+            else
+            {
+                StopAgentPlaying(message.PlayerAgent);
+            }
+        }
+
+        private void StopAgentPlaying(Agent agent)
+        {
+            if (AgentsPlayingSound.ContainsKey(agent) == false) return;
+            if (AgentsPlayingSound[agent].IsValid && this.AgentsPlayingSound[agent].IsPlaying())
+            {
+                AgentsPlayingSound[agent].Stop();
+                AnimationSystemData animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_warrior"), agent.Character.GetStepSize(), false);
+                agent.SetActionSet(ref animationSystemData);
+                agent.SetActionChannel(0, ActionIndexCache.act_none, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
+            }
+            this.AgentsPlayingSound.Remove(agent);
+        }
+
+        private void PlayAgentSound(Agent agent, Instrument instrument)
+        {
+            SoundEvent eventRef = SoundEvent.CreateEvent(instrument.SoundIndex, base.Mission.Scene);//get a reference to sound and update parameters later.
+            eventRef.SetPosition(agent.Position);
+            eventRef.Play();
+            this.AgentsPlayingSound[agent] = eventRef;
+            AnimationSystemData animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_musician"), agent.Character.GetStepSize(), false);
+            agent.SetActionSet(ref animationSystemData);
+            agent.SetActionChannel(0, instrument.Animation, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
+        }
+#endif
     }
 }

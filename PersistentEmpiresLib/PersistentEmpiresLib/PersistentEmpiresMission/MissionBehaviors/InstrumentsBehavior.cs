@@ -25,6 +25,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             this.SoundIndex = SoundEvent.GetEventIdFromString(musicId);
         }
     }
+
     public class InstrumentsBehavior : MissionNetwork
     {
         public class PlayingAction
@@ -35,34 +36,39 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             public PlayingAction(Agent player, Instrument instrument)
             {
-                this.PlayerAgent = player;
-                this.Instrument = instrument;
-                this.PlayingStartedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                PlayerAgent = player;
+                Instrument = instrument;
+                PlayingStartedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             }
         }
 
         public List<Instrument> Instruments = new List<Instrument>();
+#if SERVER
         public Dictionary<Agent, PlayingAction> AgentsPlaying = new Dictionary<Agent, PlayingAction>();
+#endif
+#if CLIENT
         public Dictionary<Agent, SoundEvent> AgentsPlayingSound = new Dictionary<Agent, SoundEvent>();
+#endif
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();
-            this.AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
+
+            AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
+
             foreach (ModuleInfo module in ModuleHelper.GetModules())
             {
-                /*if (module.IsSelected || GameNetwork.IsServer)
-                {*/
-                this.LoadInstruments(module.Id);
-                //}
+                LoadInstruments(module.Id);
             }
         }
+
         public override void OnRemoveBehavior()
         {
             base.OnRemoveBehavior();
-            this.AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
-            this.Instruments.Clear();
 
-            foreach(var agent in AgentsPlayingSound.Keys)
+            AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
+            Instruments.Clear();
+#if CLIENT
+            foreach (var agent in AgentsPlayingSound.Keys)
             {
                 if (AgentsPlayingSound[agent].IsPlaying())
                 {
@@ -70,6 +76,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
             }
             AgentsPlayingSound.Clear();
+#endif
         }
 
         private void AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode mode)
@@ -86,64 +93,52 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private void LoadInstruments(string moduleId)
         {
-            string FoodPath = ModuleHelper.GetXmlPath(moduleId, "Instruments");
+            var FoodPath = ModuleHelper.GetXmlPath(moduleId, "Instruments");
+
             if (File.Exists(FoodPath) == false) return;
-            XmlDocument xmlDocument = new XmlDocument();
+
+            var xmlDocument = new XmlDocument();
+
             xmlDocument.Load(FoodPath);
+
             foreach (XmlNode node in xmlDocument.SelectNodes("/Instruments/Instrument"))
             {
-                string ItemId = node["ItemId"].InnerText;
-                string animation = node["Animation"].InnerText;
-                string musicId = node["MusicId"].InnerText;
-                Instrument instrument = new Instrument(ItemId, animation, musicId);
-                this.Instruments.Add(instrument);
+                var ItemId = node["ItemId"].InnerText;
+                var animation = node["Animation"].InnerText;
+                var musicId = node["MusicId"].InnerText;
+                var instrument = new Instrument(ItemId, animation, musicId);
+
+                Instruments.Add(instrument);
             }
         }
 
-#if SERVER
-        private static int _counter = 0;
-        public override void OnMissionTick(float dt)
-        {
-            base.OnMissionTick(dt);
-            
-            if (++_counter < 10)
-                return;
-            // Reset counter
-            _counter = 0;
-
-            foreach (Agent key in this.AgentsPlayingSound.Keys.ToList())
-            {
-                if (key != null && key.IsActive())
-                {
-                    this.AgentsPlayingSound[key].SetPosition(key.Position);
-                }
-            }
-        }
-
+#if SERVER        
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
         {
-#if SERVER
             if (affectedAgent == null) return;
+
             if (AgentsPlaying.ContainsKey(affectedAgent))
             {
                 GameNetwork.BeginBroadcastModuleEvent();
                 GameNetwork.WriteMessage(new AgentPlayingInstrument(affectedAgent, 0, false));
                 GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
-                this.AgentsPlaying.Remove(affectedAgent);
+
+                AgentsPlaying.Remove(affectedAgent);
             }
         }
 
         private bool HandleRequestStopPlayingFromClient(NetworkCommunicator peer, RequestStopPlaying message)
         {
             if (peer.ControlledAgent == null) return false;
-            if (this.AgentsPlaying.ContainsKey(peer.ControlledAgent))
+
+            if (AgentsPlaying.ContainsKey(peer.ControlledAgent))
             {
                 // peer.ControlledAgent.SetActionChannel(0, ActionIndexCache.act_none, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                 GameNetwork.BeginBroadcastModuleEvent();
                 GameNetwork.WriteMessage(new AgentPlayingInstrument(peer.ControlledAgent, 0, false));
                 GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
                 // peer.ControlledAgent.ClearTargetFrame();
-                this.AgentsPlaying.Remove(peer.ControlledAgent);
+                AgentsPlaying.Remove(peer.ControlledAgent);
             }
             return true;
         }
@@ -151,26 +146,53 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private bool HandleRequestStartPlayingFromClient(NetworkCommunicator peer, RequestStartPlaying message)
         {
             if (peer.ControlledAgent == null) return false;
+
             PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+
             if (persistentEmpireRepresentative == null) return false;
 
             EquipmentIndex index = peer.ControlledAgent.GetWieldedItemIndex(Agent.HandIndex.OffHand);
+
             if (index == EquipmentIndex.None) return false;
+
             MissionWeapon equipmentElement = peer.ControlledAgent.Equipment[index];
 
             var instrumentWithIndex = this.Instruments.Select((instr, instrIndex) => new { Instrument = instr, Index = instrIndex }).FirstOrDefault(f => f.Instrument.Item.Id == equipmentElement.Item.Id);
+
             if (instrumentWithIndex.Instrument.Item == null) return false;
+
             PlayingAction playingAction = new PlayingAction(peer.ControlledAgent, instrumentWithIndex.Instrument);
-            this.AgentsPlaying[peer.ControlledAgent] = playingAction;
+            AgentsPlaying[peer.ControlledAgent] = playingAction;
             // peer.ControlledAgent.SetActionChannel(0, instrumentWithIndex.Instrument.Animation, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
+
             GameNetwork.BeginBroadcastModuleEvent();
             GameNetwork.WriteMessage(new AgentPlayingInstrument(peer.ControlledAgent, instrumentWithIndex.Index, true));
             GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
             // peer.ControlledAgent.SetTargetPosition(peer.ControlledAgent.Position.AsVec2);
+
             return true;
         }
 #endif
 #if CLIENT
+        private static int _counter = 0;
+        public override void OnMissionTick(float dt)
+        {
+            base.OnMissionTick(dt);
+
+            if (++_counter < 10)
+                return;
+            // Reset counter
+            _counter = 0;
+
+            foreach (Agent key in AgentsPlayingSound.Keys.ToList())
+            {
+                if (key != null && key.IsActive())
+                {
+                    AgentsPlayingSound[key].SetPosition(key.Position);
+                }
+            }
+        }
+
         public bool CanPlay()
         {
             Agent myAgent = GameNetwork.MyPeer.ControlledAgent;

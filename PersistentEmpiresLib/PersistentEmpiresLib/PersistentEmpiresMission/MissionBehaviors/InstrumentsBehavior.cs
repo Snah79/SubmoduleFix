@@ -18,11 +18,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public ItemObject Item;
         public ActionIndexCache Animation;
         public int SoundIndex;
+
         public Instrument(string itemId, string animation, string musicId)
         {
-            this.Item = MBObjectManager.Instance.GetObject<ItemObject>(itemId);
-            this.Animation = ActionIndexCache.Create(animation);
-            this.SoundIndex = SoundEvent.GetEventIdFromString(musicId);
+            Item = MBObjectManager.Instance.GetObject<ItemObject>(itemId);
+            Animation = ActionIndexCache.Create(animation);
+            SoundIndex = SoundEvent.GetEventIdFromString(musicId);
         }
     }
 
@@ -218,10 +219,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             GameNetwork.WriteMessage(new RequestStartPlaying());
             GameNetwork.EndModuleEventAsClient();
         }
-
         public void RequestStopPlaying()
         {
-            Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
+            var myAgent = GameNetwork.MyPeer.ControlledAgent;
+
             if (myAgent == null) return;
 
             GameNetwork.BeginModuleEventAsClient();
@@ -232,6 +233,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private void HandleAgentPlayingInstrumentFromServer(AgentPlayingInstrument message)
         {
             if (message.PlayerAgent == null || message.PlayerAgent.IsActive() == false) return;
+
             if (message.IsPlaying)
             {
                 StopAgentPlaying(message.PlayerAgent);
@@ -249,6 +251,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private void StopAgentPlaying(Agent agent)
         {
             if (AgentsPlayingSound.ContainsKey(agent) == false) return;
+
             if (AgentsPlayingSound[agent].IsValid && this.AgentsPlayingSound[agent].IsPlaying())
             {
                 AgentsPlayingSound[agent].Stop();
@@ -256,16 +259,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 agent.SetActionSet(ref animationSystemData);
                 agent.SetActionChannel(0, ActionIndexCache.act_none, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
             }
-            this.AgentsPlayingSound.Remove(agent);
+            
+            AgentsPlayingSound.Remove(agent);
         }
 
         private void PlayAgentSound(Agent agent, Instrument instrument)
         {
-            SoundEvent eventRef = SoundEvent.CreateEvent(instrument.SoundIndex, base.Mission.Scene);//get a reference to sound and update parameters later.
+            var eventRef = SoundEvent.CreateEvent(instrument.SoundIndex, base.Mission.Scene);//get a reference to sound and update parameters later.
+            
             eventRef.SetPosition(agent.Position);
             eventRef.Play();
-            this.AgentsPlayingSound[agent] = eventRef;
-            AnimationSystemData animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_musician"), agent.Character.GetStepSize(), false);
+            AgentsPlayingSound[agent] = eventRef;
+            
+            var animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_musician"), agent.Character.GetStepSize(), false);
+            
             agent.SetActionSet(ref animationSystemData);
             agent.SetActionChannel(0, instrument.Animation, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
         }

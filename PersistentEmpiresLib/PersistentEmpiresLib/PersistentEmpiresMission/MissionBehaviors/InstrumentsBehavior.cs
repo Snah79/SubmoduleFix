@@ -128,7 +128,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
         {
 #if SERVER
-            if (affectedAgent == null) return false;
+            if (affectedAgent == null) return;
             if (AgentsPlaying.ContainsKey(affectedAgent))
             {
                 GameNetwork.BeginBroadcastModuleEvent();

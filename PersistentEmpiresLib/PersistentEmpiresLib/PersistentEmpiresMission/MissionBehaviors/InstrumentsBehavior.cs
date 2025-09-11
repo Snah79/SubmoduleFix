@@ -127,10 +127,16 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
         {
-            if (GameNetwork.IsClient)
+#if SERVER
+            if (affectedAgent == null) return false;
+            if (AgentsPlaying.ContainsKey(affectedAgent))
             {
-                this.StopAgentPlaying(affectedAgent);
+                GameNetwork.BeginBroadcastModuleEvent();
+                GameNetwork.WriteMessage(new AgentPlayingInstrument(affectedAgent, 0, false));
+                GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
+                this.AgentsPlaying.Remove(affectedAgent);
             }
+#endif
         }
         public void RequestStopEat()
         {

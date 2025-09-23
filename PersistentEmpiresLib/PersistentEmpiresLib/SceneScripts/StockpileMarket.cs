@@ -217,17 +217,32 @@ namespace PersistentEmpiresLib.SceneScripts
             if (attackerAgent == null) return false;
             NetworkCommunicator player = attackerAgent.MissionPeer.GetNetworkPeer();
             bool isAdmin = Main.IsPlayerAdmin(player);
-            if (isAdmin && weapon.Item != null && weapon.Item.StringId == "pe_adminstockfiller")
+            if (isAdmin && weapon.Item != null)
             {
-                foreach (MarketItem marketItem in this.MarketItems)
+                if (weapon.Item.StringId == "pe_adminstockfiller_t1")
                 {
-                    var currentStock = marketItem.Stock;
-                    if (currentStock + 10 < 900)
+                    foreach (MarketItem marketItem in MarketItems.Where(x=> x.Tier == 1))
                     {
-                        marketItem.UpdateReserve(currentStock + 10);
+                        var currentStock = marketItem.Stock;
+                        if (currentStock + 10 < 900)
+                        {
+                            marketItem.UpdateReserve(currentStock + 10);
+                        }
                     }
+                    InformationComponent.Instance.SendMessage("Stocks updated", Colors.Blue.ToUnsignedInteger(), player);
                 }
-                InformationComponent.Instance.SendMessage("Stocks updated", Colors.Blue.ToUnsignedInteger(), player);
+                else if (weapon.Item.StringId == "pe_adminstockfiller")
+                {
+                    foreach (MarketItem marketItem in this.MarketItems)
+                    {
+                        var currentStock = marketItem.Stock;
+                        if (currentStock + 10 < 900)
+                        {
+                            marketItem.UpdateReserve(currentStock + 10);
+                        }
+                    }
+                    InformationComponent.Instance.SendMessage("Stocks updated", Colors.Blue.ToUnsignedInteger(), player);
+                }
             }
             return true;
         }

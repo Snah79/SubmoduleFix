@@ -14,6 +14,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="ModuleData\pe_weapons.xml" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Include="ModuleData\pe_weapons.xml">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
 		<Folder Include="GUI\Brushes\" />
 		<Folder Include="GUI\Prefabs\PEMessageLog\" />
 		<Folder Include="GUI\SpriteParts\" />

@@ -14,16 +14,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="ModuleData\pe_weapons.xml" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Compile Include="ModuleData\pe_weapons.xml">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Compile>
-	</ItemGroup>
-
-	<ItemGroup>
 		<Folder Include="GUI\Brushes\" />
 		<Folder Include="GUI\Prefabs\PEMessageLog\" />
 		<Folder Include="GUI\SpriteParts\" />
@@ -230,6 +220,9 @@
 		</None>
 		<None Update="ModuleData\native_strings.xml">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="ModuleData\pe_weapons.xml">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="ModuleSounds\500_Or_Die.wav">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>

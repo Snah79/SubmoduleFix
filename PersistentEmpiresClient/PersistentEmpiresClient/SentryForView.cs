@@ -18,6 +18,7 @@ namespace PersistentEmpires.Views
         {
             AppDomain.CurrentDomain.UnhandledException += HandleExceptionalExit;
             HarmonyLibClient.OnRglExceptionThrown += RglExceptionThrown;
+            HarmonyLibClient.OnExceptionThrown += OnExceptionThrown;
             HarmonyLibClient.Instance.PatchFinalizer(typeof(Managed).GetMethod("ApplicationTick", BindingFlags.NonPublic | BindingFlags.Static));
             HarmonyLibClient.Instance.PatchFinalizer(typeof(ScriptComponentBehavior).GetMethod("OnTick", BindingFlags.NonPublic | BindingFlags.Instance));
             HarmonyLibClient.Instance.PatchFinalizer(typeof(TaleWorlds.MountAndBlade.Module).GetMethod("OnApplicationTick", BindingFlags.NonPublic | BindingFlags.Instance));
@@ -26,6 +27,30 @@ namespace PersistentEmpires.Views
             HarmonyLibClient.Instance.PatchFinalizer(typeof(MBSubModuleBase).GetMethod("OnSubModuleLoad", BindingFlags.NonPublic | BindingFlags.Instance));
             HarmonyLibClient.Instance.PatchFinalizer(typeof(MissionView).GetMethod("OnMissionScreenTick", BindingFlags.Public | BindingFlags.Instance));
             HarmonyLibClient.Instance.PatchFinalizer(typeof(ScreenManager).GetMethod("Tick", BindingFlags.Public | BindingFlags.Static));
+        }
+
+        public static void OnExceptionThrown(Exception e)
+        {
+            var message = $"Exception{Environment.NewLine}" +
+                $"Exception: {e.ToLogString()}";
+
+            try
+            {
+                var path = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\"));
+
+                path += $"Error_{DateTime.Now.ToString("yyyyMMdd_hhmmss")}.txt";
+                using (FileStream fs = File.Create(path))
+                {
+                    using (var sw = new StreamWriter(fs))
+                    {
+                        sw.Write(message);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+
+            }
         }
 
         public static void RglExceptionThrown(StackTrace obj, Exception rglException)

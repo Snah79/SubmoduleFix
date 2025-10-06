@@ -23,17 +23,18 @@ namespace PersistentEmpires.Views.ViewsVM
         public override void AddItem(object obj, int i)
         {
             var item = (MarketItem)obj;
-            
-            if (item.Item == null)
-            {
-                InformationManager.DisplayMessage(new InformationMessage("Error adding item to stockpile market view model for xmlfile: \"" + stockpileMarket.XmlFile + "\", item no (i): " + i, Color.ConvertStringToColor("#FF0000FF")));
-            }
-            else
+
+            try
             {
                 this.FilteredItemList.Add(new PEStockpileMarketItemVM(item, i, (selected) =>
                 {
                     this.SelectedItem = selected;
                 }));
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage("Error adding item to stockpile market view model for xmlfile: \"" + stockpileMarket.XmlFile + "\", item no (i): " + i, Color.ConvertStringToColor("#FF0000FF")));
+                SentryForView.OnExceptionThrown(ex);
             }
         }
 

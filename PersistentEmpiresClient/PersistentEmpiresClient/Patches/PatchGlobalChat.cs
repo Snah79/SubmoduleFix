@@ -60,10 +60,10 @@ namespace PersistentEmpiresHarmony.Patches
             {
                 if (str.Length > __instance.MaxMessageLength)
                     str = __instance.WrittenText.Substring(0, __instance.MaxMessageLength);
-
-                GameNetwork.BeginModuleEventAsClient();
-                GameNetwork.WriteMessage(new LocalMessage(str));
-                GameNetwork.EndModuleEventAsClient();
+                //Handle this on server in team and global chat message handlers
+                //GameNetwork.BeginModuleEventAsClient();
+                //GameNetwork.WriteMessage(new LocalMessage(str));
+                //GameNetwork.EndModuleEventAsClient();
             }
 
             return true;

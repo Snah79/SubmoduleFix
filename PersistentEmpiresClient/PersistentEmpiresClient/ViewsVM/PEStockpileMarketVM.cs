@@ -1,6 +1,7 @@
 ﻿using PersistentEmpires.Views.ViewsVM.StockpileMarket;
 using PersistentEmpiresClient.ViewsVM;
 using PersistentEmpiresLib.Data;
+using PersistentEmpiresLib.Database.DBEntities;
 using PersistentEmpiresLib.SceneScripts;
 using System;
 using TaleWorlds.Library;
@@ -21,11 +22,20 @@ namespace PersistentEmpires.Views.ViewsVM
 
         public override void AddItem(object obj, int i)
         {
-            MarketItem item = (MarketItem)obj;
-            this.FilteredItemList.Add(new PEStockpileMarketItemVM(item, i, (selected) =>
+            var item = (MarketItem)obj;
+
+            try
             {
-                this.SelectedItem = selected;
-            }));
+                this.FilteredItemList.Add(new PEStockpileMarketItemVM(item, i, (selected) =>
+                {
+                    this.SelectedItem = selected;
+                }));
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage("Error adding item to stockpile market view model for xmlfile: \"" + stockpileMarket.XmlFile + "\", item no (i): " + i, Color.ConvertStringToColor("#FF0000FF")));
+                SentryForView.OnExceptionThrown(ex);
+            }
         }
 
         public void RefreshValues(PE_StockpileMarket stockpileMarket, Inventory inventory, Action<PEStockpileMarketItemVM> buy, Action<PEStockpileMarketItemVM> sell, Action unpackBoxes)

@@ -221,6 +221,9 @@
 		<None Update="ModuleData\native_strings.xml">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+		<None Update="ModuleData\pe_weapons.xml">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="ModuleSounds\500_Or_Die.wav">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

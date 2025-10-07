@@ -100,7 +100,7 @@ namespace PersistentEmpiresServer.ServerMissions
                     {
                         if (n.IsConnectionActive && n.IsNetworkActive)
                         {
-                            InformationComponent.Instance.SendMessage(f.name + " [" + networkPeer.UserName + "]: " + message.Message, Colors.Red.ToUnsignedInteger(), networkPeer);
+                            InformationComponent.Instance.SendMessage(f.name + " [" + networkPeer.UserName + "]: " + message.Message, Colors.Red.ToUnsignedInteger(), n);
                             InformationComponent.Instance.SendQuickInformationToPlayer("[" + f.name + "] " + message.Message, n, Colors.Red.ToUnsignedInteger());
                         }
                     }

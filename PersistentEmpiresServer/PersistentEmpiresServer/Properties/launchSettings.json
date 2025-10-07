@@ -27,7 +27,7 @@
     "Server PE Only Snah": {
       "commandName": "Executable",
       "executablePath": "C:\\Users\\Snah\\Desktop\\FTP\\Mount & Blade II Dedicated Server\\bin\\Win64_Shipping_Server\\DedicatedCustomServer.Starter.exe",
-      "commandLineArgs": "_MODULES_*Native*Multiplayer*PersistentEmpires*_MODULES_ /dedicatedcustomserverconfigfile pe_birke_pe_test.txt /port 7233 /no_watchdog /tickrate 120",
+      "commandLineArgs": "_MODULES_*Native*Multiplayer*PersistentEmpires*_MODULES_ /dedicatedcustomserverconfigfile pe_birke_pe.txt /port 7233 /no_watchdog /tickrate 120",
       "workingDirectory": "C:\\Users\\Snah\\Desktop\\FTP\\Mount & Blade II Dedicated Server\\bin\\Win64_Shipping_Server\\"
     },
 

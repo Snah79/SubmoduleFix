@@ -83,9 +83,9 @@ namespace PersistentEmpiresLib.SceneScripts
             return forStandingPoint;
         }
 
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return new TextObject("{=}" + this.Name).ToString();
+            return new TextObject("{=}" + this.Name);
         }
 
         public override bool IsStray()
@@ -243,7 +243,7 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
             reportDamage = true;
             MissionWeapon missionWeapon = weapon;
@@ -260,6 +260,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 )
             {
                 reportDamage = false;
+                finalDamage = 0;
                 NetworkCommunicator player = attackerAgent.MissionPeer.GetNetworkPeer();
                 PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
                 if (persistentEmpireRepresentative == null) return false;
@@ -293,6 +294,8 @@ namespace PersistentEmpiresLib.SceneScripts
                 if (impactDirection == null) impactDirection = Vec3.Zero;
                 this.SetHitPoint(this.HitPoint - damage, impactDirection);
             }
+            finalDamage = damage;   
+
             return false;
         }
     }

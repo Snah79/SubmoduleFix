@@ -94,14 +94,14 @@ namespace PersistentEmpiresLib.SceneScripts
         public static int MAX_STOCK_COUNT = 1000;
         public string XmlFile = "examplemarket"; // itemId*minimum*maximum,itemId*minimum*maximum
         public string ModuleFolder = Main.ModuleName;
-        protected override bool LockUserFrames
+        public override bool LockUserFrames
         {
             get
             {
                 return false;
             }
         }
-        protected override bool LockUserPositions
+        public override bool LockUserPositions
         {
             get
             {
@@ -166,19 +166,19 @@ namespace PersistentEmpiresLib.SceneScripts
             this.LoadMarketItems(xmlDocument.SelectSingleNode("/Market/Tier4Items").InnerText, 4);
             this.LoadCraftingBoxes(xmlDocument.SelectSingleNode("/Market/CraftingBoxes").InnerText);
         }
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Stockpile Market";
+            return new TextObject("Stockpile Market");
         }
 
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             if (!base.IsUsable(userAgent))
             {
                 userAgent.StopUsingGameObjectMT(false);
                 return;
             }
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
             Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name);
 
             if (GameNetwork.IsServer)
@@ -211,9 +211,10 @@ namespace PersistentEmpiresLib.SceneScripts
             return this;
         }
 
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
             reportDamage = false;
+            finalDamage = 0;
             if (attackerAgent == null) return false;
             NetworkCommunicator player = attackerAgent.MissionPeer.GetNetworkPeer();
             bool isAdmin = Main.IsPlayerAdmin(player);

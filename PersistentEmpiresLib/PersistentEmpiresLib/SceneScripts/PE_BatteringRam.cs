@@ -204,7 +204,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 this._gate.AttackerSiegeWeapon = this;
             }
             this.AddRegularMovementComponent();
-            this._batteringRamBody = base.GameEntity.GetChildren().FirstOrDefault((GameEntity x) => x.HasTag("body"));
+            this._batteringRamBody = base.GameEntity.GetChildren().FirstOrDefault((WeakGameEntity x) => x.HasTag("body"));
             this._batteringRamBodySkeleton = this._batteringRamBody.Skeleton;
             this._batteringRamBodySkeleton.SetAnimationAtChannel("batteringram_idle", 0, 1f, 0f, 0f);
             this._pullStandingPoints = new List<StandingPoint>();
@@ -214,7 +214,7 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 foreach (StandingPoint standingPoint in base.StandingPoints)
                 {
-                    standingPoint.AddComponent(new ResetAnimationOnStopUsageComponent(ActionIndexCache.act_none));
+                    standingPoint.AddComponent(new ResetAnimationOnStopUsageComponent(ActionIndexCache.act_none, true));
                     if (standingPoint.GameEntity.HasTag("pull"))
                     {
                         standingPoint.IsDeactivated = true;
@@ -482,7 +482,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 if (standingPoint.HasUser && standingPoint.GameEntity.HasTag("pull"))
                 {
                     ActionIndexCache actionCodeForStandingPoint = this.GetActionCodeForStandingPoint(standingPoint, powerStage);
-                    if (!standingPoint.UserAgent.SetActionChannel(1, actionCodeForStandingPoint, false, 0UL, 0f, 1f, -0.2f, 0.4f, progress, false, -0.2f, 0, true) && standingPoint.UserAgent.Controller == Agent.ControllerType.AI)
+                    if (!standingPoint.UserAgent.SetActionChannel(1, actionCodeForStandingPoint, false, 0UL, 0f, 1f, -0.2f, 0.4f, progress, false, -0.2f, 0, true) && standingPoint.UserAgent.Controller == AgentControllerType.AI)
                     {
                         standingPoint.UserAgent.StopUsingGameObject(false, Agent.StopUsingGameObjectFlags.AutoAttachAfterStoppingUsingGameObject);
                     }
@@ -498,7 +498,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 if (standingPoint.HasUser && standingPoint.GameEntity.HasTag("pull"))
                 {
                     ActionIndexCache actionCodeForStandingPoint = this.GetActionCodeForStandingPoint(standingPoint, powerStage);
-                    if (standingPoint.UserAgent.GetCurrentActionValue(1) == actionCodeForStandingPoint)
+                    if (standingPoint.UserAgent.GetCurrentAction(1) == actionCodeForStandingPoint)
                     {
                         standingPoint.UserAgent.SetCurrentActionProgress(1, progress);
                     }
@@ -614,9 +614,9 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         // Token: 0x06002BAA RID: 11178 RVA: 0x000A9856 File Offset: 0x000A7A56
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return new TextObject("{=MaBSSg7I}Battering Ram", null).ToString();
+            return new TextObject("{=MaBSSg7I}Battering Ram", null);
         }
 
         // Token: 0x06002BAB RID: 11179 RVA: 0x000A9868 File Offset: 0x000A7A68
@@ -851,7 +851,7 @@ namespace PersistentEmpiresLib.SceneScripts
         private GameEntity _ditchFillDebris;
 
         // Token: 0x04001132 RID: 4402
-        private GameEntity _batteringRamBody;
+        private WeakGameEntity _batteringRamBody;
 
         // Token: 0x04001133 RID: 4403
         private Skeleton _batteringRamBodySkeleton;

@@ -119,7 +119,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
             }
         }
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
             reportDamage = true;
             MissionWeapon missionWeapon = weapon;
@@ -136,6 +136,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 )
             {
                 reportDamage = false;
+                finalDamage = 0;
                 NetworkCommunicator player = attackerAgent.MissionPeer.GetNetworkPeer();
                 PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
                 if (persistentEmpireRepresentative == null) return false;
@@ -161,6 +162,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     // LoggerHelper.LogAnAction(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerRepairesTheDestructable, null, new object[] { this.GetType().Name });
                 }
             }
+            finalDamage = damage;
 
             return true;
         }

@@ -128,10 +128,11 @@ namespace PersistentEmpiresLib.Helpers
         }
 
 
-        public static GameEntity SpawnWeaponWithNewEntityAux(Scene scene, MissionWeapon weapon, Mission.WeaponSpawnFlags spawnFlags, MatrixFrame frame, int forcedSpawnIndex, MissionObject attachedMissionObject, bool hasLifeTime)
+        public static WeakGameEntity SpawnWeaponWithNewEntityAux(Scene scene, MissionWeapon weapon, Mission.WeaponSpawnFlags spawnFlags, MatrixFrame frame, int forcedSpawnIndex, MissionObject attachedMissionObject, bool hasLifeTime)
         {
-            GameEntity gameEntity = GameEntityExtensions.Instantiate(scene, weapon, spawnFlags.HasAnyFlag(Mission.WeaponSpawnFlags.WithHolster), true);
-            gameEntity.CreateAndAddScriptComponent(typeof(SpawnedItemEntity).Name);
+            var tmp = GameEntityExtensions.Instantiate(scene, weapon, spawnFlags.HasAnyFlag(Mission.WeaponSpawnFlags.WithHolster), true);
+            var gameEntity = tmp.WeakEntity;
+            gameEntity.CreateAndAddScriptComponent(typeof(SpawnedItemEntity).Name, true);
             SpawnedItemEntity firstScriptOfType = gameEntity.GetFirstScriptOfType<SpawnedItemEntity>();
             if (forcedSpawnIndex >= 0)
             {
@@ -143,7 +144,7 @@ namespace PersistentEmpiresLib.Helpers
             }
             if (attachedMissionObject != null)
             {
-                GameEntity gameEntity2 = gameEntity;
+                var gameEntity2 = gameEntity;
                 MatrixFrame matrixFrame = attachedMissionObject.GameEntity.GetGlobalFrame();
                 matrixFrame = matrixFrame.TransformToParent(frame);
                 gameEntity2.SetGlobalFrame(matrixFrame);

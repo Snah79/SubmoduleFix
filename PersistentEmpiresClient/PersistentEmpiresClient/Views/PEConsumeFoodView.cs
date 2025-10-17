@@ -1,5 +1,6 @@
 ﻿using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using TaleWorlds.InputSystem;
+using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
 
 namespace PersistentEmpires.Views.Views
@@ -18,7 +19,7 @@ namespace PersistentEmpires.Views.Views
         public override void OnMissionTick(float dt)
         {
             base.OnMissionTick(dt);
-            GameKey defendClick = HotKeyManager.GetCategory("CombatHotKeyCategory").GetGameKey("Defend");
+            GameKey defendClick = HotKeyManager.GetCategory("CombatHotKeyCategory").GetGameKey(CombatHotKeyCategory.Defend);
             if (base.MissionScreen.SceneLayer.Input.IsGameKeyPressed(defendClick.Id))
             {
                 this.RequestedStartEat = this._agentHungerBehavior.RequestStartEat();

@@ -34,18 +34,18 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         // Token: 0x060001C2 RID: 450 RVA: 0x0000C530 File Offset: 0x0000A730
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
             switch (this.ChairType)
             {
                 case PE_Chair.SittableType.Log:
-                    return new TextObject("{=9pgOGq7X}Log", null).ToString();
+                    return new TextObject("{=9pgOGq7X}Log", null);
                 case PE_Chair.SittableType.Sofa:
-                    return new TextObject("{=GvLZKQ1U}Sofa", null).ToString();
+                    return new TextObject("{=GvLZKQ1U}Sofa", null);
                 case PE_Chair.SittableType.Ground:
-                    return new TextObject("{=L7ZQtIuM}Ground", null).ToString();
+                    return new TextObject("{=L7ZQtIuM}Ground", null);
                 default:
-                    return new TextObject("{=OgTUrRlR}Chair", null).ToString();
+                    return new TextObject("{=OgTUrRlR}Chair", null);
             }
         }
 

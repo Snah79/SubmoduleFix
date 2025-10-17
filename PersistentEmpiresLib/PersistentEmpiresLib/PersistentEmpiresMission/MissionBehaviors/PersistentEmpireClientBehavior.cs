@@ -25,7 +25,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public override bool IsGameModeUsingGold => true;
         public override bool IsGameModeTactical => false;
         public override bool IsGameModeUsingRoundCountdown => false;
-        public override MultiplayerGameType GameType => MultiplayerGameType.FreeForAll;
+        public override MultiplayerGameType GameType => MultiplayerGameType.Duel;// ????
         private FactionsBehavior _factionsBehavior;
         private CastlesBehavior _castlesBehavior;
         public override void OnBehaviorInitialize()

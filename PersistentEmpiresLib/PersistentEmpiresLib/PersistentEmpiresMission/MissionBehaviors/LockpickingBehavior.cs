@@ -38,7 +38,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 {
                     pickedAgents.Remove(a);
 
-                    EquipmentIndex index = a.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                    EquipmentIndex index = a.GetPrimaryWieldedItemIndex();
                     
                     if (index != EquipmentIndex.None)
                     {

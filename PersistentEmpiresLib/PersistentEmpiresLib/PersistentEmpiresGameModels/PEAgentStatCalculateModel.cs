@@ -282,10 +282,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
             
             weaponsTotalWeight *= 1f + ((perkHandler != null) ? perkHandler.GetEncumbrance(true) : 0f);
 
-            var mainHandWieldedItemIndex = agent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+            var mainHandWieldedItemIndex = agent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
             var mainWeaponItem = (mainHandWieldedItemIndex != EquipmentIndex.None) ? equipment[mainHandWieldedItemIndex].Item : null;
             var mainWeaponWeaponComponentData = (mainHandWieldedItemIndex != EquipmentIndex.None) ? equipment[mainHandWieldedItemIndex].CurrentUsageItem : null;
-            var offHandWieldedItemIndex = agent.GetWieldedItemIndex(Agent.HandIndex.OffHand);
+            var offHandWieldedItemIndex = agent.GetOffhandWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.OffHand);
             var offHandWieldedWeaponComponentData = (offHandWieldedItemIndex != EquipmentIndex.None) ? equipment[offHandWieldedItemIndex].CurrentUsageItem : null;
 
             // 1. Calculate WeaponsEncumbrance
@@ -522,6 +522,21 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
         public override float GetWeaponDamageMultiplier(Agent agent, WeaponComponentData weapon)
         {
             return 1f;
+        }
+
+        public override float GetEquipmentStealthBonus(Agent agent)
+        {
+            return 1.0f;
+        }
+
+        public override float GetSneakAttackMultiplier(Agent agent, WeaponComponentData weapon)
+        {
+            return 1.0f;
+        }
+
+        public override float GetBreatheHoldMaxDuration(Agent agent, float baseBreatheHoldMaxDuration)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

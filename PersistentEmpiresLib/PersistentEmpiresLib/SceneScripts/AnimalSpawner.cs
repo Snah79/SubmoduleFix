@@ -72,9 +72,9 @@ namespace PersistentEmpiresLib.SceneScripts
             this.NeededReceipt = this.ParseReceipts(this.NeededItemRecipies);
             this.DropReceipt = this.ParseReceipts(this.DropItemRecipies);
         }
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Animal Spawner";
+            return new TextObject("Animal Spawner");
         }
 
         public void RemoveSpawnedAnimal(Agent animal)
@@ -162,14 +162,24 @@ namespace PersistentEmpiresLib.SceneScripts
                     ItemRosterElement harnessRosterElement = this.HorseHarness == "" ? default(ItemRosterElement) : new ItemRosterElement(MBObjectManager.Instance.GetObject<ItemObject>(this.HorseHarness), 1);
                     Vec2 asVec = globalFrame.rotation.f.AsVec2;
                     Agent agent = mission.SpawnMonster(rosterElement, harnessRosterElement, globalFrame.origin, asVec, -1);
-                    AnimalSpawnSettings.CheckAndSetAnimalAgentFlags(this.GameEntity, agent);
+                    //AnimalSpawnSettings.CheckAndSetAnimalAgentFlags(this.GameEntity, agent);
+                    CheckAndSetAnimalAgentFlags(this.GameEntity, agent);
                     SpawnedAnimals.Add(agent);
                     AnimalButcheringBehavior.Instance.AgentToAnimalSpawner[agent] = this;
                 }
             }
             if (userAgent.IsMine) PEInformationManager.StopCounter();
         }
-        public override void OnUse(Agent userAgent)
+
+        public static void CheckAndSetAnimalAgentFlags(WeakGameEntity spawnEntity, Agent animalAgent)
+        {
+            if (spawnEntity.HasScriptOfType<AnimalSpawnSettings>() && spawnEntity.GetFirstScriptOfType<AnimalSpawnSettings>().DisableWandering)
+            {
+                animalAgent.SetAgentFlags(animalAgent.GetAgentFlags() & ~AgentFlag.CanWander);
+            }
+        }
+
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             if (GameNetwork.IsServer)
             {
@@ -188,7 +198,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     return;
                 }
 
-                base.OnUse(userAgent);
+                base.OnUse(userAgent, agentBoneIndex);
                 ActionIndexCache actionIndexCache = ActionIndexCache.Create(this.Animation);
                 userAgent.SetActionChannel(0, actionIndexCache, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                 this.UseStartedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

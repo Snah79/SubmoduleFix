@@ -12,7 +12,7 @@ using TaleWorlds.MountAndBlade.View.MissionViews.Singleplayer;
 
 namespace PersistentEmpires.Views.Views
 {
-    public class PEAgentStatusView : MissionGauntletBattleUIBase
+    public class PEAgentStatusView : MissionGauntletAgentStatus// MissionGauntletBattleUIBase
     {
         private GauntletLayer _gauntletLayer;
         private PEHungerVM _dataSource;
@@ -91,23 +91,23 @@ namespace PersistentEmpires.Views.Views
         {
             base.OnMissionScreenInitialize();
             this._isInDeployement = (base.Mission.GetMissionBehavior<BattleDeploymentHandler>() != null);
-            if (this._isInDeployement)
-            {
-                this._deploymentMissionView = base.Mission.GetMissionBehavior<DeploymentMissionView>();
-                if (this._deploymentMissionView != null)
-                {
-                    DeploymentMissionView deploymentMissionView = this._deploymentMissionView;
-                    deploymentMissionView.OnDeploymentFinish = (OnPlayerDeploymentFinishDelegate)Delegate.Combine(deploymentMissionView.OnDeploymentFinish, new OnPlayerDeploymentFinishDelegate(this.OnDeploymentFinish));
-                }
-            }
+            //if (this._isInDeployement)
+            //{
+            //    this._deploymentMissionView = base.Mission.GetMissionBehavior<DeploymentMissionView>();
+            //    if (this._deploymentMissionView != null)
+            //    {
+            //        DeploymentMissionView deploymentMissionView = this._deploymentMissionView;
+            //        deploymentMissionView.OnDeploymentFinish = (OnPlayerDeploymentFinishDelegate)Delegate.Combine(deploymentMissionView.OnDeploymentFinish, new OnPlayerDeploymentFinishDelegate(this.OnDeploymentFinish));
+            //    }
+            //}
         }
 
         // Token: 0x0600018B RID: 395 RVA: 0x00008C57 File Offset: 0x00006E57
         private void OnDeploymentFinish()
         {
             this._isInDeployement = false;
-            DeploymentMissionView deploymentMissionView = this._deploymentMissionView;
-            deploymentMissionView.OnDeploymentFinish = (OnPlayerDeploymentFinishDelegate)Delegate.Remove(deploymentMissionView.OnDeploymentFinish, new OnPlayerDeploymentFinishDelegate(this.OnDeploymentFinish));
+            //DeploymentMissionView deploymentMissionView = this._deploymentMissionView;
+            //deploymentMissionView.OnDeploymentFinish = (OnPlayerDeploymentFinishDelegate)Delegate.Remove(deploymentMissionView.OnDeploymentFinish, new OnPlayerDeploymentFinishDelegate(this.OnDeploymentFinish));
         }
 
         // Token: 0x0600018C RID: 396 RVA: 0x00008C88 File Offset: 0x00006E88
@@ -202,15 +202,15 @@ namespace PersistentEmpires.Views.Views
         }
 
         // Token: 0x0600018F RID: 399 RVA: 0x00008D4D File Offset: 0x00006F4D
-        public override void OnAgentInteraction(Agent userAgent, Agent agent)
+        public override void OnAgentInteraction(Agent userAgent, Agent agent, sbyte agentBoneIndex)
         {
-            base.OnAgentInteraction(userAgent, agent);
+            base.OnAgentInteraction(userAgent, agent, agentBoneIndex);
             PEHungerVM dataSource = this._dataSource;
             if (dataSource == null)
             {
                 return;
             }
-            dataSource.OnAgentInteraction(userAgent, agent);
+            dataSource.OnAgentInteraction(userAgent, agent, agentBoneIndex);
         }
 
         // Token: 0x06000190 RID: 400 RVA: 0x00008D69 File Offset: 0x00006F69

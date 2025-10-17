@@ -90,7 +90,7 @@ namespace PersistentEmpiresLib.SceneScripts
         // Token: 0x06002BC4 RID: 11204 RVA: 0x000A9C04 File Offset: 0x000A7E04
         public PE_NativeGate()
         {
-            this._attackOnlyDoorColliders = new List<GameEntity>();
+            this._attackOnlyDoorColliders = new List<WeakGameEntity>();
         }
 
         // Token: 0x06002BC5 RID: 11205 RVA: 0x000A9CC2 File Offset: 0x000A7EC2
@@ -156,10 +156,10 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 return;
             }
-            List<GameEntity> list = base.GameEntity.CollectChildrenEntitiesWithTag("middle_pos");
+            var list = base.GameEntity.CollectChildrenEntitiesWithTag("middle_pos");
             if (list.Count > 0)
             {
-                GameEntity gameEntity2 = list.FirstOrDefault<GameEntity>();
+                var gameEntity2 = list.FirstOrDefault<WeakGameEntity>();
                 this.MiddlePosition = gameEntity2.GetFirstScriptOfType<TacticalPosition>();
                 MatrixFrame globalFrame = gameEntity2.GetGlobalFrame();
                 this._middleFrame = new WorldFrame(globalFrame.rotation, globalFrame.origin.ToWorldPosition());
@@ -170,10 +170,10 @@ namespace PersistentEmpiresLib.SceneScripts
                 MatrixFrame globalFrame2 = base.GameEntity.GetGlobalFrame();
                 this._middleFrame = new WorldFrame(globalFrame2.rotation, globalFrame2.origin.ToWorldPosition());
             }
-            List<GameEntity> list2 = base.GameEntity.CollectChildrenEntitiesWithTag("wait_pos");
+            var list2 = base.GameEntity.CollectChildrenEntitiesWithTag("wait_pos");
             if (list2.Count > 0)
             {
-                GameEntity gameEntity3 = list2.FirstOrDefault<GameEntity>();
+                var gameEntity3 = list2.FirstOrDefault<WeakGameEntity>();
                 this.WaitPosition = gameEntity3.GetFirstScriptOfType<TacticalPosition>();
                 MatrixFrame globalFrame3 = gameEntity3.GetGlobalFrame();
                 this._defenseWaitFrame = new WorldFrame(globalFrame3.rotation, globalFrame3.origin.ToWorldPosition());
@@ -193,9 +193,9 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             PE_RepairableDestructableComponent comp = base.GameEntity.GetFirstScriptOfType<PE_RepairableDestructableComponent>();
 
-            foreach (GameEntity entity in base.GameEntity.GetChildren().ToList())
+            foreach (var entity in base.GameEntity.GetChildren().ToList())
             {
-                if (entity != comp.BrokenState()) entity.SetVisibilityExcludeParents(true);
+                if (entity != comp.BrokenState() && entity.IsValid) entity.SetVisibilityExcludeParents(true);
             }
         }
 
@@ -273,9 +273,9 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         // Token: 0x06002BD2 RID: 11218 RVA: 0x000AA32D File Offset: 0x000A852D
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return new TextObject("{=6wZUG0ev}Gate", null).ToString();
+            return new TextObject("{=6wZUG0ev}Gate", null);
         }
 
         // Token: 0x06002BD3 RID: 11219 RVA: 0x000AA340 File Offset: 0x000A8540
@@ -378,12 +378,12 @@ namespace PersistentEmpiresLib.SceneScripts
                     MatrixFrame matrixFrame2 = this._doorSkeleton.GetBoneEntitialFrameWithIndex(this._rightDoorBoneIndex);
                     this._attackOnlyDoorColliders[0].SetFrame(ref matrixFrame2);
                     this._attackOnlyDoorColliders[1].SetFrame(ref matrixFrame);
-                    GameEntity agentColliderLeft = this._agentColliderLeft;
+                    var agentColliderLeft = this._agentColliderLeft;
                     if (agentColliderLeft != null)
                     {
                         agentColliderLeft.SetFrame(ref matrixFrame);
                     }
-                    GameEntity agentColliderRight = this._agentColliderRight;
+                    var agentColliderRight = this._agentColliderRight;
                     if (agentColliderRight != null)
                     {
                         agentColliderRight.SetFrame(ref matrixFrame2);
@@ -482,7 +482,7 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 MatrixFrame boneEntitialFrameWithName = this._doorSkeleton.GetBoneEntitialFrameWithName(this.RightDoorBoneName);
                 this._attackOnlyDoorColliders[0].SetFrame(ref boneEntitialFrameWithName);
-                GameEntity agentColliderRight2 = this._agentColliderRight;
+                var agentColliderRight2 = this._agentColliderRight;
                 if (agentColliderRight2 == null)
                 {
                     return;
@@ -669,7 +669,7 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         // Token: 0x06002BE2 RID: 11234 RVA: 0x000AAF30 File Offset: 0x000A9130
-        public GameEntity GetTargetEntity()
+        public WeakGameEntity GetTargetEntity()
         {
             return base.GameEntity;
         }
@@ -681,7 +681,7 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         // Token: 0x06002BE4 RID: 11236 RVA: 0x000AAF3B File Offset: 0x000A913B
-        public GameEntity Entity()
+        public WeakGameEntity Entity()
         {
             return base.GameEntity;
         }
@@ -692,10 +692,10 @@ namespace PersistentEmpiresLib.SceneScripts
             this.CollectDynamicGameEntities(calledFromOnInit);
             if (!GameNetwork.IsClientOrReplay)
             {
-                List<GameEntity> list = base.GameEntity.CollectChildrenEntitiesWithTag("plank");
+                var list = base.GameEntity.CollectChildrenEntitiesWithTag("plank");
                 if (list.Count > 0)
                 {
-                    this._plank = list.FirstOrDefault<GameEntity>().GetFirstScriptOfType<SynchedMissionObject>();
+                    this._plank = list.FirstOrDefault<WeakGameEntity>().GetFirstScriptOfType<SynchedMissionObject>();
                 }
             }
         }
@@ -704,10 +704,10 @@ namespace PersistentEmpiresLib.SceneScripts
         protected void CollectDynamicGameEntities(bool calledFromOnInit)
         {
             this._attackOnlyDoorColliders.Clear();
-            List<GameEntity> list;
+            List<WeakGameEntity> list;
             if (calledFromOnInit)
             {
-                list = base.GameEntity.CollectChildrenEntitiesWithTag("gate").ToList<GameEntity>();
+                list = base.GameEntity.CollectChildrenEntitiesWithTag("gate").ToList<WeakGameEntity>();
                 this._leftExtraColliderDisabled = false;
                 this._rightExtraColliderDisabled = false;
                 this._agentColliderLeft = base.GameEntity.GetFirstChildEntityWithTag("collider_agent_l");
@@ -717,7 +717,7 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 list = (from x in base.GameEntity.CollectChildrenEntitiesWithTag("gate")
                         where x.IsVisibleIncludeParents()
-                        select x).ToList<GameEntity>();
+                        select x).ToList<WeakGameEntity>();
             }
             if (list.Count == 0)
             {
@@ -727,9 +727,9 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 int num = int.MinValue;
                 int num2 = int.MaxValue;
-                GameEntity gameEntity = null;
-                GameEntity gameEntity2 = null;
-                foreach (GameEntity gameEntity3 in list)
+                WeakGameEntity? gameEntity = null;
+                WeakGameEntity? gameEntity2 = null;
+                foreach (var gameEntity3 in list)
                 {
                     int num3 = int.Parse(gameEntity3.Tags.FirstOrDefault((string x) => x.Contains("state_")).Split(new char[] { '_' }).Last<string>());
                     if (num3 > num)
@@ -743,37 +743,37 @@ namespace PersistentEmpiresLib.SceneScripts
                         gameEntity2 = gameEntity3;
                     }
                 }
-                this._door = (calledFromOnInit ? gameEntity2.GetFirstScriptOfType<SynchedMissionObject>() : gameEntity.GetFirstScriptOfType<SynchedMissionObject>());
+                this._door = (calledFromOnInit ? gameEntity2.Value.GetFirstScriptOfType<SynchedMissionObject>() : gameEntity.Value.GetFirstScriptOfType<SynchedMissionObject>());
             }
             else
             {
                 this._door = list[0].GetFirstScriptOfType<SynchedMissionObject>();
             }
             this._doorSkeleton = this._door.GameEntity.Skeleton;
-            GameEntity gameEntity4 = this._door.GameEntity.CollectChildrenEntitiesWithTag("collider_r").FirstOrDefault<GameEntity>();
+            var gameEntity4 = this._door.GameEntity.CollectChildrenEntitiesWithTag("collider_r").FirstOrDefault<WeakGameEntity>();
             if (gameEntity4 != null)
             {
                 this._attackOnlyDoorColliders.Add(gameEntity4);
             }
-            GameEntity gameEntity5 = this._door.GameEntity.CollectChildrenEntitiesWithTag("collider_l").FirstOrDefault<GameEntity>();
+            var gameEntity5 = this._door.GameEntity.CollectChildrenEntitiesWithTag("collider_l").FirstOrDefault<WeakGameEntity>();
             if (gameEntity5 != null)
             {
                 this._attackOnlyDoorColliders.Add(gameEntity5);
             }
             if (gameEntity4 == null || gameEntity5 == null)
             {
-                GameEntity agentColliderLeft = this._agentColliderLeft;
+                var agentColliderLeft = this._agentColliderLeft;
                 if (agentColliderLeft != null)
                 {
                     agentColliderLeft.SetVisibilityExcludeParents(false);
                 }
-                GameEntity agentColliderRight = this._agentColliderRight;
+                var agentColliderRight = this._agentColliderRight;
                 if (agentColliderRight != null)
                 {
                     agentColliderRight.SetVisibilityExcludeParents(false);
                 }
             }
-            GameEntity gameEntity6 = this._door.GameEntity.CollectChildrenEntitiesWithTag(this.ExtraCollisionObjectTagLeft).FirstOrDefault<GameEntity>();
+            var gameEntity6 = this._door.GameEntity.CollectChildrenEntitiesWithTag(this.ExtraCollisionObjectTagLeft).FirstOrDefault<WeakGameEntity>();
             if (gameEntity6 != null)
             {
                 if (!this.ActivateExtraColliders)
@@ -802,7 +802,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                 }
             }
-            GameEntity gameEntity7 = this._door.GameEntity.CollectChildrenEntitiesWithTag(this.ExtraCollisionObjectTagRight).FirstOrDefault<GameEntity>();
+            var gameEntity7 = this._door.GameEntity.CollectChildrenEntitiesWithTag(this.ExtraCollisionObjectTagRight).FirstOrDefault<WeakGameEntity>();
             if (gameEntity7 != null)
             {
                 if (!this.ActivateExtraColliders)
@@ -854,7 +854,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 this._extraColliderRight.SetVisibilityExcludeParents(true);
             }
             this.UpdateDoorBodies(true);
-            foreach (GameEntity gameEntity in this._attackOnlyDoorColliders)
+            foreach (var gameEntity in this._attackOnlyDoorColliders)
             {
                 gameEntity.SetVisibilityExcludeParents(true);
             }
@@ -903,7 +903,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
             PE_RepairableDestructableComponent comp = base.GameEntity.GetFirstScriptOfType<PE_RepairableDestructableComponent>();
 
-            foreach (GameEntity entity in base.GameEntity.GetChildren().ToList())
+            foreach (var entity in base.GameEntity.GetChildren().ToList())
             {
                 if (entity != comp.BrokenState()) entity.SetVisibilityExcludeParents(false);
             }
@@ -927,7 +927,7 @@ namespace PersistentEmpiresLib.SceneScripts
             if (base.GameEntity.HasTag("outer_gate"))
             {
                 uint visibilityMask = base.GameEntity.GetVisibilityLevelMaskIncludingParents();
-                GameEntity gameEntity = base.GameEntity.GetChildren().FirstOrDefault((GameEntity x) => x.HasTag("middle_pos") && x.GetVisibilityLevelMaskIncludingParents() == visibilityMask);
+                var gameEntity = base.GameEntity.GetChildren().FirstOrDefault((WeakGameEntity x) => x.HasTag("middle_pos") && x.GetVisibilityLevelMaskIncludingParents() == visibilityMask);
                 if (gameEntity != null)
                 {
                     GameEntity gameEntity2 = base.Scene.FindEntitiesWithTag("inner_gate").FirstOrDefault((GameEntity x) => x.GetVisibilityLevelMaskIncludingParents() == visibilityMask);
@@ -974,6 +974,26 @@ namespace PersistentEmpiresLib.SceneScripts
         public Vec3 GetTargetingOffset()
         {
             return Vec3.Zero;
+        }
+
+        public Vec3 GetTargetGlobalVelocity()
+        {
+            return Vec3.Zero;
+        }
+
+        public bool IsDestructable()
+        {
+            return true;
+        }
+
+        public Vec3 GetPhysicsGlobalBoxMax()
+        {
+            return GameEntity.PhysicsGlobalBoxMax;
+        }
+
+        public Vec3 GetPhysicsGlobalBoxMin()
+        {
+            return GameEntity.PhysicsGlobalBoxMin;
         }
 
         // Token: 0x04001139 RID: 4409
@@ -1052,22 +1072,22 @@ namespace PersistentEmpiresLib.SceneScripts
         public Skeleton _doorSkeleton;
 
         // Token: 0x04001160 RID: 4448
-        public GameEntity _extraColliderRight;
+        public WeakGameEntity _extraColliderRight;
 
         // Token: 0x04001161 RID: 4449
-        public GameEntity _extraColliderLeft;
+        public WeakGameEntity _extraColliderLeft;
 
         // Token: 0x04001162 RID: 4450
-        private readonly List<GameEntity> _attackOnlyDoorColliders;
+        private readonly List<WeakGameEntity> _attackOnlyDoorColliders;
 
         // Token: 0x04001163 RID: 4451
         private float _previousAnimationProgress = -1f;
 
         // Token: 0x04001164 RID: 4452
-        private GameEntity _agentColliderRight;
+        private WeakGameEntity _agentColliderRight;
 
         // Token: 0x04001165 RID: 4453
-        private GameEntity _agentColliderLeft;
+        private WeakGameEntity _agentColliderLeft;
 
         // Token: 0x04001166 RID: 4454
         private LadderQueueManager _queueManager;

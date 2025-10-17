@@ -52,7 +52,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 if (pickedAgents[a] == 0)
                 {
                     pickedAgents.Remove(a);
-                    EquipmentIndex index = a.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                    EquipmentIndex index = a.GetPrimaryWieldedItemIndex();
                     if (index != EquipmentIndex.None)
                     {
                         a.RemoveEquippedWeapon(index);
@@ -83,7 +83,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             if (affectorWeapon.Item.StringId == this.PoisionItemId)
             {
-                EquipmentIndex mainHandIndex = affectorAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                EquipmentIndex mainHandIndex = affectorAgent.GetPrimaryWieldedItemIndex();
                 if (mainHandIndex != EquipmentIndex.None && affectorAgent.Equipment[mainHandIndex].Item.StringId == this.PoisionItemId)
                 {
                     pickedAgents[affectorAgent] = 5;
@@ -94,7 +94,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             else if (affectorWeapon.Item.StringId == this.AntidoteItemId && this.Poisioned.ContainsKey(affectedAgent.MissionPeer.GetNetworkPeer()))
             {
-                EquipmentIndex mainHandIndex = affectorAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                EquipmentIndex mainHandIndex = affectorAgent.GetPrimaryWieldedItemIndex();
                 if (mainHandIndex != EquipmentIndex.None && affectorAgent.Equipment[mainHandIndex].Item.StringId == this.AntidoteItemId)
                 {
                     pickedAgents[affectorAgent] = 5;

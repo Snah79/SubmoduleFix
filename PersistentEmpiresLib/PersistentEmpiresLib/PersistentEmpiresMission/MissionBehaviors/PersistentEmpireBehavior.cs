@@ -75,7 +75,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public override MultiplayerGameType GetMissionType()
         {
-            return MultiplayerGameType.FreeForAll;
+            return MultiplayerGameType.Duel;
         }
         protected override void HandleEarlyNewClientAfterLoadingFinished(NetworkCommunicator networkPeer)
         {
@@ -152,9 +152,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                             affected = affectedAgent.RiderAgent.MissionPeer.GetNetworkPeer();
                         }
                         MissionWeapon weapon = new MissionWeapon();
-                        if (affectorAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand) != EquipmentIndex.None)
+                        if (affectorAgent.GetPrimaryWieldedItemIndex() != EquipmentIndex.None)
                         {
-                            weapon = affectorAgent.Equipment[affectorAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand)];
+                            weapon = affectorAgent.Equipment[affectorAgent.GetPrimaryWieldedItemIndex()];
                         }
                         LoggerHelper.LogAnAction(affectorAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerKilledAnAgent, affected == null ? new AffectedPlayer[] { } : new AffectedPlayer[] { new AffectedPlayer(affected) }, new object[] { weapon, affectedAgent });
                     }

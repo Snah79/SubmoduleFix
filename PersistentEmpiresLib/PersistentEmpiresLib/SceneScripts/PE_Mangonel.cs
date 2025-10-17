@@ -98,7 +98,7 @@ namespace PersistentEmpiresLib.SceneScripts
         // Token: 0x06002CC2 RID: 11458 RVA: 0x000AFE90 File Offset: 0x000AE090
         public override SiegeEngineType GetSiegeEngineType()
         {
-            if (this._defaultSide != BattleSideEnum.Attacker)
+            if (DefaultSide != BattleSideEnum.Attacker)
             {
                 return DefaultSiegeEngineTypes.Catapult;
             }
@@ -126,72 +126,84 @@ namespace PersistentEmpiresLib.SceneScripts
         // Token: 0x06002CC3 RID: 11459 RVA: 0x000AFEA8 File Offset: 0x000AE0A8
         protected override void OnInit()
         {
-            this.AmmoPickUpTag = null;
-            List<SynchedMissionObject> list = base.GameEntity.CollectObjectsWithTag<SynchedMissionObject>("rope");
+            var list = GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("rope");
+            
+            AmmoPickUpTag = null;
+            
             if (list.Count > 0)
             {
-                this._rope = list[0];
+                _rope = list[0];
             }
-            list = base.GameEntity.CollectObjectsWithTag<SynchedMissionObject>("body");
-            this._body = list.Count > 0 ? list[0] : this;
-            this.RotationObject = this._body;
-            List<GameEntity> list2 = base.GameEntity.CollectChildrenEntitiesWithTag("vertical_adjuster");
-            this._verticalAdjuster = list2[0];
-            if (this._verticalAdjuster.Skeleton != null)
+            
+            list = GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("body");
+            _body = list.Count > 0 ? list[0] : this;
+            RotationObject = _body;
+            
+            var list2 = GameEntity.CollectChildrenEntitiesWithTag("vertical_adjuster");
+
+            _verticalAdjuster = list2[0];
+            
+            if (_verticalAdjuster.Skeleton != null)
             {
-                this._verticalAdjuster.Skeleton.SetAnimationAtChannel(this.MangonelAimAnimation, 0, 1f, -1f, 0f);
+                _verticalAdjuster.Skeleton.SetAnimationAtChannel(MangonelAimAnimation, 0, 1f, -1f, 0f);
             }
-            this._verticalAdjusterStartingLocalFrame = this._verticalAdjuster.GetFrame();
-            this._verticalAdjusterStartingLocalFrame = this._body.GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToLocal(this._verticalAdjusterStartingLocalFrame);
+            _verticalAdjusterStartingLocalFrame = _verticalAdjuster.GetFrame();
+            _verticalAdjusterStartingLocalFrame = _body.GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToLocal(_verticalAdjusterStartingLocalFrame);
             base.OnInit();
             this.InitiateMoveSynch();
-            this.HitPoint = this.MaxHitPoint;
-            this.LoadAmmoStandingPoint.InitRequiredWeaponClasses(this.OriginalMissileItem.PrimaryWeapon.WeaponClass);
-            this.LoadAmmoStandingPoint.InitRequiredWeapon(null);
-            this.LoadAmmoStandingPoint.InitGivenWeapon(null);
-            this.timeGapBetweenShootActionAndProjectileLeaving = 0.23f;
-            this.timeGapBetweenShootingEndAndReloadingStart = 0f;
-            this._rotateStandingPoints = new List<StandingPoint>();
-            if (base.StandingPoints != null)
+            HitPoint = MaxHitPoint;
+            LoadAmmoStandingPoint.InitRequiredWeaponClasses(new WeaponClass[] { OriginalMissileItem.PrimaryWeapon.WeaponClass });
+            LoadAmmoStandingPoint.InitRequiredWeapon(null);
+            LoadAmmoStandingPoint.InitGivenWeapon(null);
+            TimeGapBetweenShootActionAndProjectileLeaving = 0.23f;
+            TimeGapBetweenShootingEndAndReloadingStart = 0f;
+            _rotateStandingPoints = new List<StandingPoint>();
+            
+            if (StandingPoints != null)
             {
                 foreach (StandingPoint standingPoint in base.StandingPoints)
                 {
                     if (standingPoint.GameEntity.HasTag("rotate"))
                     {
-                        if (standingPoint.GameEntity.HasTag("left") && this._rotateStandingPoints.Count > 0)
+                        if (standingPoint.GameEntity.HasTag("left") && _rotateStandingPoints.Count > 0)
                         {
-                            this._rotateStandingPoints.Insert(0, standingPoint);
+                            _rotateStandingPoints.Insert(0, standingPoint);
                         }
                         else
                         {
-                            this._rotateStandingPoints.Add(standingPoint);
+                            _rotateStandingPoints.Add(standingPoint);
                         }
                     }
                 }
-                MatrixFrame globalFrame = this._body.GameEntity.GetGlobalFrame();
-                this._standingPointLocalIKFrames = new MatrixFrame[base.StandingPoints.Count];
-                for (int i = 0; i < base.StandingPoints.Count; i++)
+                var globalFrame = _body.GameEntity.GetGlobalFrame();
+
+                _standingPointLocalIKFrames = new MatrixFrame[StandingPoints.Count];
+                
+                for (int i = 0; i < StandingPoints.Count; i++)
                 {
-                    this._standingPointLocalIKFrames[i] = base.StandingPoints[i].GameEntity.GetGlobalFrame().TransformToLocal(globalFrame);
-                    base.StandingPoints[i].AddComponent(new ClearHandInverseKinematicsOnStopUsageComponent());
+                    _standingPointLocalIKFrames[i] = StandingPoints[i].GameEntity.GetGlobalFrame().TransformToLocal(globalFrame);
+                    StandingPoints[i].AddComponent(new ClearHandInverseKinematicsOnStopUsageComponent());
                 }
             }
-            this._missileBoneIndex = Skeleton.GetBoneIndexFromName(this.SkeletonOwnerObjects[0].GameEntity.Skeleton.GetName(), this._missileBoneName);
-            this.ApplyAimChange();
-            foreach (StandingPoint standingPoint2 in this.ReloadStandingPoints)
+
+            _missileBoneIndex = Skeleton.GetBoneIndexFromName(SkeletonOwnerObjects[0].GameEntity.Skeleton.GetName(), _missileBoneName);
+            ApplyAimChange();
+
+            foreach (var standingPoint2 in ReloadStandingPoints)
             {
-                if (standingPoint2 != base.PilotStandingPoint)
+                if (standingPoint2 != PilotStandingPoint)
                 {
-                    this._reloadWithoutPilot = standingPoint2;
+                    _reloadWithoutPilot = standingPoint2;
                 }
             }
             if (!GameNetwork.IsClientOrReplay)
             {
                 // this.SetActivationLoadAmmoPoint(false);
             }
-            this.EnemyRangeToStopUsing = 7f;
-            this.moverStandingPoint = base.GameEntity.GetFirstChildEntityWithTag(this.MoverStandingPointTag).GetFirstScriptOfType<StandingPoint>();
-            base.SetScriptComponentToTick(this.GetTickRequirement());
+
+            EnemyRangeToStopUsing = 7f;
+            moverStandingPoint = GameEntity.GetFirstChildEntityWithTag(MoverStandingPointTag).GetFirstScriptOfType<StandingPoint>();
+            SetScriptComponentToTick(GetTickRequirement());
         }
 
         // Token: 0x06002CC4 RID: 11460 RVA: 0x000B0180 File Offset: 0x000AE380
@@ -347,7 +359,7 @@ namespace PersistentEmpiresLib.SceneScripts
                                     return;
                                 }
                             }
-                            else if (!userAgent.SetActionChannel(1, PE_Mangonel.act_pickup_boulder_begin, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && userAgent.Controller != Agent.ControllerType.AI)
+                            else if (!userAgent.SetActionChannel(1, PE_Mangonel.act_pickup_boulder_begin, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && userAgent.Controller != AgentControllerType.AI)
                             {
                                 userAgent.StopUsingGameObject(true);
                             }
@@ -365,7 +377,7 @@ namespace PersistentEmpiresLib.SceneScripts
                             Agent userAgent2 = this.LoadAmmoStandingPoint.UserAgent;
                             if (userAgent2.GetCurrentAction(1) == this._loadAmmoEndAnimationActionIndex)
                             {
-                                EquipmentIndex wieldedItemIndex = userAgent2.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                                EquipmentIndex wieldedItemIndex = userAgent2.GetPrimaryWieldedItemIndex();// GetWieldedItemIndex(Agent.HandIndex.MainHand);
                                 Debug.Print(wieldedItemIndex.ToString());
                                 if (wieldedItemIndex != EquipmentIndex.None && userAgent2.Equipment[wieldedItemIndex].CurrentUsageItem.WeaponClass == this.OriginalMissileItem.PrimaryWeapon.WeaponClass)
                                 {
@@ -403,7 +415,7 @@ namespace PersistentEmpiresLib.SceneScripts
                         else if (this.LoadAmmoStandingPoint.HasAIMovingTo)
                         {
                             Agent movingAgent = this.LoadAmmoStandingPoint.MovingAgent;
-                            EquipmentIndex wieldedItemIndex2 = movingAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                            EquipmentIndex wieldedItemIndex2 = movingAgent.GetPrimaryWieldedItemIndex();// WieldedItemIndex(Agent.HandIndex.MainHand);
                             if (wieldedItemIndex2 == EquipmentIndex.None || movingAgent.Equipment[wieldedItemIndex2].CurrentUsageItem.WeaponClass != this.OriginalMissileItem.PrimaryWeapon.WeaponClass)
                             {
                                 movingAgent.StopUsingGameObject(true);
@@ -439,53 +451,53 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnTickParallel(float dt)
         {
             base.OnTickParallel(dt);
-            if (!base.GameEntity.IsVisibleIncludeParents())
+            if (!GameEntity.IsVisibleIncludeParents())
             {
                 return;
             }
-            if (base.State == RangedSiegeWeapon.WeaponState.WaitingBeforeProjectileLeaving)
+            if (State == RangedSiegeWeapon.WeaponState.WaitingBeforeProjectileLeaving)
             {
-                this.UpdateProjectilePosition();
+                UpdateProjectilePosition();
             }
-            if (this._verticalAdjuster.Skeleton != null)
+            if (_verticalAdjuster.Skeleton != null)
             {
-                float parameter = MBMath.ClampFloat((this.currentReleaseAngle - this.BottomReleaseAngleRestriction) / (this.TopReleaseAngleRestriction - this.BottomReleaseAngleRestriction), 0f, 1f);
-                this._verticalAdjuster.Skeleton.SetAnimationParameterAtChannel(0, parameter);
+                float parameter = MBMath.ClampFloat((CurrentReleaseAngle - BottomReleaseAngleRestriction) / (TopReleaseAngleRestriction - BottomReleaseAngleRestriction), 0f, 1f);
+                _verticalAdjuster.Skeleton.SetAnimationParameterAtChannel(0, parameter);
             }
-            MatrixFrame matrixFrame = this.SkeletonOwnerObjects[0].GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToParent(this._verticalAdjusterStartingLocalFrame);
-            this._verticalAdjuster.SetFrame(ref matrixFrame);
-            MatrixFrame globalFrame = this._body.GameEntity.GetGlobalFrame();
-            for (int i = 0; i < base.StandingPoints.Count; i++)
+            var matrixFrame = SkeletonOwnerObjects[0].GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToParent(_verticalAdjusterStartingLocalFrame);
+            _verticalAdjuster.SetFrame(ref matrixFrame);
+            var globalFrame = _body.GameEntity.GetGlobalFrame();
+            for (int i = 0; i < StandingPoints.Count; i++)
             {
-                if (base.StandingPoints[i].HasUser)
+                if (StandingPoints[i].HasUser)
                 {
-                    if (base.StandingPoints[i].UserAgent.IsInBeingStruckAction)
+                    if (StandingPoints[i].UserAgent.IsInBeingStruckAction)
                     {
-                        base.StandingPoints[i].UserAgent.ClearHandInverseKinematics();
+                        StandingPoints[i].UserAgent.ClearHandInverseKinematics();
                     }
-                    else if (base.StandingPoints[i] != base.PilotStandingPoint)
+                    else if (StandingPoints[i] != PilotStandingPoint)
                     {
-                        if (base.StandingPoints[i].UserAgent.GetCurrentAction(1) != this._reload2IdleActionIndex)
+                        if (StandingPoints[i].UserAgent.GetCurrentAction(1) != _reload2IdleActionIndex)
                         {
-                            base.StandingPoints[i].UserAgent.SetHandInverseKinematicsFrameForMissionObjectUsage(this._standingPointLocalIKFrames[i], globalFrame, 0f);
+                            StandingPoints[i].UserAgent.SetHandInverseKinematicsFrameForMissionObjectUsage(_standingPointLocalIKFrames[i], globalFrame, 0f);
                         }
                         else
                         {
-                            base.StandingPoints[i].UserAgent.ClearHandInverseKinematics();
+                            StandingPoints[i].UserAgent.ClearHandInverseKinematics();
                         }
                     }
                     else
                     {
-                        base.StandingPoints[i].UserAgent.SetHandInverseKinematicsFrameForMissionObjectUsage(this._standingPointLocalIKFrames[i], globalFrame, 0f);
+                        StandingPoints[i].UserAgent.SetHandInverseKinematicsFrameForMissionObjectUsage(_standingPointLocalIKFrames[i], globalFrame, 0f);
                     }
                 }
             }
             if (!GameNetwork.IsClientOrReplay)
             {
-                for (int j = 0; j < this._rotateStandingPoints.Count; j++)
+                for (int j = 0; j < _rotateStandingPoints.Count; j++)
                 {
-                    StandingPoint standingPoint = this._rotateStandingPoints[j];
-                    if (standingPoint.HasUser && !standingPoint.UserAgent.SetActionChannel(1, (j == 0) ? this._rotateLeftAnimationActionIndex : this._rotateRightAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && standingPoint.UserAgent.Controller != Agent.ControllerType.AI)
+                    StandingPoint standingPoint = _rotateStandingPoints[j];
+                    if (standingPoint.HasUser && !standingPoint.UserAgent.SetActionChannel(1, (j == 0) ? _rotateLeftAnimationActionIndex : _rotateRightAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && standingPoint.UserAgent.Controller != AgentControllerType.AI)
                     {
                         standingPoint.UserAgent.StopUsingGameObjectMT(true);
                     }
@@ -502,12 +514,12 @@ namespace PersistentEmpiresLib.SceneScripts
                                 base.PilotAgent.SetActionChannel(1, PE_Mangonel.act_strike_bent_over, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                             }
                         }
-                        else if (!base.PilotAgent.SetActionChannel(1, this._shootAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && base.PilotAgent.Controller != Agent.ControllerType.AI)
+                        else if (!base.PilotAgent.SetActionChannel(1, this._shootAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && base.PilotAgent.Controller != AgentControllerType.AI)
                         {
                             base.PilotAgent.StopUsingGameObjectMT(true);
                         }
                     }
-                    else if (!base.PilotAgent.SetActionChannel(1, this._idleAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && currentAction != this._reload1AnimationActionIndex && currentAction != this._shootAnimationActionIndex && base.PilotAgent.Controller != Agent.ControllerType.AI)
+                    else if (!base.PilotAgent.SetActionChannel(1, this._idleAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && currentAction != this._reload1AnimationActionIndex && currentAction != this._shootAnimationActionIndex && base.PilotAgent.Controller != AgentControllerType.AI)
                     {
                         base.PilotAgent.StopUsingGameObjectMT(true);
                     }
@@ -515,7 +527,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 if (this._reloadWithoutPilot.HasUser)
                 {
                     Agent userAgent = this._reloadWithoutPilot.UserAgent;
-                    if (!userAgent.SetActionChannel(1, this._reload2IdleActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && userAgent.GetCurrentAction(1) != this._reload2AnimationActionIndex && userAgent.Controller != Agent.ControllerType.AI)
+                    if (!userAgent.SetActionChannel(1, this._reload2IdleActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && userAgent.GetCurrentAction(1) != this._reload2AnimationActionIndex && userAgent.Controller != AgentControllerType.AI)
                     {
                         userAgent.StopUsingGameObjectMT(true);
                     }
@@ -535,7 +547,7 @@ namespace PersistentEmpiresLib.SceneScripts
                         else if (!GameNetwork.IsClientOrReplay)
                         {
                             ActionIndexCache actionIndexCache = (standingPoint2 == base.PilotStandingPoint) ? this._reload1AnimationActionIndex : this._reload2AnimationActionIndex;
-                            if (!standingPoint2.UserAgent.SetActionChannel(1, actionIndexCache, false, 0UL, 0f, 1f, -0.2f, 0.4f, this._body.GameEntity.Skeleton.GetAnimationParameterAtChannel(0), false, -0.2f, 0, true) && standingPoint2.UserAgent.Controller != Agent.ControllerType.AI)
+                            if (!standingPoint2.UserAgent.SetActionChannel(1, actionIndexCache, false, 0UL, 0f, 1f, -0.2f, 0.4f, this._body.GameEntity.Skeleton.GetAnimationParameterAtChannel(0), false, -0.2f, 0, true) && standingPoint2.UserAgent.Controller != AgentControllerType.AI)
                             {
                                 standingPoint2.UserAgent.StopUsingGameObjectMT(true);
                             }
@@ -608,10 +620,11 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             get
             {
-                if (this._defaultSide == BattleSideEnum.Defender)
+                if (DefaultSide == BattleSideEnum.Defender)
                 {
                     return 0.25f;
                 }
+
                 return 0.05f + (from rotateStandingPoint in this._rotateStandingPoints
                                 where rotateStandingPoint.HasUser && !rotateStandingPoint.UserAgent.IsInBeingStruckAction
                                 select rotateStandingPoint).Sum((StandingPoint rotateStandingPoint) => 0.1f);
@@ -635,7 +648,7 @@ namespace PersistentEmpiresLib.SceneScripts
             get
             {
                 Mat3 rotation = this._body.GameEntity.GetGlobalFrame().rotation;
-                rotation.RotateAboutSide(-this.currentReleaseAngle);
+                rotation.RotateAboutSide(-CurrentReleaseAngle);
                 return rotation.TransformToParent(new Vec3(0f, -1f, 0f, -1f));
             }
         }
@@ -688,13 +701,13 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         // Token: 0x06002CD4 RID: 11476 RVA: 0x000B0DEA File Offset: 0x000AEFEA
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
             if (!gameEntity.HasTag(this.AmmoPickUpTag))
             {
-                return new TextObject("{=NbpcDXtJ}Mangonel", null).ToString();
+                return new TextObject("{=NbpcDXtJ}Mangonel", null);
             }
-            return new TextObject("{=pzfbPbWW}Boulder", null).ToString();
+            return new TextObject("{=pzfbPbWW}Boulder", null);
         }
 
         // Token: 0x06002CD5 RID: 11477 RVA: 0x000B0E1C File Offset: 0x000AF01C
@@ -878,7 +891,7 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
 
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
             reportDamage = true;
             MissionWeapon missionWeapon = weapon;
@@ -899,6 +912,8 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 LoggerHelper.LogAnAction(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerHitToDestructable, null, new object[] { this.GetType().Name });
             }
+            
+            finalDamage = damage;
 
             return false;
         }
@@ -982,7 +997,7 @@ namespace PersistentEmpiresLib.SceneScripts
         private SynchedMissionObject _rope;
 
         // Token: 0x040011C0 RID: 4544
-        private GameEntity _verticalAdjuster;
+        private WeakGameEntity _verticalAdjuster;
 
         // Token: 0x040011C1 RID: 4545
         private MatrixFrame _verticalAdjusterStartingLocalFrame;

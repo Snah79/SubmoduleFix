@@ -37,14 +37,14 @@ namespace PersistentEmpiresLib.SceneScripts
         private int CurrentCount = 0;
         private ItemObject DropsItemObject;
 
-        protected override bool LockUserFrames
+        public override bool LockUserFrames
         {
             get
             {
                 return false;
             }
         }
-        protected override bool LockUserPositions
+        public override bool LockUserPositions
         {
             get
             {
@@ -128,15 +128,15 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             if (!isDestroyed)
             {
-                this.CurrentCount = this.ItemCount;
-                base.GameEntity.SetVisibilityExcludeParents(true);
-                this.IsDestroyed = false;
+                CurrentCount = this.ItemCount;
+                GameEntity.SetVisibilityExcludeParents(true);
+                IsDestroyed = false;
             }
             else
             {
-                this.IsDestroyed = true;
-                base.GameEntity.SetVisibilityExcludeParents(false);
-                this.DestroyedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                IsDestroyed = true;
+                GameEntity.SetVisibilityExcludeParents(false);
+                DestroyedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             }
 
 
@@ -177,7 +177,7 @@ namespace PersistentEmpiresLib.SceneScripts
             userAgent.ClearTargetFrame();
         }
 
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             if (GameNetwork.IsServer)
             {
@@ -195,7 +195,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     userAgent.StopUsingGameObjectMT(false);
                     return;
                 }
-                EquipmentIndex wieldedItemIndex = userAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                EquipmentIndex wieldedItemIndex = userAgent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
                 // MissionWeapon wieldedItem = userAgent.Equipment[wieldedItemIndex];
                 if (this.NeededItem == "" && wieldedItemIndex != EquipmentIndex.None)
                 {
@@ -247,7 +247,7 @@ namespace PersistentEmpiresLib.SceneScripts
             this.UseWillEndAt = this.UseStartedAt + this.AnimationDurationInSeconds;
             if (this.RotateWhenUsage)
             {
-                GameEntity entity = base.GameEntity.GetFirstChildEntityWithTag(this.LookPointTag);
+                var entity = base.GameEntity.GetFirstChildEntityWithTag(this.LookPointTag);
                 GameEntityWithWorldPosition gameEntityWithWorldPosition = new GameEntityWithWorldPosition(entity);
                 WorldFrame userFrameLook = gameEntityWithWorldPosition.WorldFrame;
                 WorldFrame userFrameForAgent = this.GetUserFrameForAgent(userAgent);
@@ -261,11 +261,11 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 PEInformationManager.StartCounter("Gathering " + this.DropsItemObject.Name.ToString() + "...", this.AnimationDurationInSeconds);
             }
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
         }
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Item Gathering";
+            return new TextObject("Item Gathering");
         }
     }
 }

@@ -16,6 +16,7 @@ using PersistentEmpiresLib.Helpers;
 using PersistentEmpires.Views.Views;
 using TaleWorlds.Core.ViewModelCollection.Information;
 using System.Linq;
+using TaleWorlds.Core.ImageIdentifiers;
 
 namespace PersistentEmpires.Views.Views
 {
@@ -62,7 +63,7 @@ namespace PersistentEmpires.Views.Views
             list.Add(new EscapeMenuItemVM(new TextObject("{=e139gKZc}Return to the Game", null), delegate (object o)
             {
                 base.OnEscapeMenuToggled(false);
-            }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+            }, null, () => new Tuple<bool, TextObject>(false, new TextObject("")), false));
             list.Add(new EscapeMenuItemVM(new TextObject("{=NqarFr4P}Options", null), delegate (object o)
             {
                 base.OnEscapeMenuToggled(false);
@@ -72,14 +73,14 @@ namespace PersistentEmpires.Views.Views
                     return;
                 }
                 missionOptionsComponent.OnAddOptionsUIHandler();
-            }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+            }, null, () => new Tuple<bool, TextObject>(false, new TextObject("")), false));
             if (this._proximityChatComponent != null)
             {
                 list.Add(new EscapeMenuItemVM(GameTexts.FindText("EscapeMenuVC", null), delegate (object o)
                 {
                     base.OnEscapeMenuToggled(false);
                     this._proximityChatComponent.HandleOption();
-                }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+                }, null, () => new Tuple<bool, TextObject>(false, new TextObject("")), false));
             }
             if (_persistentEmpireRepresentative != null && _persistentEmpireRepresentative.IsAdmin)
             {
@@ -88,7 +89,7 @@ namespace PersistentEmpires.Views.Views
                     base.OnEscapeMenuToggled(false);
                     this._adminBehavior.HandleAdminPanelClick();
 
-                }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+                }, null, () => new Tuple<bool, TextObject>(false, new TextObject("")), false));
             }
 
             if (_persistentEmpireRepresentative != null && _persistentEmpireRepresentative.GetFaction() != null && (_persistentEmpireRepresentative.GetFaction().lordId == GameNetwork.MyPeer.VirtualPlayer.ToPlayerId() || _persistentEmpireRepresentative.GetFaction().marshalls.Contains(GameNetwork.MyPeer.VirtualPlayer.ToPlayerId())))
@@ -101,7 +102,7 @@ namespace PersistentEmpires.Views.Views
                         return;
                     }
                     this._factionManagementComponent.OnFactionManagementClickHandler();
-                }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+                }, null, () => new Tuple<bool, TextObject>(false, new TextObject("")), false));
             }
             if (_persistentEmpireRepresentative != null && _persistentEmpireRepresentative.CanUsePoll && _persistentEmpireRepresentative.GetFactionIndex() > 1)
             {
@@ -115,7 +116,7 @@ namespace PersistentEmpires.Views.Views
                     MissionPeer myPeer = GameNetwork.MyPeer.GetComponent<MissionPeer>();
                     // this._factionPollComponent.RequestLordPlayerPoll(GameNetwork.MyPeer);
                     this._factionManagementComponent.OnFactionLordPollClickHandler();
-                }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+                }, null, () => new Tuple<bool, TextObject>(false, new TextObject("")), false));
             }
             if (_persistentEmpireRepresentative != null && _persistentEmpireRepresentative.CanUseSuicide)
             {
@@ -136,7 +137,7 @@ namespace PersistentEmpires.Views.Views
 
                     });
                     InformationManager.ShowInquiry(inquiry);
-                }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+                }, null, () => new Tuple<bool, TextObject>(false, new TextObject("")), false));
             }
             if (_persistentEmpireRepresentative != null && _persistentEmpireRepresentative.CanUseChangeColors)
             {
@@ -146,7 +147,7 @@ namespace PersistentEmpires.Views.Views
                     {
                         ExecuteChangeColor();
                         base.OnEscapeMenuToggled(false);
-                    }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+                    }, null, () => new Tuple<bool, TextObject>(false, new TextObject("")), false));
                 }
             }
             //list.Add(new EscapeMenuItemVM(new TextObject("Respawn", null), delegate (object o)
@@ -205,7 +206,7 @@ namespace PersistentEmpires.Views.Views
                             }
                             gameClient.QuitFromMatchmakerGame();
                         }, null, "", 0f, null), false, false);
-            }, null, () => new Tuple<bool, TextObject>(false, TextObject.Empty), false));
+            }, null, () => new Tuple<bool, TextObject>(false, new TextObject("")), false));
             return list;
         }
         
@@ -219,7 +220,7 @@ namespace PersistentEmpires.Views.Views
 
             for (int i = 0; i < 194; i++)
             {
-                tmp.Add(new InquiryElement(i, $"{i}", new ImageIdentifier(Banner.CreateOneColoredEmptyBanner(i))));
+                tmp.Add(new InquiryElement(i, $"{i}", new BannerImageIdentifier(Banner.CreateOneColoredEmptyBanner(i))));
             }
 
             return tmp;

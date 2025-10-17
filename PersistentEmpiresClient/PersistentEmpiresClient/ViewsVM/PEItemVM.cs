@@ -1,5 +1,6 @@
 ﻿using System;
 using TaleWorlds.Core;
+using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
 using TaleWorlds.Library;
 
 namespace PersistentEmpires.Views.ViewsVM
@@ -7,7 +8,7 @@ namespace PersistentEmpires.Views.ViewsVM
     public class PEItemVM : ViewModel
     {
         public ItemObject Item;
-        private ImageIdentifierVM _imageIdentifierVM;
+        private ItemImageIdentifierVM _imageIdentifierVM;
         private int _count;
         private Action<PEItemVM, PEItemVM> _executeTransfer;
         private Action<PEItemVM> _handleClickItem;
@@ -19,11 +20,11 @@ namespace PersistentEmpires.Views.ViewsVM
             this.Item = item;
             if (item != null)
             {
-                this.ImageIdentifier = new ImageIdentifierVM(item);
+                this.ImageIdentifier = new ItemImageIdentifierVM(item);
             }
             else
             {
-                this.ImageIdentifier = new ImageIdentifierVM();
+                this.ImageIdentifier = new ItemImageIdentifierVM(null);
             }
             this.Count = count;
             this.DropTag = dropTag;
@@ -38,13 +39,13 @@ namespace PersistentEmpires.Views.ViewsVM
             {
                 this.Count = 0;
                 this.Item = null;
-                this.ImageIdentifier = new ImageIdentifierVM();
+                this.ImageIdentifier = new ItemImageIdentifierVM(null);
             }
             else
             {
                 this.Count = 1;
                 this.Item = equipmentItem.Item;
-                this.ImageIdentifier = new ImageIdentifierVM(equipmentItem.Item);
+                this.ImageIdentifier = new ItemImageIdentifierVM(equipmentItem.Item);
             }
             this.DropTag = dropTag;
             this._executeTransfer = executeTranfser;
@@ -55,7 +56,7 @@ namespace PersistentEmpires.Views.ViewsVM
         {
             this.Count = 0;
             this.Item = null;
-            this.ImageIdentifier = new ImageIdentifierVM();
+            this.ImageIdentifier = new ItemImageIdentifierVM(null);
             this.DropTag = dropTag;
             this._executeTransfer = executeTranfser;
         }
@@ -64,11 +65,11 @@ namespace PersistentEmpires.Views.ViewsVM
         {
             if (this.Item != null)
             {
-                this.ImageIdentifier = new ImageIdentifierVM(this.Item);
+                this.ImageIdentifier = new ItemImageIdentifierVM(this.Item);
             }
             else
             {
-                this.ImageIdentifier = new ImageIdentifierVM();
+                this.ImageIdentifier = new ItemImageIdentifierVM(null);
             }
         }
         public string DropTag { get; set; }
@@ -113,7 +114,7 @@ namespace PersistentEmpires.Views.ViewsVM
         }
 
         [DataSourceProperty]
-        public ImageIdentifierVM ImageIdentifier
+        public ItemImageIdentifierVM ImageIdentifier
         {
             get => this._imageIdentifierVM;
             set

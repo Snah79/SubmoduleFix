@@ -29,7 +29,8 @@ namespace PersistentEmpires.Views.Views
         // Token: 0x060004A4 RID: 1188 RVA: 0x000235D4 File Offset: 0x000217D4
         private UsableMachine GetUsableMachineFromPoint(StandingPoint standingPoint)
         {
-            GameEntity gameEntity = standingPoint.GameEntity;
+            var gameEntity = standingPoint.GameEntity;
+
             while (gameEntity != null && !gameEntity.HasScriptOfType<RangedSiegeWeapon>())
             {
                 gameEntity = gameEntity.Parent;

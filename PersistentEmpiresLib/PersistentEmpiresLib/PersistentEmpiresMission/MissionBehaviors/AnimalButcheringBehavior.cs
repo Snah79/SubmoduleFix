@@ -54,7 +54,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 {
                     return;
                 }
-                EquipmentIndex mainHandIndex = affectorAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                EquipmentIndex mainHandIndex = affectorAgent.GetPrimaryWieldedItemIndex();
                 if (mainHandIndex == EquipmentIndex.None) return;
 
                 ItemObject item = affectorAgent.Equipment[mainHandIndex].Item;

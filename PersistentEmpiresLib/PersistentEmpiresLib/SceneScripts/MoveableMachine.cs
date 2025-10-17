@@ -118,7 +118,7 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         abstract public void SetHitPoint(float hitPoint, Vec3 impactDirection);
-        abstract protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage);
+        abstract protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage);
         abstract public bool IsStray();
 
         abstract public void ResetStrayDuration();

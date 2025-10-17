@@ -24,14 +24,14 @@ namespace PersistentEmpiresLib.SceneScripts
         public int RequiredSkill = 10;
         public bool HideItemOnAnimation = false;
         private EquipmentIndex HiddenItemIndex = EquipmentIndex.None;
-        protected override bool LockUserFrames
+        public override bool LockUserFrames
         {
             get
             {
                 return true;
             }
         }
-        protected override bool LockUserPositions
+        public override bool LockUserPositions
         {
             get
             {
@@ -39,9 +39,9 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return this.Name;
+            return new TextObject(Name);
         }
 
         protected override void OnInit()
@@ -103,7 +103,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                     else
                     {
-                        mainHandIndex = userAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                        mainHandIndex = userAgent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
                     }
 
                     bool flag = true;
@@ -137,7 +137,7 @@ namespace PersistentEmpiresLib.SceneScripts
             userAgent.ClearTargetFrame();
         }
 
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             if (GameNetwork.IsServer)
             {
@@ -148,7 +148,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     return;
                 }
 
-                EquipmentIndex mainHandIndex = userAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                EquipmentIndex mainHandIndex = userAgent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
                 if (mainHandIndex == EquipmentIndex.None)
                 {
                     userAgent.StopUsingGameObjectMT(false);
@@ -191,7 +191,7 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 PEInformationManager.StartCounter("Converting...", this.AnimationDurationInSeconds);
             }
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
         }
     }
 }

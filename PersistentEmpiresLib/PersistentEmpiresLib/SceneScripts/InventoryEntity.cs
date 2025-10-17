@@ -77,8 +77,8 @@ namespace PersistentEmpiresLib.SceneScripts
         private static readonly ActionIndexCache act_pickup_from_left_up_horseback_end = ActionIndexCache.Create("act_pickup_from_left_up_horseback_end");
         private static readonly ActionIndexCache act_pickup_from_left_up_horseback_left_begin = ActionIndexCache.Create("act_pickup_from_left_up_horseback_left_begin");
         private static readonly ActionIndexCache act_pickup_from_left_up_horseback_left_end = ActionIndexCache.Create("act_pickup_from_left_up_horseback_left_end");
-        protected override bool LockUserFrames { get => false; }
-        protected override bool LockUserPositions { get => false; }
+        public override bool LockUserFrames { get => false; }
+        public override bool LockUserPositions { get => false; }
 
         private string GenerateId()
         {
@@ -180,9 +180,9 @@ namespace PersistentEmpiresLib.SceneScripts
             return this.ValidateValues();
         }
 
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Use Inventory";
+            return new TextObject("Use Inventory");
         }
         public PE_CastleBanner GetCastleBanner()
         {
@@ -202,7 +202,7 @@ namespace PersistentEmpiresLib.SceneScripts
             // userAgent.StopUsingGameObjectMT(true);            
         }        
 
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             float distance = base.GameEntity.GetGlobalFrame().origin.Distance(userAgent.Position);
             if (distance >= this.Distance)
@@ -211,7 +211,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 return;
             }
 
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
             Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name + " ID " + this.InventoryId + " PLAYER " + userAgent.MissionPeer.DisplayedName);
             if (this.GameEntity == null || this.InteractionEntity == null) return;
 

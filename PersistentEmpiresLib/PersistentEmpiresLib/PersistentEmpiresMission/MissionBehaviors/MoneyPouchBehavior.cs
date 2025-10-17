@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Core;
+using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
@@ -124,10 +125,14 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private void DropMoney(MatrixFrame frame, int amount)
         {
-            PE_MoneyBag moneyBag = (PE_MoneyBag)base.Mission.CreateMissionObjectFromPrefab("pe_moneybag", frame);
+            PE_MoneyBag moneyBag = (PE_MoneyBag)base.Mission.CreateMissionObjectFromPrefab("pe_moneybag", frame, Default);
             this.MoneyBagCreatedAt[moneyBag] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             moneyBag.SetAmount(amount);
 
+        }
+
+        private void Default(GameEntity entity)
+        {
         }
 
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)

@@ -24,7 +24,7 @@ namespace PersistentEmpires.Views.Views
             base.OnMissionTick(dt);
             
             var canPlay = _instrumentsBehavior.CanPlay();
-            var defendClick = HotKeyManager.GetCategory("CombatHotKeyCategory").GetGameKey("Defend");
+            var defendClick = HotKeyManager.GetCategory("CombatHotKeyCategory").GetGameKey(CombatHotKeyCategory.Defend);
                         
             if (MissionScreen.SceneLayer.Input.IsGameKeyReleased(defendClick.Id) && canPlay)
             {
@@ -41,7 +41,7 @@ namespace PersistentEmpires.Views.Views
             }
             else if (IsPLaying && GameNetwork.MyPeer?.ControlledAgent != null &&
                     ((_instrumentsBehavior.AgentsPlayingSound.ContainsKey(GameNetwork.MyPeer.ControlledAgent)
-                    && GameNetwork.MyPeer.ControlledAgent.GetCurrentAction(0).Name == "act_none")
+                    && GameNetwork.MyPeer.ControlledAgent.GetCurrentAction(0).GetName() == "act_none")
                     || !canPlay))
             {
                 _instrumentsBehavior.RequestStopPlaying();

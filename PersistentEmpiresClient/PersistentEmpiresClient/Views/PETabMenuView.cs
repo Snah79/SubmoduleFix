@@ -13,6 +13,7 @@ using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
 using PersistentEmpiresLib.Helpers;
+using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
 
 namespace PersistentEmpires.Views.Views
 {
@@ -180,9 +181,8 @@ namespace PersistentEmpires.Views.Views
 
         private void OnFactionUpdate(int factionIndex, Faction faction)
         {
-            this._dataSource.Factions[factionIndex].FactionName = faction.name;
-            BannerCode bannerCode = BannerCode.CreateFrom(faction.banner);
-            this._dataSource.Factions[factionIndex].BannerImage = new ImageIdentifierVM(bannerCode, true);
+            this._dataSource.Factions[factionIndex].FactionName = faction.name;            
+            this._dataSource.Factions[factionIndex].BannerImage = new BannerImageIdentifierVM(faction.banner, true);
             this._dataSource.Factions[factionIndex].RefreshValues();
         }
         private void InitializeLayer()

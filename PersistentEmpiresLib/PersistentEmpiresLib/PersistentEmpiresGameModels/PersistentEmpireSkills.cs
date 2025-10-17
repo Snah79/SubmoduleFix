@@ -45,7 +45,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
         private static SkillObject InitializeSkill(Game game, string stringId, string name, string description)
         {
             SkillObject skillObject = game.ObjectManager.RegisterPresumedObject<SkillObject>(new SkillObject(stringId));
-            skillObject.Initialize(new TextObject(name, null), new TextObject(description, null), SkillObject.SkillTypeEnum.Personal);
+            skillObject.Initialize(new TextObject(name, null), new TextObject(description, null), new CharacterAttribute[1]);
             return skillObject;
         }
     }

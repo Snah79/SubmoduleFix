@@ -13,13 +13,13 @@ namespace PersistentEmpires.Views
     public class BannerRender
     {
         public Banner RenderBanner { get; set; }
-        public GameEntity RenderOnTo { get; set; }
+        public WeakGameEntity RenderOnTo { get; set; }
     }
 
     public class ViewHandler
     {
         public static Queue<BannerRender> RenderQueue;
-        public static void OnRequestRenderBanner(Banner banner, GameEntity renderOnTo)
+        public static void OnRequestRenderBanner(Banner banner, WeakGameEntity renderOnTo)
         {
             RenderQueue.Enqueue(new BannerRender
             {

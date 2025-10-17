@@ -19,14 +19,14 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public long UseStartedAt = 0;
         public long UseWillEndAt = 0;
-        protected override bool LockUserFrames
+        public override bool LockUserFrames
         {
             get
             {
                 return false;
             }
         }
-        protected override bool LockUserPositions
+        public override bool LockUserPositions
         {
             get
             {
@@ -87,9 +87,9 @@ namespace PersistentEmpiresLib.SceneScripts
 #endif
         }
 
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Bed";
+            return new TextObject("Bed");
         }
 
         public override void OnUseStopped(Agent userAgent, bool isSuccessful, int preferenceIndex)
@@ -123,7 +123,7 @@ namespace PersistentEmpiresLib.SceneScripts
             userAgent.ClearTargetFrame();
         }
 
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             if (GameNetwork.IsServer)
             {
@@ -159,7 +159,7 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 PEInformationManager.StartCounter("Sleeping...", this.AnimationDurationInSeconds);
             }
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
         }
     }
 }

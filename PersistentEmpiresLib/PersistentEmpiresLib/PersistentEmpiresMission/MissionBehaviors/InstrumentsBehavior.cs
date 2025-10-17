@@ -199,7 +199,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
             if (myAgent == null) return false;
 
-            EquipmentIndex wieldedIndex = myAgent.GetWieldedItemIndex(Agent.HandIndex.OffHand);
+            EquipmentIndex wieldedIndex = myAgent.GetOffhandWieldedItemIndex();
             if (wieldedIndex == EquipmentIndex.None) return false;
 
             MissionWeapon equipment = myAgent.Equipment[wieldedIndex];

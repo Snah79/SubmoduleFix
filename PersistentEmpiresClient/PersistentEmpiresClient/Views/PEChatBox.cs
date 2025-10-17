@@ -23,13 +23,13 @@ namespace PersistentEmpires.Views.Views
             {
                 if (focusedLayer is TaleWorlds.Engine.GauntletUI.GauntletLayer layer)
                 {
-                    if (layer.MoviesAndDataSources[0].Item2 is TaleWorlds.MountAndBlade.ViewModelCollection.Multiplayer.MPChatVM)
+                    if (layer.GetMovieIdentifier("SPChatLog").DataSource is TaleWorlds.MountAndBlade.ViewModelCollection.Multiplayer.MPChatVM)
                     {
-                        var tmp = layer.MoviesAndDataSources[0].Item1 as TaleWorlds.GauntletUI.Data.GeneratedGauntletMovie;
+                        var tmp = layer.GetMovieIdentifier("SPChatLog").Movie as TaleWorlds.GauntletUI.Data.GeneratedGauntletMovie;
                         if (tmp == null) return;
                         try
                         {
-                            var chatLogWidget = tmp.RootWidget.AllChildren.ToList().Where(x => x.Id == "ChatLogWidget").FirstOrDefault();
+                            var chatLogWidget = tmp.RootWidget.GetAllChildrenRecursive().ToList().Where(x => x.Id == "ChatLogWidget").FirstOrDefault();
                             if (chatLogWidget != null)
                                 {
                                 if (focusedLayer.Input.IsKeyDown(InputKey.LeftControl))
@@ -71,7 +71,7 @@ namespace PersistentEmpires.Views.Views
                                     }
                                     else if (focusedLayer.Input.IsKeyPressed(InputKey.Right))
                                     {
-                                        var chatTextInputParent = tmp.RootWidget.AllChildren.ToList().Where(x => x.Id == "ChatTextInputParent").FirstOrDefault();
+                                        var chatTextInputParent = tmp.RootWidget.GetAllChildrenRecursive().ToList().Where(x => x.Id == "ChatTextInputParent").FirstOrDefault();
                                         if (chatTextInputParent != null)
                                         {
                                             chatTextInputParent.HorizontalAlignment = TaleWorlds.GauntletUI.HorizontalAlignment.Left;
@@ -85,7 +85,7 @@ namespace PersistentEmpires.Views.Views
                                     }
                                     else if (focusedLayer.Input.IsKeyReleased(InputKey.Left))
                                     {
-                                        var chatTextInputParent = tmp.RootWidget.AllChildren.ToList().Where(x => x.Id == "ChatTextInputParent").FirstOrDefault();
+                                        var chatTextInputParent = tmp.RootWidget.GetAllChildrenRecursive().ToList().Where(x => x.Id == "ChatTextInputParent").FirstOrDefault();
                                         if (chatTextInputParent != null)
                                         {
                                             chatTextInputParent.HorizontalAlignment = TaleWorlds.GauntletUI.HorizontalAlignment.Left;

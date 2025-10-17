@@ -93,7 +93,8 @@ namespace PersistentEmpiresLib.SceneScripts
         public void TriggerOnHit(Agent attackerAgent, int inflictedDamage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
             bool flag;
-            this.OnHit(attackerAgent, inflictedDamage, impactPosition, impactDirection, weapon, attackerScriptComponentBehavior, out flag);
+            float flag2;
+            this.OnHit(attackerAgent, inflictedDamage, impactPosition, impactDirection, weapon, attackerScriptComponentBehavior, out flag, out flag2);
         }
 
         private void SpawnItem(Agent agent, ItemObject item)
@@ -103,8 +104,7 @@ namespace PersistentEmpiresLib.SceneScripts
             frame.origin = agent.Position;
             frame.origin.z += 1;
 
-            GameEntity entity = ItemHelper.SpawnWeaponWithNewEntityAux(this.Scene, spawnWeapon, Mission.WeaponSpawnFlags.WithPhysics | Mission.WeaponSpawnFlags.WithHolster, frame, -1, null, true);
-
+            var entity = ItemHelper.SpawnWeaponWithNewEntityAux(this.Scene, spawnWeapon, Mission.WeaponSpawnFlags.WithPhysics | Mission.WeaponSpawnFlags.WithHolster, frame, -1, null, true);
         }
 
         public void ResetObject()
@@ -117,7 +117,7 @@ namespace PersistentEmpiresLib.SceneScripts
             }
             else
             {
-                base.GameEntity.FadeIn();
+                GameEntity.SetVisibilityExcludeParents(true);
             }
             base.GameEntity.RemovePhysics();
             base.GameEntity.SetGlobalFrame(initialFrame);
@@ -155,10 +155,10 @@ namespace PersistentEmpiresLib.SceneScripts
                 }
                 else
                 {
-                    base.GameEntity.FadeOut(1, false);
+                    GameEntity.SetVisibilityExcludeParents(false);
                 }
-                this.destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
-                this.destructed = true;
+                destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
+                destructed = true;
             }
             if (GameNetwork.IsServer)
             {
@@ -168,7 +168,7 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
             reportDamage = true;
             MissionWeapon missionWeapon = weapon;
@@ -176,6 +176,7 @@ namespace PersistentEmpiresLib.SceneScripts
             if (weapon.Item == null || weapon.Item.StringId != this.RequiredItemId || this.destructed)
             {
                 reportDamage = false;
+                finalDamage = 0;
                 damage = 0;
                 return false;
             }
@@ -183,12 +184,14 @@ namespace PersistentEmpiresLib.SceneScripts
             if (attackerAgent.Character.GetSkillValue(requiredSkillObject) < this.RequiredSkillLevel)
             {
                 reportDamage = false;
+                finalDamage = 0;
                 damage = 0;
                 return false;
             }
             if (attackerAgent == null)
             {
                 reportDamage = false;
+                finalDamage = 0;
                 damage = 0;
                 return false;
             }
@@ -214,14 +217,16 @@ namespace PersistentEmpiresLib.SceneScripts
                             }
                             else
                             {
-                                this.SpawnItem(attackerAgent, item);
+                                SpawnItem(attackerAgent, item);
                             }
                         }
                     }
                 }
             }
             damage = 10;
-            this.SetHitPoint(this.HitPoint - damage, impactDirection, attackerScriptComponentBehavior);
+            finalDamage = damage;
+            SetHitPoint(HitPoint - damage, impactDirection, attackerScriptComponentBehavior);
+
             return false;
         }
     }

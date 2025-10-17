@@ -6,6 +6,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using PersistentEmpiresLib.Helpers;
+using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
 
 namespace PersistentEmpires.Views.ViewsVM.PETabMenu
 {
@@ -18,8 +19,8 @@ namespace PersistentEmpires.Views.ViewsVM.PETabMenu
         {
             this.factionObj = faction;
             this.FactionName = faction.name;
-            BannerCode bannercode = BannerCode.CreateFrom(new Banner(faction.banner.Serialize()));
-            this.BannerImage = new ImageIdentifierVM(bannercode, true);
+            var bannercode = new Banner(faction.banner.Serialize());
+            this.BannerImage = new BannerImageIdentifierVM(bannercode, true);
             this.Members = new MBBindingList<TabPlayerVM>();
             this.Castles = new MBBindingList<CastleVM>();
             this._executeSelectFaction = ExecuteSelectFaction;
@@ -86,7 +87,7 @@ namespace PersistentEmpires.Views.ViewsVM.PETabMenu
             }
         }
         [DataSourceProperty]
-        public ImageIdentifierVM BannerImage
+        public BannerImageIdentifierVM BannerImage
         {
             get => _bannerImage;
             set
@@ -136,7 +137,7 @@ namespace PersistentEmpires.Views.ViewsVM.PETabMenu
 
 
         private String _factionName;
-        private ImageIdentifierVM _bannerImage;
+        private BannerImageIdentifierVM _bannerImage;
         private MBBindingList<TabPlayerVM> _members;
         private bool _isSelected;
         private MBBindingList<CastleVM> _castles;

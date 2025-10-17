@@ -32,9 +32,11 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnInit()
         {
             base.OnInit();
+            var tmp = new WeaponClass[] { WeaponClass.Arrow, WeaponClass.Bolt };
+
             foreach (StandingPoint standingPoint in base.StandingPoints)
             {
-                (standingPoint as StandingPointWithWeaponRequirement).InitRequiredWeaponClasses(WeaponClass.Arrow, WeaponClass.Bolt);
+                (standingPoint as StandingPointWithWeaponRequirement).InitRequiredWeaponClasses(tmp);
             }
             base.SetScriptComponentToTick(this.GetTickRequirement());
             this.MakeVisibilityCheck = false;
@@ -62,9 +64,9 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         // Token: 0x06003047 RID: 12359 RVA: 0x000C680A File Offset: 0x000C4A0A
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return new TextObject("{=bWi4aMO9}Arrow Barrel", null).ToString();
+            return new TextObject("{=bWi4aMO9}Arrow Barrel", null);
         }
 
         // Token: 0x06003048 RID: 12360 RVA: 0x000C681C File Offset: 0x000C4A1C
@@ -103,12 +105,13 @@ namespace PersistentEmpiresLib.SceneScripts
                 {
                     if (standingPoint.HasUser)
                     {
-                        Agent userAgent = standingPoint.UserAgent;
-                        ActionIndexValueCache currentActionValue = userAgent.GetCurrentActionValue(0);
-                        ActionIndexValueCache currentActionValue2 = userAgent.GetCurrentActionValue(1);
-                        if (!(currentActionValue2 == ActionIndexValueCache.act_none) || (!(currentActionValue == PE_ArrowBarrel.act_pickup_down_begin) && !(currentActionValue == PE_ArrowBarrel.act_pickup_down_begin_left_stance)))
+                        var userAgent = standingPoint.UserAgent;
+                        var currentActionValue = userAgent.GetCurrentAction(0);
+                        var currentActionValue2 = userAgent.GetCurrentAction(1);
+
+                        if (!(currentActionValue2 == ActionIndexCache.act_none) || (!(currentActionValue == PE_ArrowBarrel.act_pickup_down_begin) && !(currentActionValue == PE_ArrowBarrel.act_pickup_down_begin_left_stance)))
                         {
-                            if (currentActionValue2 == ActionIndexValueCache.act_none && (currentActionValue == PE_ArrowBarrel.act_pickup_down_end || currentActionValue == PE_ArrowBarrel.act_pickup_down_end_left_stance))
+                            if (currentActionValue2 == ActionIndexCache.act_none && (currentActionValue == PE_ArrowBarrel.act_pickup_down_end || currentActionValue == PE_ArrowBarrel.act_pickup_down_end_left_stance))
                             {
                                 if (isParallel)
                                 {
@@ -131,7 +134,7 @@ namespace PersistentEmpiresLib.SceneScripts
                                     userAgent.StopUsingGameObject(true, Agent.StopUsingGameObjectFlags.AutoAttachAfterStoppingUsingGameObject);
                                 }
                             }
-                            else if (currentActionValue2 != ActionIndexValueCache.act_none || !userAgent.SetActionChannel(0, userAgent.GetIsLeftStance() ? PE_ArrowBarrel.act_pickup_down_begin_left_stance : PE_ArrowBarrel.act_pickup_down_begin, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true))
+                            else if (currentActionValue2 != ActionIndexCache.act_none || !userAgent.SetActionChannel(0, userAgent.GetIsLeftStance() ? PE_ArrowBarrel.act_pickup_down_begin_left_stance : PE_ArrowBarrel.act_pickup_down_begin, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true))
                             {
                                 if (isParallel)
                                 {

@@ -1,4 +1,5 @@
-﻿using PersistentEmpiresLib.Data;
+﻿using Newtonsoft.Json.Linq;
+using PersistentEmpiresLib.Data;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
@@ -65,11 +66,11 @@ namespace PersistentEmpiresLib.SceneScripts
         private List<UpgradeReceipt> Tier2Upgrade = new List<UpgradeReceipt>();
         private List<UpgradeReceipt> Tier3Upgrade = new List<UpgradeReceipt>();
 
-        private GameEntity _currentTierState;
-        private GameEntity _tier0State;
-        private GameEntity _tier1State;
-        private GameEntity _tier2State;
-        private GameEntity _tier3State;
+        private WeakGameEntity? _currentTierState;
+        private WeakGameEntity? _tier0State;
+        private WeakGameEntity? _tier1State;
+        private WeakGameEntity? _tier2State;
+        private WeakGameEntity? _tier3State;
         private PE_InventoryEntity _upgradeInventory;
         private PlayerInventoryComponent _playerInventoryComponent;
 
@@ -164,17 +165,17 @@ namespace PersistentEmpiresLib.SceneScripts
             this._tier1State = base.GameEntity.GetChildren().FirstOrDefault((g) => g.Tags.Contains(this.Tier1Tag));
             this._tier2State = base.GameEntity.GetChildren().FirstOrDefault((g) => g.Tags.Contains(this.Tier2Tag));
             this._tier3State = base.GameEntity.GetChildren().FirstOrDefault((g) => g.Tags.Contains(this.Tier3Tag));
-
-            _tier0State.SetVisibilityExcludeParents(true);
-            _tier1State.SetVisibilityExcludeParents(false);
-            if (_tier2State != null)
+            
+            _tier0State.Value.SetVisibilityExcludeParents(true);
+            _tier1State.Value.SetVisibilityExcludeParents(false);
+            if (_tier2State.HasValue)
             {
-                _tier2State.SetVisibilityExcludeParents(false);
+                _tier2State.Value.SetVisibilityExcludeParents(false);
                 this.MaxTier = 2;
             }
-            if (_tier3State != null)
+            if (_tier3State.HasValue)
             {
-                _tier3State.SetVisibilityExcludeParents(false);
+                _tier3State.Value.SetVisibilityExcludeParents(false);
                 this.MaxTier = 3;
             }
 
@@ -194,14 +195,14 @@ namespace PersistentEmpiresLib.SceneScripts
             if (this.CurrentTier == 2) return this.Tier3MaxHit;
             return 0;
         }
-        public GameEntity GetNextUpgrade()
+        public WeakGameEntity? GetNextUpgrade()
         {
             if (this.CurrentTier == 0) return this._tier1State;
             if (this.CurrentTier == 1) return this._tier2State;
             if (this.CurrentTier == 2) return this._tier3State;
             return null;
         }
-        public GameEntity GetEntityFromTier(int tier)
+        public WeakGameEntity? GetEntityFromTier(int tier)
         {
             if (tier == 0) return this._tier0State;
             if (tier == 1) return this._tier1State;
@@ -226,20 +227,20 @@ namespace PersistentEmpiresLib.SceneScripts
         public void SetTier(int tier)
         {
             if (tier > 3) return;
-            GameEntity tierEntity = this.GetEntityFromTier(tier);
-            this._currentTierState.SetVisibilityExcludeParents(false);
+            var tierEntity = this.GetEntityFromTier(tier);
+            this._currentTierState.Value.SetVisibilityExcludeParents(false);
             this._currentTierState = tierEntity;
-            this._currentTierState.SetVisibilityExcludeParents(true);
+            this._currentTierState.Value.SetVisibilityExcludeParents(true);
             this.CurrentTier = tier;
             this.MaxHitPoint = this.GetNextMaxHit();
         }
         public void UpgradeBuilding()
         {
-            GameEntity nextUpgrade = this.GetNextUpgrade();
+            var nextUpgrade = this.GetNextUpgrade();
             if (nextUpgrade == null) return;
-            this._currentTierState.SetVisibilityExcludeParents(false);
+            this._currentTierState.Value.SetVisibilityExcludeParents(false);
             this._currentTierState = nextUpgrade;
-            this._currentTierState.SetVisibilityExcludeParents(true);
+            this._currentTierState.Value.SetVisibilityExcludeParents(true);
             this.CurrentTier = this.CurrentTier + 1;
             this.MaxHitPoint = this.GetNextMaxHit();
 
@@ -278,9 +279,10 @@ namespace PersistentEmpiresLib.SceneScripts
 
         }
 
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
             reportDamage = false;
+            finalDamage = 0;
             MissionWeapon missionWeapon = weapon;
             WeaponComponentData currentUsageItem = missionWeapon.CurrentUsageItem;
             if (attackerAgent == null) return false;
@@ -333,7 +335,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 }
 
 
-                GameEntity nextUpgrade = this.GetNextUpgrade();
+                var nextUpgrade = this.GetNextUpgrade();
                 List<UpgradeReceipt> nextUpgradeReceipts = this.GetUpgradeReceipts();
 
                 Inventory upgradeInv = this._playerInventoryComponent.CustomInventories[this._upgradeInventory.InventoryId];

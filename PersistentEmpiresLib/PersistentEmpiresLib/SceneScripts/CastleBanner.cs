@@ -23,8 +23,8 @@ namespace PersistentEmpiresLib.SceneScripts
         public int CaptureDuration = 5;
         public string CaptureItem = "pe_banner";
 
-        protected override bool LockUserFrames { get => false; }
-        protected override bool LockUserPositions { get => false; }
+        public override bool LockUserFrames { get => false; }
+        public override bool LockUserPositions { get => false; }
 
         public long UseStartedAt { get; private set; }
         public long UseWillEndAt { get; private set; }
@@ -118,9 +118,9 @@ namespace PersistentEmpiresLib.SceneScripts
 
         }
 
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Castle Banner";
+            return new TextObject("Castle Banner");
         }
 
         public override void OnUseStopped(Agent userAgent, bool isSuccessful, int preferenceIndex)
@@ -132,7 +132,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 Debug.Print("[USING LOG] AGENT USE STOPPED " + this.GetType().Name);
                 if (isSuccessful)
                 {
-                    EquipmentIndex wieldedEquipmentIndex = userAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                    EquipmentIndex wieldedEquipmentIndex = userAgent.GetPrimaryWieldedItemIndex();//GetWieldedItemIndex(Agent.HandIndex.MainHand);
                     if (wieldedEquipmentIndex == EquipmentIndex.None) return;
                     if (userAgent.Equipment[wieldedEquipmentIndex].Item.StringId != this.CaptureItem) return;
 
@@ -147,7 +147,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     GameNetwork.WriteMessage(new UpdateCastle(this));
                     GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
                     InformationComponent.Instance.BroadcastQuickInformation(this.CastleName + " have been captured by " + capturerFaction.name, Colors.Red.ToUnsignedInteger());
-                    userAgent.RemoveEquippedWeapon(userAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand));
+                    userAgent.RemoveEquippedWeapon(userAgent.GetPrimaryWieldedItemIndex());//.GetWieldedItemIndex(Agent.HandIndex.MainHand));
                 }
             }
 
@@ -160,7 +160,7 @@ namespace PersistentEmpiresLib.SceneScripts
             userAgent.ClearTargetFrame();
         }
 
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             if (GameNetwork.IsServer)
             {
@@ -170,7 +170,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     userAgent.StopUsingGameObjectMT(false);
                     return;
                 }
-                EquipmentIndex wieldedItemIndex = userAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                EquipmentIndex wieldedItemIndex = userAgent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
                 if (wieldedItemIndex == EquipmentIndex.None)
                 {
                     userAgent.StopUsingGameObjectMT(false);
@@ -218,7 +218,7 @@ namespace PersistentEmpiresLib.SceneScripts
             this.UseStartedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             this.UseWillEndAt = this.UseStartedAt + this.CaptureDuration;
             userAgent.SetTargetPosition(userAgent.Position.AsVec2);
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
         }
     }
 }

@@ -286,7 +286,7 @@ namespace PersistentEmpires.Views.Views
         public override void OnMissionScreenFinalize()
         {
             base.OnMissionScreenFinalize();
-            base.Mission.OnMainAgentChanged -= this.OnMainAgentChanged;
+            base.Mission.OnMainAgentChanged-= this.OnMainAgentChanged;
             base.MissionScreen.OnSpectateAgentFocusIn -= this.HandleSpectateAgentFocusIn;
             base.MissionScreen.OnSpectateAgentFocusOut -= this.HandleSpectateAgentFocusOut;
         }
@@ -468,7 +468,7 @@ namespace PersistentEmpires.Views.Views
         }
 
         // Token: 0x060002FF RID: 767 RVA: 0x0001A60C File Offset: 0x0001880C
-        private void OnMainAgentChanged(object sender, PropertyChangedEventArgs e)
+        private void OnMainAgentChanged(Agent oldAgent)
         {
             foreach (Agent agent in this._agentMeshes.Keys)
             {
@@ -476,6 +476,14 @@ namespace PersistentEmpires.Views.Views
             }
         }
 
+        private void OnMainAgentChanged_old(object sender, PropertyChangedEventArgs e)
+        {
+            foreach (Agent agent in this._agentMeshes.Keys)
+            {
+                this.UpdateVisibilityOfAgentMesh(agent);
+            }
+        }
+        
         // Token: 0x06000300 RID: 768 RVA: 0x0001A664 File Offset: 0x00018864
         private void HandleSpectateAgentFocusIn(Agent agent)
         {

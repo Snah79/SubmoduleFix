@@ -29,11 +29,11 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         // Token: 0x06000257 RID: 599 RVA: 0x00010114 File Offset: 0x0000E314
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             PE_ChairUsePoint.ChairAction chairAction = base.CanAgentUseItem(userAgent) ? this.GetRandomChairAction() : PE_ChairUsePoint.ChairAction.None;
             this.SetChairAction(chairAction);
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
         }
 
         // Token: 0x06000258 RID: 600 RVA: 0x00010144 File Offset: 0x0000E344

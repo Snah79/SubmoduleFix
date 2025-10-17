@@ -103,9 +103,9 @@ namespace PersistentEmpiresLib.SceneScripts
                 InformationManager.HideTooltip();
             }
         }
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
             if (GameNetwork.IsServer)
             {
                 Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name);
@@ -168,14 +168,15 @@ namespace PersistentEmpiresLib.SceneScripts
                 }
             }
         }
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Horse Market";
+            return new TextObject("Horse Market");
         }
 
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
             reportDamage = false;
+            finalDamage = 0;
             if (attackerAgent == null) return false;
             NetworkCommunicator player = attackerAgent.MissionPeer.GetNetworkPeer();
             bool isAdmin = Main.IsPlayerAdmin(player);

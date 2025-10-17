@@ -28,38 +28,39 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private float _maxElevationZ { get; set; }
         private float _minElevationZ { get; set; }
-        private GameEntity _portcullis;
+        private WeakGameEntity _portcullis;
         private PortcullisState portcullisState = PortcullisState.Idle;
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement() => !this.GameEntity.IsVisibleIncludeParents() ? base.GetTickRequirement() : ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel;
         protected override void OnInit()
         {
             base.OnInit();
-            this._portcullis = base.GameEntity.GetFirstChildEntityWithTag(this.PortcullisTag);
-            this._maxElevationZ = base.GameEntity.GetFirstChildEntityWithTag(this.ElevationPointTag).GetFrame().origin.Z;
-            this._minElevationZ = this._portcullis.GetFrame().origin.Z;
+            _portcullis = base.GameEntity.GetFirstChildEntityWithTag(this.PortcullisTag);
+            _maxElevationZ = base.GameEntity.GetFirstChildEntityWithTag(this.ElevationPointTag).GetFrame().origin.Z;
+            _minElevationZ = this._portcullis.GetFrame().origin.Z;
 
-            SynchedMissionObject synchObject = this._portcullis.GetFirstScriptOfType<SynchedMissionObject>();
-
+            var synchObject = this._portcullis.GetFirstScriptOfType<SynchedMissionObject>();
             var prop = typeof(SynchedMissionObject).GetField("_initialSynchFlags", BindingFlags.NonPublic | BindingFlags.Instance);
-            SynchedMissionObject.SynchFlags syncFlags = (SynchedMissionObject.SynchFlags)prop.GetValue(synchObject);
+            var syncFlags = (SynchedMissionObject.SynchFlags)prop.GetValue(synchObject);
+            
             syncFlags |= SynchFlags.SynchTransform;
             prop.SetValue(synchObject, syncFlags);
 
-            MatrixFrame frame = this._portcullis.GetFrame();
+            var frame = this._portcullis.GetFrame();
+            
             frame.origin.z = this._maxElevationZ;
-            this._portcullis.SetFrame(ref frame);
-
+            _portcullis.SetFrame(ref frame);
 
             foreach (StandingPoint standingPoint in this.StandingPoints)
             {
-                standingPoint.AddComponent(new ResetAnimationOnStopUsageComponent(ActionIndexCache.act_none));
+                standingPoint.AddComponent(new ResetAnimationOnStopUsageComponent(ActionIndexCache.act_none, true));
                 standingPoint.AutoSheathWeapons = true;
             }
         }
         protected bool ValidateValues()
         {
-            GameEntity portcullis = base.GameEntity.GetFirstChildEntityWithTag(this.PortcullisTag);
-            GameEntity elevation = base.GameEntity.GetFirstChildEntityWithTag(this.ElevationPointTag);
+            var portcullis = base.GameEntity.GetFirstChildEntityWithTag(this.PortcullisTag);
+            var elevation = base.GameEntity.GetFirstChildEntityWithTag(this.ElevationPointTag);
+
             if (portcullis == null)
             {
                 MBEditor.AddEntityWarning(base.GameEntity, "Portcullis body not found");
@@ -108,7 +109,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                     else if (standingPoint.GameEntity.HasTag(this.ElevatorTag))
                     {
-                        if (standingPoint.UserAgent.GetCurrentAction(0).Name == "act_none" && this.ElevationAnimation != "")
+                        if (standingPoint.UserAgent.GetCurrentAction(0).GetName() == "act_none" && this.ElevationAnimation != "")
                         {
                             standingPoint.UserAgent.SetActionChannel(0, ActionIndexCache.Create(this.ElevationAnimation), true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                         }
@@ -116,7 +117,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                     else if (standingPoint.GameEntity.HasTag(this.LowerTag))
                     {
-                        if (standingPoint.UserAgent.GetCurrentAction(0).Name == "act_none" && this.LowerAnimation != "")
+                        if (standingPoint.UserAgent.GetCurrentAction(0).GetName() == "act_none" && this.LowerAnimation != "")
                         {
                             standingPoint.UserAgent.SetActionChannel(0, ActionIndexCache.Create(this.LowerAnimation), true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                         }
@@ -186,9 +187,9 @@ namespace PersistentEmpiresLib.SceneScripts
             return new TextObject("");
         }
 
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "";
+            return new TextObject("");
         }
     }
 }

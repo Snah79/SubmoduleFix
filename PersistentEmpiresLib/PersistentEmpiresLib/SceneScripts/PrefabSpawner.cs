@@ -1,6 +1,7 @@
 ﻿using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
@@ -15,7 +16,6 @@ using TaleWorlds.ObjectSystem;
 
 namespace PersistentEmpiresLib.SceneScripts
 {
-
     public struct SpawnableItem
     {
         public string PrefabName;
@@ -25,7 +25,6 @@ namespace PersistentEmpiresLib.SceneScripts
         public float AdjustPositionX;
         public float AdjustPositionY;
         public float AdjustPositionZ;
-
 
         public SpawnableItem(string prefabName, string spawnerItemId, int maxSpawnAmount, float despawnArea, float adjustPositionX, float adjustPositionY, float adjustPositionZ)
         {
@@ -46,16 +45,16 @@ namespace PersistentEmpiresLib.SceneScripts
         public string PrefabSpawnerName = "Siege Unit Deployer";
         public string SpawnerCategoryName = "Siege Units";
 
-        private GameEntity SpawningPoint;
+        private WeakGameEntity SpawningPoint;
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement() => GameNetwork.IsServer ? base.GetTickRequirement() : ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel;
         public List<SpawnableItem> SpawnableItems { get; private set; }
-        public List<GameEntity> SpawnedPrefabs { get; private set; }
-        public Dictionary<GameEntity, IStray> StrayEntity { get; private set; }
+        public List<WeakGameEntity> SpawnedPrefabs { get; private set; }
+        public Dictionary<WeakGameEntity, IStray> StrayEntity { get; private set; }
         protected override void OnTick(float dt)
         {
             base.OnTick(dt);
             if (!GameNetwork.IsServer) return;
-            foreach (GameEntity spawnedEntity in this.StrayEntity.Keys.ToList())
+            foreach (WeakGameEntity spawnedEntity in this.StrayEntity.Keys.ToList())
             {
                 if (spawnedEntity == null)
                 {
@@ -107,23 +106,23 @@ namespace PersistentEmpiresLib.SceneScripts
             this.SpawnableItems = new List<SpawnableItem>();
             this.LoadSpawnableItems();
             this.SpawningPoint = base.GameEntity.GetFirstChildEntityWithTag(this.SpawnPointTag);
-            this.SpawnedPrefabs = new List<GameEntity>();
-            this.StrayEntity = new Dictionary<GameEntity, IStray>();
+            this.SpawnedPrefabs = new List<WeakGameEntity>();
+            this.StrayEntity = new Dictionary<WeakGameEntity, IStray>();
         }
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Siege Workshop";
+            return new TextObject("Siege Workshop");
         }
 
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
             userAgent.StopUsingGameObjectMT(true);
             if (GameNetwork.IsServer)
             {
                 Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name);
 
-                EquipmentIndex equipmentIndex = userAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                EquipmentIndex equipmentIndex = userAgent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
                 if (equipmentIndex == EquipmentIndex.None)
                 {
                     this.DespawnNearest(userAgent);
@@ -150,7 +149,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private void SpawnSpawnableItem(Agent userAgent, SpawnableItem spawnableItem)
         {
-            EquipmentIndex equipmentIndex = userAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+            EquipmentIndex equipmentIndex = userAgent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
             userAgent.RemoveEquippedWeapon(equipmentIndex);
 
             MatrixFrame spawnFrame = this.SpawningPoint.GetGlobalFrame();
@@ -158,7 +157,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
             MatrixFrame adjSpawnFrame = new MatrixFrame(spawnFrame.rotation, vecspawnFrame);
 
-            MissionObject mObject = Mission.Current.CreateMissionObjectFromPrefab(spawnableItem.PrefabName, adjSpawnFrame);
+            MissionObject mObject = Mission.Current.CreateMissionObjectFromPrefab(spawnableItem.PrefabName, adjSpawnFrame, DefaultAction);
 
             this.SpawnedPrefabs.Add(mObject.GameEntity);
 
@@ -167,13 +166,13 @@ namespace PersistentEmpiresLib.SceneScripts
             });
 
             // Initiate all mObject childrens
-            List<GameEntity> childrens = new List<GameEntity>();
+            var childrens = new List<WeakGameEntity>();
 
             ScriptComponentBehavior[] spawnablesRoot = mObject.GameEntity.GetScriptComponents().Where(s => s is ISpawnable).ToArray();
             foreach (ISpawnable spawnable in spawnablesRoot) spawnable.OnSpawnedByPrefab(this);
 
             mObject.GameEntity.GetChildrenRecursive(ref childrens);
-            foreach (GameEntity child in childrens)
+            foreach (var child in childrens)
             {
                 ScriptComponentBehavior[] spawnables = child.GetScriptComponents().Where(s => s is ISpawnable).ToArray();
                 foreach (ISpawnable spawnable in spawnables) spawnable.OnSpawnedByPrefab(this);
@@ -191,7 +190,12 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
-        private void DespawnSpawnedPrefab(GameEntity spawnedPrefab)
+        private void DefaultAction(GameEntity entity)
+        {
+
+        }
+
+        private void DespawnSpawnedPrefab(WeakGameEntity spawnedPrefab)
         {
             spawnedPrefab.Remove(80);
             this.SpawnedPrefabs.Remove(spawnedPrefab);

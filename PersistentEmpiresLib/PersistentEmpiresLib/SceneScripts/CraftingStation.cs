@@ -124,14 +124,14 @@ namespace PersistentEmpiresLib.SceneScripts
             this.craftingComponent = Mission.Current.GetMissionBehavior<CraftingComponent>();
             this.LoadCraftables();
         }
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Crafting Station Named As " + this.StationName;
+            return new TextObject("Crafting Station Named As " + this.StationName);
         }
 
 
 
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name);
             if (!base.IsUsable(userAgent))
@@ -139,13 +139,12 @@ namespace PersistentEmpiresLib.SceneScripts
                 userAgent.StopUsingGameObjectMT(false);
                 return;
             }
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
             userAgent.StopUsingGameObjectMT(true);
             if (GameNetwork.IsServer)
             {
                 this.craftingComponent.AgentRequestCrafting(userAgent, this);
             }
-
         }
     }
 }

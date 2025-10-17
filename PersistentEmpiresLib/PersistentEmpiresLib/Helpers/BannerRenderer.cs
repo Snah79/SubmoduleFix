@@ -6,19 +6,19 @@ namespace PersistentEmpiresLib.Helpers
 {
     public class BannerRenderer
     {
-        public delegate void RequestRenderBannerFromView(Banner banner, GameEntity renderOnTo);
+        public delegate void RequestRenderBannerFromView(Banner banner, WeakGameEntity renderOnTo);
         public static event RequestRenderBannerFromView OnRequestRenderBanner;
 
         // [HandleProcessCorruptedStateExceptions]
         // [SecurityCritical]
-        public static void RequestRenderBanner(Banner banner, GameEntity renderOnTo)
+        public static void RequestRenderBanner(Banner banner, WeakGameEntity renderOnTo)
         {
             if (OnRequestRenderBanner != null) OnRequestRenderBanner(banner, renderOnTo);
         }
 
         // [HandleProcessCorruptedStateExceptions]
         // [SecurityCritical]
-        public static void OnBannerTableauRenderDone(GameEntity gameEntity, Texture bannerTexture)
+        public static void OnBannerTableauRenderDone(WeakGameEntity gameEntity, Texture bannerTexture)
         {
             if (gameEntity == null) return;
             try

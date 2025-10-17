@@ -21,15 +21,15 @@ namespace PersistentEmpiresLib.SceneScripts
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
             base.DescriptionMessage = descriptionMessage;
         }
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Bank";
+            return new TextObject("Bank");
         }
 
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
 
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
             if (GameNetwork.IsServer)
             {
                 this.bankingComponent.OpenBankForPeer(userAgent.MissionPeer.GetNetworkPeer(), this);

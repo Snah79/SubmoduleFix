@@ -32,7 +32,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private Vec3 _pointA { get; set; }
         private Vec3 _pointB { get; set; }
-        private GameEntity _portcullis;
+        private WeakGameEntity _portcullis;
         private AToBNavigatorState portcullisState = AToBNavigatorState.Idle;
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement() => !this.GameEntity.IsVisibleIncludeParents() ? base.GetTickRequirement() : ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel;
         protected override void OnInit()
@@ -57,15 +57,16 @@ namespace PersistentEmpiresLib.SceneScripts
 
             foreach (StandingPoint standingPoint in this.StandingPoints)
             {
-                standingPoint.AddComponent(new ResetAnimationOnStopUsageComponent(ActionIndexCache.act_none));
+                standingPoint.AddComponent(new ResetAnimationOnStopUsageComponent(ActionIndexCache.act_none, true));
                 standingPoint.AutoSheathWeapons = true;
             }
         }
         protected bool ValidateValues()
         {
-            GameEntity portcullis = base.GameEntity.GetFirstChildEntityWithTag(this.PortcullisTag);
-            GameEntity pointAEntity = base.GameEntity.GetFirstChildEntityWithTag(this.PointATag);
-            GameEntity pointBEntity = base.GameEntity.GetFirstChildEntityWithTag(this.PointBTag);
+            var portcullis = base.GameEntity.GetFirstChildEntityWithTag(this.PortcullisTag);
+            var pointAEntity = base.GameEntity.GetFirstChildEntityWithTag(this.PointATag);
+            var pointBEntity = base.GameEntity.GetFirstChildEntityWithTag(this.PointBTag);
+
             if (portcullis == null)
             {
                 MBEditor.AddEntityWarning(base.GameEntity, "Portcullis body not found");
@@ -122,7 +123,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                     else if (standingPoint.GameEntity.HasTag(this.ToAUseTag))
                     {
-                        if (standingPoint.UserAgent.GetCurrentAction(0).Name == "act_none" && this.ElevationAnimation != "")
+                        if (standingPoint.UserAgent.GetCurrentAction(0).GetName() == "act_none" && this.ElevationAnimation != "")
                         {
                             standingPoint.UserAgent.SetActionChannel(0, ActionIndexCache.Create(this.ElevationAnimation), true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                         }
@@ -130,7 +131,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                     else if (standingPoint.GameEntity.HasTag(this.ToBUseTag))
                     {
-                        if (standingPoint.UserAgent.GetCurrentAction(0).Name == "act_none" && this.LowerAnimation != "")
+                        if (standingPoint.UserAgent.GetCurrentAction(0).GetName() == "act_none" && this.LowerAnimation != "")
                         {
                             standingPoint.UserAgent.SetActionChannel(0, ActionIndexCache.Create(this.LowerAnimation), true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                         }
@@ -200,9 +201,9 @@ namespace PersistentEmpiresLib.SceneScripts
             return new TextObject("");
         }
 
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "";
+            return new TextObject("");
         }
     }
 }

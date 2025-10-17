@@ -7,7 +7,7 @@ namespace PersistentEmpiresLib.SceneScripts
     {
         public override bool IsDisabledForAgent(Agent agent)
         {
-            EquipmentIndex wieldedItemIndex = agent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+            EquipmentIndex wieldedItemIndex = agent.GetPrimaryWieldedItemIndex();
             if (wieldedItemIndex == EquipmentIndex.None) return false;
 
             if (agent.Equipment[wieldedItemIndex].Item.PrimaryWeapon.WeaponClass == WeaponClass.Boulder)

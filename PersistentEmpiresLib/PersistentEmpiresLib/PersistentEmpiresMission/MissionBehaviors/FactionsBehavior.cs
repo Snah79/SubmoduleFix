@@ -337,103 +337,104 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             try
             {
-                List<BannerData> bannerDatas = Banner.GetBannerDataFromBannerCode(updateFactionBanner.BannerCode);
-                for (int i = 0; i < bannerDatas.Count; i++)
+                List<BannerData> bannerDatas;
+                if (Banner.TryGetBannerDataFromCode(updateFactionBanner.BannerCode, out bannerDatas))
                 {
-                    BannerData bannerData = bannerDatas[i];
-                    if (bannerData.MeshId > CompressionBasic.BannerDataMeshIdCompressionInfo.GetMaximumValue())
+                    for (int i = 0; i < bannerDatas.Count; i++)
                     {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior8", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if (bannerData.MeshId < 0)
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior8", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if (bannerData.ColorId > CompressionBasic.BannerDataColorIndexCompressionInfo.GetMaximumValue())
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior9", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if (bannerData.ColorId < 0)
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior9", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
+                        BannerData bannerData = bannerDatas[i];
+                        if (bannerData.MeshId > CompressionBasic.BannerDataMeshIdCompressionInfo.GetMaximumValue())
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior8", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if (bannerData.MeshId < 0)
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior8", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if (bannerData.ColorId > CompressionBasic.BannerDataColorIndexCompressionInfo.GetMaximumValue())
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior9", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if (bannerData.ColorId < 0)
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior9", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
 
-                    if (bannerData.ColorId2 > CompressionBasic.BannerDataColorIndexCompressionInfo.GetMaximumValue())
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior9", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if (bannerData.ColorId2 < 0)
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior9", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
+                        if (bannerData.ColorId2 > CompressionBasic.BannerDataColorIndexCompressionInfo.GetMaximumValue())
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior9", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if (bannerData.ColorId2 < 0)
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior9", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
 
-                    if ((int)bannerData.Size.X > CompressionBasic.BannerDataSizeCompressionInfo.GetMaximumValue())
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior10", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if ((int)bannerData.Size.X < -8000)
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior11", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if ((int)bannerData.Size.Y > CompressionBasic.BannerDataSizeCompressionInfo.GetMaximumValue())
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior12", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if ((int)bannerData.Size.Y < -8000)
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior13", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
+                        if ((int)bannerData.Size.X > CompressionBasic.BannerDataSizeCompressionInfo.GetMaximumValue())
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior10", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if ((int)bannerData.Size.X < -8000)
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior11", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if ((int)bannerData.Size.Y > CompressionBasic.BannerDataSizeCompressionInfo.GetMaximumValue())
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior12", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if ((int)bannerData.Size.Y < -8000)
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior13", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
 
-                    if ((int)bannerData.Position.X > CompressionBasic.BannerDataSizeCompressionInfo.GetMaximumValue())
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior14", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
+                        if ((int)bannerData.Position.X > CompressionBasic.BannerDataSizeCompressionInfo.GetMaximumValue())
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior14", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if ((int)bannerData.Position.X < -8000)
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior14", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if ((int)bannerData.Position.Y > CompressionBasic.BannerDataSizeCompressionInfo.GetMaximumValue())
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior14", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if ((int)bannerData.Position.Y < -8000)
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior14", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if ((int)bannerData.Rotation > 360)
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior15", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
+                        if ((int)bannerData.Rotation < -360)
+                        {
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior15", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
+                            return false;
+                        }
                     }
-                    if ((int)bannerData.Position.X < -8000)
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior14", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if ((int)bannerData.Position.Y > CompressionBasic.BannerDataSizeCompressionInfo.GetMaximumValue())
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior14", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if ((int)bannerData.Position.Y < -8000)
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior14", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if ((int)bannerData.Rotation > 360)
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior15", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
-                    if ((int)bannerData.Rotation < -360)
-                    {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior15", null).ToString() + i, Colors.Red.ToUnsignedInteger(), player);
-                        return false;
-                    }
+                    UpdateFactionBanner(factionIndex, updateFactionBanner.BannerCode);
                 }
-
-                this.UpdateFactionBanner(factionIndex, updateFactionBanner.BannerCode);
             }
             catch (Exception e)
             {
                 InformationComponent.Instance.SendMessage(GameTexts.FindText("FactionsBehavior16", null).ToString(), Colors.Red.ToUnsignedInteger(), player);
                 return false;
             }
-
 
             return true;
         }

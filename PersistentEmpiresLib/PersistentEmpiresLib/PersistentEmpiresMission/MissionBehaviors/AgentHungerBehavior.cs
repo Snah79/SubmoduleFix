@@ -128,19 +128,19 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
                 EatingAction action = this.AgentsEating[agent];
 
-                if (agent.GetWieldedItemIndex(Agent.HandIndex.MainHand) == EquipmentIndex.None)
+                if (agent.GetPrimaryWieldedItemIndex() == EquipmentIndex.None)
                 {
                     agent.SetActionChannel(0, ActionIndexCache.act_none, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                     this.AgentsEating.Remove(agent);
                     continue;
                 }
-                else if (agent.GetCurrentAction(0).Name == "act_none")
+                else if (agent.GetCurrentAction(0).GetName() == "act_none")
                 {
                     agent.SetActionChannel(0, ActionIndexCache.act_none, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                     this.AgentsEating.Remove(agent);
                     continue;
                 }
-                else if (action.EatingEndsAt < DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() && agent.GetWieldedItemIndex(Agent.HandIndex.MainHand) != EquipmentIndex.None)
+                else if (action.EatingEndsAt < DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() && agent.GetPrimaryWieldedItemIndex() != EquipmentIndex.None)
                 {
                     agent.SetActionChannel(0, ActionIndexCache.act_none, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                     NetworkCommunicator peer = agent.MissionPeer.GetNetworkPeer();
@@ -150,7 +150,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     agent.Health += action.Food.RefillHealth;
 
                     if (agent.Health > agent.HealthLimit) agent.Health = agent.HealthLimit;
-                    agent.RemoveEquippedWeapon(agent.GetWieldedItemIndex(Agent.HandIndex.MainHand));
+                    agent.RemoveEquippedWeapon(agent.GetPrimaryWieldedItemIndex());
                     if(OnAgentConsumedEatable != null)
                     {
                         OnAgentConsumedEatable(peer, action.Food);
@@ -253,7 +253,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
             if (myAgent == null) return false;
 
-            EquipmentIndex wieldedIndex = myAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+            EquipmentIndex wieldedIndex = myAgent.GetPrimaryWieldedItemIndex();
             if (wieldedIndex == EquipmentIndex.None) return false;
 
             MissionWeapon equipment = myAgent.Equipment[wieldedIndex];
@@ -292,7 +292,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
             if (persistentEmpireRepresentative == null) return false;
 
-            EquipmentIndex index = peer.ControlledAgent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+            EquipmentIndex index = peer.ControlledAgent.GetPrimaryWieldedItemIndex();
             if (index == EquipmentIndex.None) return false;
             MissionWeapon equipmentElement = peer.ControlledAgent.Equipment[index];
 

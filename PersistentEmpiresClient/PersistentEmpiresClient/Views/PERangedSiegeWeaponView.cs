@@ -29,7 +29,7 @@ namespace PersistentEmpires.Views.Views
         {
             get
             {
-                return this.RangedSiegeWeapon.cameraHolder;
+                return this.RangedSiegeWeapon.CameraHolder;
             }
         }
 

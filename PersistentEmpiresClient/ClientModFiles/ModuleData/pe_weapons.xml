@@ -2,14 +2,9 @@
 <Items>
     <!-- LOTR - Errayn -->
 
-    <CraftedItem id="PE_uruk_2h_sword"
-                 name="uruk berserker sword"
-                 crafting_template="PE_TwoHandedSword"
-                 is_merchandise="false">
+    <CraftedItem id="PE_uruk_2h_sword" name="uruk berserker sword" crafting_template="PE_TwoHandedSword" is_merchandise="false">
         <Pieces>
-            <Piece id="PE_uruk_berserker_sword"
-                   Type="Blade"
-                   scale_factor="120" />
+            <Piece id="PE_uruk_berserker_sword" Type="Blade" scale_factor="120" />
             <Piece id="PE_2h_guard_9"
                    Type="Guard"
                    scale_factor="100" />

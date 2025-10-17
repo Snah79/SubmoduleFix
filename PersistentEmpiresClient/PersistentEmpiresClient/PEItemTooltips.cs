@@ -95,10 +95,10 @@ namespace PersistentEmpires.Views
             }
             propertyBasedTooltipVM.AddProperty(new TextObject("{=4Dd2xgPm}Weight", null).ToString(), item.Weight.ToString(), 0, TooltipProperty.TooltipPropertyFlags.None);
             string text = "";
-            if (item.IsUniqueItem)
-            {
-                text = text + GameTexts.FindText("str_inventory_flag_unique", null).ToString() + " ";
-            }
+            //if (item.IsUniqueItem)
+            //{
+            //    text = text + GameTexts.FindText("str_inventory_flag_unique", null).ToString() + " ";
+            //}
             if (item.ItemFlags.HasAnyFlag(ItemFlags.NotUsableByFemale))
             {
                 text = text + GameTexts.FindText("str_inventory_flag_male_only", null).ToString() + " ";

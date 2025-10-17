@@ -71,6 +71,7 @@ namespace PersistentEmpiresClient
             prefix = typeof(PatchGlobalChat).GetMethod("PrefixClientEventPlayerMessageTeam", BindingFlags.Public | BindingFlags.Static);
             HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
             Debug.Print("** Persistent Harmony ** Patched [ChatBox::HandleClientEventPlayerMessageTeam]", 0, Debug.DebugColor.Yellow);
+            
             original = typeof(MPChatVM).GetMethod("ExecuteSendMessage", BindingFlags.NonPublic | BindingFlags.Instance);
             prefix = typeof(PatchGlobalChat).GetMethod("PrefixExecuteSendMessage", BindingFlags.Public | BindingFlags.Static);
             HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));

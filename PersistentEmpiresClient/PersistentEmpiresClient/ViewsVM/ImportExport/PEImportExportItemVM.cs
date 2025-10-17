@@ -1,5 +1,6 @@
 ﻿using System;
 using TaleWorlds.Core;
+using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
 using TaleWorlds.Library;
 
 namespace PersistentEmpires.Views.ViewsVM.ImportExport
@@ -7,7 +8,7 @@ namespace PersistentEmpires.Views.ViewsVM.ImportExport
     public class PEImportExportItemVM : ViewModel
     {
         public ItemObject Item;
-        private ImageIdentifierVM _imageIdentifier;
+        private ItemImageIdentifierVM _imageIdentifier;
         private int _exportPrice;
         private int _importPrice;
         private Action<PEImportExportItemVM> _executeSelect;
@@ -16,7 +17,7 @@ namespace PersistentEmpires.Views.ViewsVM.ImportExport
         public PEImportExportItemVM(ItemObject item, int exportPrice, int importPrice, Action<PEImportExportItemVM> executeSelect)
         {
             this.Item = item;
-            this.ImageIdentifier = new ImageIdentifierVM(item);
+            this.ImageIdentifier = new ItemImageIdentifierVM(item);
             this.ExportPrice = exportPrice;
             this.ImportPrice = importPrice;
             base.OnPropertyChanged("ItemName");
@@ -87,7 +88,7 @@ namespace PersistentEmpires.Views.ViewsVM.ImportExport
             }
         }
         [DataSourceProperty]
-        public ImageIdentifierVM ImageIdentifier
+        public ItemImageIdentifierVM ImageIdentifier
         {
             get => this._imageIdentifier;
             set

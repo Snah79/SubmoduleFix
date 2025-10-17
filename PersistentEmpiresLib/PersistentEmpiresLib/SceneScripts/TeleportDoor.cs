@@ -30,9 +30,9 @@ namespace PersistentEmpiresLib.SceneScripts
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
             base.DescriptionMessage = descriptionMessage;
         }
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Use Door";
+            return new TextObject("Use Door");
         }
         public PE_CastleBanner GetCastleBanner()
         {
@@ -44,9 +44,10 @@ namespace PersistentEmpiresLib.SceneScripts
             }
             return null;
         }
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
             reportDamage = false;
+            finalDamage = 0;
             if (this.Lockpickable == false) return false;
             if (this.CastleId == -1) return false;
 
@@ -70,7 +71,7 @@ namespace PersistentEmpiresLib.SceneScripts
             if (f.doorManagers.Contains(player.VirtualPlayer.ToPlayerId()) || f.marshalls.Contains(player.VirtualPlayer.ToPlayerId()) || f.lordId == player.VirtualPlayer.ToPlayerId()) return true;
             return false;
         }
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name);
 
@@ -79,7 +80,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 userAgent.StopUsingGameObjectMT(false);
                 return;
             }
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
             userAgent.StopUsingGameObjectMT(true);
             if (GameNetwork.IsServer)
             {
@@ -95,7 +96,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                     if (canPlayerUse)
                     {
-                        GameEntity teleportPosEntity = this.LinkedDoor.GameEntity.GetFirstChildEntityWithTag("position");
+                        var teleportPosEntity = this.LinkedDoor.GameEntity.GetFirstChildEntityWithTag("position");
                         userAgent.TeleportToPosition(teleportPosEntity.GlobalPosition);
                     }
                     else

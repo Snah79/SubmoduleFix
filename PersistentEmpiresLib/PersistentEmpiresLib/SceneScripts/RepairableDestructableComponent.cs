@@ -25,8 +25,6 @@ namespace PersistentEmpiresLib.SceneScripts
     }
     public class PE_RepairableDestructableComponent : PE_DestructableComponent
     {
-
-
         public string DestructionState = "";
         public string ReferenceEntityTag = "destructable_entity";
         public string RepairItem = "pe_buildhammer";
@@ -50,8 +48,8 @@ namespace PersistentEmpiresLib.SceneScripts
         public string RepairItemRecipies = "pe_hardwood*2,pe_wooden_stick*1";
         public int RepairDamage = 20;
 
-        private GameEntity _healthyState;
-        private GameEntity _brokenState;
+        private WeakGameEntity _healthyState;
+        private WeakGameEntity _brokenState;
         private List<RepairReceipt> receipt = new List<RepairReceipt>();
         private long lastHittedAt;
 
@@ -77,7 +75,8 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             if (!string.IsNullOrEmpty(this.ReferenceEntityTag))
             {
-                GameEntity entity = base.GameEntity.GetChildren().FirstOrDefault((GameEntity x) => x.HasTag(this.ReferenceEntityTag));
+                var entity = GameEntity.GetChildren().FirstOrDefault((WeakGameEntity x) => x.HasTag(this.ReferenceEntityTag));
+
                 if (entity == null)
                 {
                     MBEditor.AddEntityWarning(base.GameEntity, base.GameEntity.GetPrefabName() + " RepairableDestructableComponent game entity tagged " + this.ReferenceEntityTag + " not found in childrens");
@@ -95,12 +94,12 @@ namespace PersistentEmpiresLib.SceneScripts
             return this.ValidateValues();
         }
 
-        public GameEntity BrokenState()
+        public WeakGameEntity BrokenState()
         {
             return this._brokenState;
         }
 
-        public GameEntity HealthyState()
+        public WeakGameEntity HealthyState()
         {
             return this._healthyState;
         }
@@ -109,11 +108,12 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             base.OnInit();
             this.HitPoint = this.MaxHitPoint;
-            this._healthyState = string.IsNullOrEmpty(this.ReferenceEntityTag) ? base.GameEntity : base.GameEntity.GetChildren().FirstOrDefault((GameEntity x) => x.HasTag(this.ReferenceEntityTag));
+            this._healthyState = string.IsNullOrEmpty(this.ReferenceEntityTag) ? base.GameEntity : base.GameEntity.GetChildren().FirstOrDefault((WeakGameEntity x) => x.HasTag(this.ReferenceEntityTag));
             this._originalStatePrefab = this._healthyState.GetPrefabName();
             if (this.DestructionState != "")
             {
-                this._brokenState = GameEntity.Instantiate(Mission.Current.Scene, this.DestructionState, this._healthyState.GetGlobalFrame());
+                var newEntity = TaleWorlds.Engine.GameEntity.Instantiate(Mission.Current.Scene, this.DestructionState, this._healthyState.GetGlobalFrame());
+                this._brokenState = newEntity.WeakEntity;
                 base.GameEntity.AddChild(this._brokenState, true);
                 this._brokenState.SetVisibilityExcludeParents(false);
             }
@@ -185,10 +185,12 @@ namespace PersistentEmpiresLib.SceneScripts
         public void TriggerOnHit(Agent attackerAgent, int inflictedDamage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
             bool flag;
-            this.OnHit(attackerAgent, inflictedDamage, impactPosition, impactDirection, weapon, attackerScriptComponentBehavior, out flag);
+            float flag2;
+            
+            OnHit(attackerAgent, inflictedDamage, impactPosition, impactDirection, weapon, attackerScriptComponentBehavior, out flag, out flag2);
         }
 
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
             reportDamage = true;
             MissionWeapon missionWeapon = weapon;
@@ -204,6 +206,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 )
             {
                 reportDamage = false;
+                finalDamage = 0;
                 NetworkCommunicator player = attackerAgent.MissionPeer.GetNetworkPeer();
                 PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
                 if (persistentEmpireRepresentative == null) return false;
@@ -276,6 +279,8 @@ namespace PersistentEmpiresLib.SceneScripts
                     LoggerHelper.LogAnAction(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerHitToDestructable, null, new object[] { this.GetType().Name });
                 }
             }
+            finalDamage = damage;
+
             return false;
         }
     }

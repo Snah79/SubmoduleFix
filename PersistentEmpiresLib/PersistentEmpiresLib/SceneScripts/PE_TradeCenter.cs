@@ -23,14 +23,14 @@ namespace PersistentEmpiresLib.SceneScripts
         public int CastleIndex = 0;
         public int RandomMinStock = 10;
         public int RandomMaxStock = 300;
-        protected override bool LockUserFrames
+        public override bool LockUserFrames
         {
             get
             {
                 return false;
             }
         }
-        protected override bool LockUserPositions
+        public override bool LockUserPositions
         {
             get
             {
@@ -83,14 +83,14 @@ namespace PersistentEmpiresLib.SceneScripts
             this.LoadMarketItems(xmlDocument.SelectSingleNode("/Market/Tier4Items").InnerText, 4);
 
         }
-        public override void OnUse(Agent userAgent)
+        public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
             if (!base.IsUsable(userAgent))
             {
                 userAgent.StopUsingGameObjectMT(false);
                 return;
             }
-            base.OnUse(userAgent);
+            base.OnUse(userAgent, agentBoneIndex);
             Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name);
 
             if (GameNetwork.IsServer)
@@ -105,9 +105,9 @@ namespace PersistentEmpiresLib.SceneScripts
             return this.castlesBehavior.castles[this.CastleIndex].CastleName;
         }
 
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return "Trading Center";
+            return new TextObject("Trading Center");
         }
     }
 }

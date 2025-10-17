@@ -190,8 +190,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private void SyncCarts(NetworkCommunicator peer)
         {
-            List<GameEntity> gameEntities = base.Mission.GetActiveEntitiesWithScriptComponentOfType<PE_AttachToAgent>().ToList();
-            foreach (GameEntity g in gameEntities)
+            var gameEntities = base.Mission.GetActiveEntitiesWithScriptComponentOfType<PE_AttachToAgent>().ToList();
+            
+            foreach (var g in gameEntities)
             {
                 PE_AttachToAgent comp = g.GetFirstScriptOfType<PE_AttachToAgent>();
                 if (comp.AttachedTo != null)
@@ -201,7 +202,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     GameNetwork.EndModuleEventAsServer();
                 }
             }
-
         }
 
         private void SyncHorseMarkets(NetworkCommunicator peer)
@@ -217,8 +217,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private void SyncMoveableObject(NetworkCommunicator peer)
         {
-            List<GameEntity> gameEntities = base.Mission.GetActiveEntitiesWithScriptComponentOfType<PE_MoveableMachine>().ToList();
-            foreach (GameEntity g in gameEntities)
+            var gameEntities = Mission.GetActiveEntitiesWithScriptComponentOfType<PE_MoveableMachine>().ToList();
+            
+            foreach (var g in gameEntities)
             {
                 PE_MoveableMachine moveableMachine = g.GetFirstScriptOfType<PE_MoveableMachine>();
                 if (moveableMachine.IsMovingBackward)
@@ -285,7 +286,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private void SyncMoneyChests(NetworkCommunicator peer)
         {
             List<GameEntity> gameEntity = new List<GameEntity>();
-            base.Mission.Scene.GetAllEntitiesWithScriptComponent<PE_MoneyChest>(ref gameEntity);
+            Mission.Scene.GetAllEntitiesWithScriptComponent<PE_MoneyChest>(ref gameEntity);
+            
             foreach (GameEntity g in gameEntity)
             {
                 PE_MoneyChest moneyChest = g.GetFirstScriptOfType<PE_MoneyChest>();
@@ -325,12 +327,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
 
-
         public override void OnRemoveBehavior()
         {
             base.OnRemoveBehavior();
-            this.AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
+            AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
         }
+
         public void AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode mode)
         {
             GameNetwork.NetworkMessageHandlerRegisterer networkMessageHandlerRegisterer = new GameNetwork.NetworkMessageHandlerRegisterer(mode);
@@ -626,7 +628,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             if (message.MissionObject != null)
             {
-                GameEntity gameEntity = message.MissionObject.GameEntity;
+                var gameEntity = message.MissionObject.GameEntity;
                 gameEntity.AddPhysics(gameEntity.Mass, gameEntity.CenterOfMass, gameEntity.GetBodyShape(), message.InitialVelocity, message.AngularVelocity, PhysicsMaterial.GetFromName(message.PhysicsMaterial), false, 0);
             }
         }

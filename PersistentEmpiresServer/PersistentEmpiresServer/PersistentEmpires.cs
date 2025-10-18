@@ -7,6 +7,7 @@ using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresSave.Database.Repositories;
 using PersistentEmpiresServer.ServerMissions;
 using System;
+using System.Diagnostics;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -19,6 +20,7 @@ namespace PersistentEmpiresServer
 
         protected override void InitializeGameStarter(Game game, IGameStarter starterObject)
         {
+            Debug.DebugManager = new PEDebugger();
             base.InitializeGameStarter(game, starterObject);
             CompressionBasic.MissionObjectIDCompressionInfo = new CompressionInfo.Integer(-1, 1000000, true);
             CompressionBasic.RoundGoldAmountCompressionInfo = new CompressionInfo.Integer(0, Int32.MaxValue, true);

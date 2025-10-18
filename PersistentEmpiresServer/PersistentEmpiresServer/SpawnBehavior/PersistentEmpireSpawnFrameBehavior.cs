@@ -99,7 +99,7 @@ namespace PersistentEmpiresServer.SpawnBehavior
                         BasicCharacterObject basicCharacterObject = mpheroClassForPeer.HeroCharacter;
                         uint color = persistentEmpireRepresentative.GetFaction().banner.GetPrimaryColor();
                         uint color2 = persistentEmpireRepresentative.GetFaction().banner.GetFirstIconColor();
-                        Banner banner = new Banner(persistentEmpireRepresentative.GetFaction().basicCultureObject.BannerKey);
+                        Banner banner = new Banner(persistentEmpireRepresentative.GetFaction().basicCultureObject.Banner.BannerCode);
                         AgentBuildData agentBuildData = new AgentBuildData(basicCharacterObject).VisualsIndex(0).Team(component.Team).TroopOrigin(new BasicBattleAgentOrigin(basicCharacterObject)).Formation(component.ControlledFormation).IsFemale(component.Peer.IsFemale).ClothingColor1(color).ClothingColor2(color2).Banner(banner);
                         agentBuildData.MissionPeer(component);
                         Equipment equipment = basicCharacterObject.Equipment.Clone(false);

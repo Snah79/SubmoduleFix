@@ -76,7 +76,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 CraftingAction craftingAction = this.craftings[player];
                 if (player.ControlledAgent != null && craftingAction.craftingStation.Animation != "")
                 {
-                    if (player.ControlledAgent.GetCurrentAction(0).Name == "act_none")
+                    if (player.ControlledAgent.GetCurrentAction(0).GetName() == "act_none")
                     {
                         ActionIndexCache action = ActionIndexCache.Create(craftingAction.craftingStation.Animation);
                         player.ControlledAgent.SetActionChannel(0, action, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, MBRandom.RandomFloatRanged(1f), false, -0.2f, 0, true);

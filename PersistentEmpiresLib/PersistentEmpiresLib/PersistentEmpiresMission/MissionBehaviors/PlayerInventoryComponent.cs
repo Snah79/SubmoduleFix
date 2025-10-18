@@ -495,7 +495,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 Inventory lootInventory = new Inventory(0, 0, lootInventoryId);
                 lootInventory.IsConsumable = true;
                 MatrixFrame frame = player.ControlledAgent.Frame;
-                droppedLoot = (PE_InventoryEntity)base.Mission.CreateMissionObjectFromPrefab("pe_loot", frame);
+                droppedLoot = (PE_InventoryEntity)base.Mission.CreateMissionObjectFromPrefab("pe_loot", frame, DoNothing);
                 droppedLoot.InventoryId = lootInventory.InventoryId;
                 droppedLoot.InventoryName = "Dropped Items";
                 droppedLoot.Slot = lootInventory.Slots.Count;
@@ -516,6 +516,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             });
 
             return true;
+        }
+
+        private void DoNothing(GameEntity entity)
+        {
         }
 
         private bool HandleRequestRevealItemBag(NetworkCommunicator player, RequestRevealItemBag message)

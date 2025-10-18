@@ -352,7 +352,7 @@ namespace PersistentEmpiresServer.ServerMissions
             }
 
             FactionsBehavior factionsBehavior = base.Mission.GetMissionBehavior<FactionsBehavior>();
-            factionsBehavior.UpdateFactionBanner(message.FactionIndex, MBObjectManager.Instance.GetObject<BasicCultureObject>("empire").BannerKey);
+            factionsBehavior.UpdateFactionBanner(message.FactionIndex, MBObjectManager.Instance.GetObject<BasicCultureObject>("empire").Banner.BannerCode);
             return true;
         }
 

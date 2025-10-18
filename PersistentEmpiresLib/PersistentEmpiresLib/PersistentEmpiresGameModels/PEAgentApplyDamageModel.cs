@@ -45,10 +45,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
 
             return base.CanWeaponDismount(attackerAgent, attackerWeapon, blow, collisionData);
         }
-
-        public override float CalculateDamage(in AttackInformation attackInformation, in AttackCollisionData collisionData, in MissionWeapon weapon, float baseDamage)
+        public override float ApplyGeneralDamageModifiers(in AttackInformation attackInformation, in AttackCollisionData collisionData, float baseDamage)
         {
             // if(WoundingBehavior.Instance.WoundingEnabled && WoundingBehavior.Instance.IsPlayerWounded)
+            var weapon = attackInformation.AttackerWeapon;
 
             if (weapon.IsEmpty)
             {
@@ -57,7 +57,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
             if (weapon.Item != null && weapon.Item.WeaponComponent != null && weapon.Item.WeaponComponent.PrimaryWeapon.WeaponClass == WeaponClass.Boulder && attackInformation.IsAttackerAgentNull == false)
             {
                 bool isThrownBySiegeWeapon = false;
-                foreach (var missile in Mission.Current.Missiles.ToList())
+                foreach (var missile in Mission.Current.MissilesList)
                 {
                     if (missile.Index == collisionData.AffectorWeaponSlotOrMissileIndex && missile.MissionObjectToIgnore != null)
                     {

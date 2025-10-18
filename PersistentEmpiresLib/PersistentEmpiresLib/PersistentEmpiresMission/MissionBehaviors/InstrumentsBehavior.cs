@@ -152,7 +152,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             if (persistentEmpireRepresentative == null) return false;
 
-            EquipmentIndex index = peer.ControlledAgent.GetWieldedItemIndex(Agent.HandIndex.OffHand);
+            EquipmentIndex index = peer.ControlledAgent.GetOffhandWieldedItemIndex();
 
             if (index == EquipmentIndex.None) return false;
 

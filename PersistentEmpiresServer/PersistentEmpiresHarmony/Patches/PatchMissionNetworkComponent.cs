@@ -52,7 +52,7 @@ namespace PersistentEmpiresHarmony.Patches
             {
                 MBDebug.Print("Syncing a team to peer: " + peer.UserName + " Team Index: " + team.TeamIndex.ToString(), 0, Debug.DebugColor.Cyan);
                 GameNetwork.BeginModuleEventAsServer(peer);
-                GameNetwork.WriteMessage(new AddTeam(team.TeamIndex, team.Side, team.Color, team.Color2, (team.Banner != null) ? BannerCode.CreateFrom(team.Banner).Code : string.Empty, team.IsPlayerGeneral, team.IsPlayerSergeant));
+                GameNetwork.WriteMessage(new AddTeam(team.TeamIndex, team.Side, team.Color, team.Color2, (team.Banner != null) ? team.Banner.BannerCode : string.Empty, team.IsPlayerGeneral, team.IsPlayerSergeant));
                 GameNetwork.EndModuleEventAsServer();
             }
         }
@@ -82,7 +82,7 @@ namespace PersistentEmpiresHarmony.Patches
             if (!agent.IsActive())
             {
                 GameNetwork.BeginModuleEventAsServer(networkPeer);
-                GameNetwork.WriteMessage(new MakeAgentDead(agent.Index, agent.State == AgentState.Killed, agent.GetCurrentActionValue(0)));
+                GameNetwork.WriteMessage(new MakeAgentDead(agent.Index, agent.State == AgentState.Killed, agent.GetCurrentAction(0)));
                 GameNetwork.EndModuleEventAsServer();
             }
         }
@@ -156,13 +156,13 @@ namespace PersistentEmpiresHarmony.Patches
                     GameNetwork.EndModuleEventAsServer();
                 }
             }
-            EquipmentIndex wieldedItemIndex = agent.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+            EquipmentIndex wieldedItemIndex = agent.GetPrimaryWieldedItemIndex();
             int num5 = ((wieldedItemIndex != EquipmentIndex.None) ? agent.Equipment[wieldedItemIndex].CurrentUsageIndex : 0);
             GameNetwork.BeginModuleEventAsServer(networkPeer);
             GameNetwork.WriteMessage(new SetWieldedItemIndex(agent.Index, false, true, true, wieldedItemIndex, num5));
             GameNetwork.EndModuleEventAsServer();
             GameNetwork.BeginModuleEventAsServer(networkPeer);
-            GameNetwork.WriteMessage(new SetWieldedItemIndex(agent.Index, true, true, true, agent.GetWieldedItemIndex(Agent.HandIndex.OffHand), num5));
+            GameNetwork.WriteMessage(new SetWieldedItemIndex(agent.Index, true, true, true, agent.GetOffhandWieldedItemIndex(), num5));
             GameNetwork.EndModuleEventAsServer();
             MBActionSet actionSet = agent.ActionSet;
             if (actionSet.IsValid)
@@ -189,9 +189,9 @@ namespace PersistentEmpiresHarmony.Patches
                 bool isActive = state == AgentState.Active;
                 bool isKilledOrUnconscious = (state == AgentState.Killed || state == AgentState.Unconscious);
                 bool hasAttachedWeapons = agent.GetAttachedWeaponsCount() > 0;
-                bool hasWieldedItems = (!agent.IsMount && (agent.GetWieldedItemIndex(Agent.HandIndex.MainHand) >= EquipmentIndex.WeaponItemBeginSlot || agent.GetWieldedItemIndex(Agent.HandIndex.OffHand) >= EquipmentIndex.WeaponItemBeginSlot));
+                bool hasWieldedItems = (!agent.IsMount && (agent.GetPrimaryWieldedItemIndex() >= EquipmentIndex.WeaponItemBeginSlot || agent.GetOffhandWieldedItemIndex() >= EquipmentIndex.WeaponItemBeginSlot));
                 bool isAgentInProximity = currentMission.IsAgentInProximityMap(agent);
-                bool isMissileShooter = currentMission.Missiles.Any((Mission.Missile m) => m.ShooterAgent == agent);
+                bool isMissileShooter = currentMission.MissilesList.Any((Mission.Missile m) => m.ShooterAgent == agent);
 
                 bool shouldSendAgent = (isActive || (!isActive && isMissileShooter));
 
@@ -239,7 +239,7 @@ namespace PersistentEmpiresHarmony.Patches
 
         private static void SendMissilesToPeer(NetworkCommunicator networkPeer)
         {
-            foreach (Mission.Missile missile in Mission.Current.Missiles)
+            foreach (Mission.Missile missile in Mission.Current.MissilesList)
             {
                 Vec3 velocity = missile.GetVelocity();
                 float num = velocity.Normalize();

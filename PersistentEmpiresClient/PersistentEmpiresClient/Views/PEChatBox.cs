@@ -23,7 +23,7 @@ namespace PersistentEmpires.Views.Views
             {
                 if (focusedLayer is TaleWorlds.Engine.GauntletUI.GauntletLayer layer)
                 {
-                    if (layer.GetMovieIdentifier("SPChatLog").DataSource is TaleWorlds.MountAndBlade.ViewModelCollection.Multiplayer.MPChatVM)
+                    if (layer.GetMovieIdentifier("SPChatLog")?.DataSource is TaleWorlds.MountAndBlade.ViewModelCollection.Multiplayer.MPChatVM)
                     {
                         var tmp = layer.GetMovieIdentifier("SPChatLog").Movie as TaleWorlds.GauntletUI.Data.GeneratedGauntletMovie;
                         if (tmp == null) return;

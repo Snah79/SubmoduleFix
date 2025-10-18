@@ -25,7 +25,7 @@
 
         <ButtonWidget HorizontalAlignment="*HorizontalAlignment" MarginLeft="20" MarginRight="20" MarginTop="30" Command.AlternateClick="ExecuteAlternateClick" Command.Click="ExecuteClickAction" AcceptDrag="true" DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="80" Command.HoverBegin="ShowTooltip" Command.HoverEnd="HideTooltip">
           <Children>
-            <ImageIdentifierWidget Id="ImageIdentifier" DataSource="{ImageIdentifier}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" ImageId="@Id" AdditionalArgs="@AdditionalArgs" ImageTypeCode="@ImageTypeCode">
+            <ImageIdentifierWidget Id="ImageIdentifier" DataSource="{ImageIdentifier}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" ImageId="@Id" AdditionalArgs="@AdditionalArgs" ImageTypeCode="@ImageTypeCode" TextureProviderName="@TextureProviderName">
             </ImageIdentifierWidget>
 
           </Children>

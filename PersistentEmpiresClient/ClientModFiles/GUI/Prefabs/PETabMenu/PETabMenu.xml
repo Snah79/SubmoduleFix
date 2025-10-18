@@ -33,7 +33,7 @@
                               <ItemTemplate>
                                 <ButtonWidget Command.Click="ExecuteSelectFaction" IsSelected="@IsSelected" DoNotPassEventsToChildren="true" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="110" SuggestedHeight="180" UpdateChildrenStates="true" GamepadNavigationIndex="0" MarginRight="50">
                                   <Children>
-                                    <MaskedTextureWidget DataSource="{BannerImage}" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="125" SuggestedHeight="166" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="PE.BannerButtonBrush" AdditionalArgs="@AdditionalArgs" ImageId="@Id" ImageTypeCode="@ImageTypeCode" />
+                                    <MaskedTextureWidget DataSource="{BannerImage}" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="125" SuggestedHeight="166" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="PE.BannerButtonBrush" AdditionalArgs="@AdditionalArgs" ImageId="@Id" ImageTypeCode="@ImageTypeCode" TextureProviderName="@TextureProviderName"/>
                                     <BrushWidget Sprite="SPGeneral\MapOverlay\Encounter\WarIcon" HeightSizePolicy="Fixed" WidthSizePolicy="Fixed" HorizontalAlignment="Center" SuggestedHeight="70" SuggestedWidth="70" PositionYOffset="105" IsVisible="@ShowWarIcon"></BrushWidget>
                                   </Children>
                                 </ButtonWidget>

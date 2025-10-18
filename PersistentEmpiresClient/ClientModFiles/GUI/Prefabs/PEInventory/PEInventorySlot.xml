@@ -20,7 +20,7 @@
         </BrushWidget>
         <ButtonWidget HorizontalAlignment="*HorizontalAlignment" MarginLeft="20" MarginRight="20" MarginTop="30" Command.Click="ExecuteClickAction" Command.AlternateClick="ExecuteAlternateClick" AcceptDrag="true" DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="80" Command.HoverBegin="ShowTooltip" Command.HoverEnd="HideTooltip" >
           <Children>
-            <ImageIdentifierWidget Id="ImageIdentifier" DataSource="{ImageIdentifier}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" ImageId="@Id" AdditionalArgs="@AdditionalArgs" ImageTypeCode="@ImageTypeCode">
+            <ImageIdentifierWidget Id="ImageIdentifier" DataSource="{ImageIdentifier}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" ImageId="@Id" AdditionalArgs="@AdditionalArgs" ImageTypeCode="@ImageTypeCode" TextureProviderName="@TextureProviderName">
               <Children>
                 <TextWidget HorizontalAlignment="Right" VerticalAlignment="Bottom" MarginRight="10" MarginBottom="5" DataSource="{..}" IntText="@Count"></TextWidget>
               </Children>

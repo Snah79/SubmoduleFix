@@ -10,7 +10,7 @@
       <Children>
         <Widget HeightSizePolicy="CoverChildren" WidthSizePolicy="CoverChildren" Sprite="SPGeneral\MapOverlay\Army\leader_frame" VerticalAlignment="Center" HorizontalAlignment="Left">
           <Children>
-            <ImageIdentifierWidget HorizontalAlignment="Left" VerticalAlignment="Center" Id="ImageIdentifier" DataSource="{ImageIdentifier}" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="165" SuggestedHeight="70" ImageId="@Id" AdditionalArgs="@AdditionalArgs" ImageTypeCode="@ImageTypeCode" MarginLeft="10" MarginBottom="10"></ImageIdentifierWidget>
+            <ImageIdentifierWidget HorizontalAlignment="Left" VerticalAlignment="Center" Id="ImageIdentifier" DataSource="{ImageIdentifier}" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="165" SuggestedHeight="70" ImageId="@Id" AdditionalArgs="@AdditionalArgs" ImageTypeCode="@ImageTypeCode" MarginLeft="10" MarginBottom="10" TextureProviderName="@TextureProviderName"></ImageIdentifierWidget>
             <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="HorizontalLeftToRight" VerticalAlignment="Bottom" HorizontalAlignment="Left" PositionXOffset="10" >
               <Children>
                 <TextWidget IntText="@CraftingDuration" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"></TextWidget>
@@ -36,7 +36,7 @@
           <ItemTemplate>
             <BrushWidget HeightSizePolicy="CoverChildren" WidthSizePolicy="CoverChildren" Sprite="SPGeneral\MapOverlay\Army\leader_frame">
               <Children>
-                <ImageIdentifierWidget HorizontalAlignment="Left" VerticalAlignment="Center" Id="ImageIdentifier" DataSource="{ImageIdentifier}" MarginLeft="10" MarginTop="10" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="110" SuggestedHeight="55" ImageId="@Id" AdditionalArgs="@AdditionalArgs" ImageTypeCode="@ImageTypeCode" MarginBottom="10"></ImageIdentifierWidget>
+                <ImageIdentifierWidget HorizontalAlignment="Left" VerticalAlignment="Center" Id="ImageIdentifier" DataSource="{ImageIdentifier}" MarginLeft="10" MarginTop="10" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="110" SuggestedHeight="55" ImageId="@Id" AdditionalArgs="@AdditionalArgs" ImageTypeCode="@ImageTypeCode" MarginBottom="10" TextureProviderName="@TextureProviderName"></ImageIdentifierWidget>
                 <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="HorizontalLeftToRight" VerticalAlignment="Bottom" HorizontalAlignment="Right" PositionXOffset="-10" >
                   <Children>
                     <TextWidget IntText="@Count" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"></TextWidget>

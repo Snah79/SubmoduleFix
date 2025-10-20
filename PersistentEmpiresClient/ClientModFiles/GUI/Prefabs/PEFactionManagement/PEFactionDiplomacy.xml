@@ -24,7 +24,7 @@
                                   <Children>
                                     <ListPanel StackLayout.LayoutMethod="VerticalBottomToTop" MarginTop="30"  WidthSizePolicy = "CoverChildren" HeightSizePolicy = "CoverChildren">
                                       <Children>
-                                        <MaskedTextureWidget DataSource="{BannerImage}" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="145" SuggestedHeight="166" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="PE.BannerButtonBrush" AdditionalArgs="@AdditionalArgs" ImageId="@Id" ImageTypeCode="@ImageTypeCode" OverlayTextureScale="1.8" />
+                                        <MaskedTextureWidget DataSource="{BannerImage}" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="145" SuggestedHeight="166" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="PE.BannerButtonBrush" AdditionalArgs="@AdditionalArgs" ImageId="@Id" ImageTypeCode="@ImageTypeCode" OverlayTextureScale="1.8" TextureProviderName="@TextureProviderName"/>
                                         <TextWidget WidthSizePolicy="StretchToParent" Text="@FactionName" MarginTop="20"></TextWidget>
 
                                       </Children>

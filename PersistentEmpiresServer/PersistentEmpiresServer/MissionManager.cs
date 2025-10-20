@@ -23,7 +23,6 @@ namespace PersistentEmpiresServer
 						new DayNightCycleBehavior(),
 						// 2.0.0.76561198064533271
 						MissionLobbyComponent.CreateBehavior(),
-                        new DrowningBehavior(),
                         new NotAllPlayersJoinFixBehavior(),
                         new AnimalButcheringBehavior(),
                         new InformationComponent(),

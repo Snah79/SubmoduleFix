@@ -358,7 +358,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
             else if (maxSpeedMultiplier < 0.7f && !this.IsAgentWearingAboveItsSkill(agent)) maxSpeedMultiplier = 0.7f;
             // 7. Set maxSpeedMultiplier
             agentDrivenProperties.MaxSpeedMultiplier = maxSpeedMultiplier;
-            agentDrivenProperties.CrouchedSpeedMultiplier = maxSpeedMultiplier;
+            agentDrivenProperties.CrouchedSpeedMultiplier = maxSpeedMultiplier * 0.7f;
 
             //float maxSpeedMultiplier = (athleticsSkill / (100f + (num / 5) + (this.GetEffectiveArmorEncumbrance(agent) / 5)));
             // eray istedi 0.8f yapıldı bash speed

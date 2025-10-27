@@ -44,8 +44,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
                 foreach (Agent agent in base.Mission.Agents)
                 {
-                    //if (agent.IsActive() && agent.Position.Z < UpperLimit && agent.Position.Z > LowerLimit)
-                    if (agent.IsActive() && !agent.IsHuman)
+                    if (agent.IsActive() && agent.Position.Z < UpperLimit && agent.Position.Z > LowerLimit)
+                    //if (agent.IsActive() && !agent.IsHuman)
                     {
                         delAgentList.Add(agent);                        
                     }

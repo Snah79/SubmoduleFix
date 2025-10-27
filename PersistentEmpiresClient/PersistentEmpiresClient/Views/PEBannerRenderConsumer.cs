@@ -2,6 +2,7 @@
 using TaleWorlds.Engine;
 using TaleWorlds.MountAndBlade.View;
 using TaleWorlds.MountAndBlade.View.MissionViews;
+using TaleWorlds.MountAndBlade.View.Tableaus.Thumbnails;
 
 namespace PersistentEmpires.Views.Views
 {
@@ -24,7 +25,8 @@ namespace PersistentEmpires.Views.Views
                 if (render.RenderBanner == null) return;
 
                 Locked = true;
-                render.RenderBanner.GetTableauTextureLarge((Texture t) =>
+                BannerDebugInfo bdi = new BannerDebugInfo();
+                render.RenderBanner.GetTableauTextureLarge(in bdi , (Texture t) =>
                 {
                     BannerRenderer.OnBannerTableauRenderDone(render.RenderOnTo, t);
                     Locked = false;

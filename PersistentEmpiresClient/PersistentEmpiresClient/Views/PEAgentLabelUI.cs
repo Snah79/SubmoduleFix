@@ -10,6 +10,7 @@ using TaleWorlds.Engine;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View;
 using TaleWorlds.MountAndBlade.View.MissionViews;
+using TaleWorlds.MountAndBlade.View.Tableaus.Thumbnails;
 
 namespace PersistentEmpires.Views.Views
 {
@@ -369,7 +370,8 @@ namespace PersistentEmpires.Views.Views
                 Material tableauMaterial = Material.GetFromResource("agent_label_with_tableau");
                 if (agent.Origin.Banner != null || peerBanner != null)
                 {
-                    texture = (peerBanner ?? agent.Origin.Banner).GetTableauTextureSmall(null);
+                    BannerDebugInfo bdi = new BannerDebugInfo();
+                    texture = (peerBanner ?? agent.Origin.Banner).GetTableauTextureSmall(in bdi, null);
                 }
                 if (copy != null && tableauMaterial != null)
                 {
@@ -388,7 +390,8 @@ namespace PersistentEmpires.Views.Views
                         };
                         if (agent.Origin.Banner != null || peerBanner != null)
                         {
-                            texture = (peerBanner ?? agent.Origin.Banner).GetTableauTextureSmall(setAction);
+                            BannerDebugInfo bdi = new BannerDebugInfo();
+                            texture = (peerBanner ?? agent.Origin.Banner).GetTableauTextureSmall(in bdi, setAction);
                         }
                         tableauMaterial.SetTexture(Material.MBTextureType.DiffuseMap2, fromResource);
                         this._labelMaterials.Add(texture, tableauMaterial);

@@ -55,7 +55,7 @@ namespace PersistentEmpiresHarmony
         }
         public override void OnBeforeMissionBehaviorInitialize(Mission mission)
         {
-            List<MissionObject> cachedMissionObjects = mission.MissionObjects
+            var cachedMissionObjects = mission.MissionObjects
                .Where(o => o is SynchedMissionObject)
                .Where(o => o.GetType().FullName != "PersistentEmpiresLib.SceneScripts.PE_DestructibleWithItem")
                .Where(o => o.GetType().FullName != "PersistentEmpiresLib.SceneScripts.PE_Chair")

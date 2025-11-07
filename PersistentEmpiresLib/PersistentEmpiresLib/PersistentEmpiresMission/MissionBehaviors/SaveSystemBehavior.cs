@@ -13,6 +13,8 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using System.Xml.Linq;
+using System.IO;
+using System.Reflection;
 
 namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 {
@@ -618,9 +620,42 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
 
-        public static void RglExceptionThrown(System.Diagnostics.StackTrace e, Exception rglException)
+        public static void RglExceptionThrown(System.Diagnostics.StackTrace stackTrace, Exception exception)
         {
             // Define your error logging logic
+            try
+            {
+                var message = ToLogString(exception, stackTrace);
+                
+                Debug.Print($"* Exception in Persistent Empires Module!{message}", color: Debug.DebugColor.Red);
+
+                var path = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\"));
+
+                path += $"Error_{DateTime.Now.ToString("yyyyMMdd_hhmmss_fff")}.txt";
+                using (FileStream fs = File.Create(path))
+                {
+                    using (var sw = new StreamWriter(fs))
+                    {
+                        sw.Write(message);
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                Debug.Print($"* Exception in RglExceptionThrown handler! {ex.Message}", color: Debug.DebugColor.Red);
+            }
+        }
+
+        private static string ToLogString(Exception ex, System.Diagnostics.StackTrace stackTrace)
+        {
+            var message = $"Message: {ex.Message}{Environment.NewLine}" +
+                $"Stack: {ex.StackTrace}{Environment.NewLine}" +
+                $"InnerException: {ex.InnerException}{Environment.NewLine}" +
+                $"Data: {ex.Data}{Environment.NewLine}" +
+                $"Source: {ex.Source}{Environment.NewLine}" +
+                $"CustomStackTrace: {stackTrace}";
+
+            return message;
         }
 
         public static bool IsRunning { get { return _running; } }

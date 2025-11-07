@@ -1,12 +1,14 @@
 ﻿using NetworkMessages.FromServer;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using Debug = TaleWorlds.Library.Debug;
 
 namespace PersistentEmpiresHarmony.Patches
 {
@@ -46,14 +48,27 @@ namespace PersistentEmpiresHarmony.Patches
             return result;
         }
 
-        private static void SendTeamsToPeer(NetworkCommunicator peer)
+        private static void SendTeamsToPeer(NetworkCommunicator peer, int counter = 0)
         {
-            foreach (Team team in Mission.Current.Teams)
+            try
             {
-                MBDebug.Print("Syncing a team to peer: " + peer.UserName + " Team Index: " + team.TeamIndex.ToString(), 0, Debug.DebugColor.Cyan);
-                GameNetwork.BeginModuleEventAsServer(peer);
-                GameNetwork.WriteMessage(new AddTeam(team.TeamIndex, team.Side, team.Color, team.Color2, (team.Banner != null) ? team.Banner.BannerCode : string.Empty, team.IsPlayerGeneral, team.IsPlayerSergeant));
-                GameNetwork.EndModuleEventAsServer();
+                foreach (Team team in Mission.Current.Teams)
+                {
+                    MBDebug.Print("Syncing a team to peer: " + peer.UserName + " Team Index: " + team.TeamIndex.ToString(), 0, Debug.DebugColor.Cyan);
+                    GameNetwork.BeginModuleEventAsServer(peer);
+                    GameNetwork.WriteMessage(new AddTeam(team.TeamIndex, team.Side, team.Color, team.Color2, (team.Banner != null) ? team.Banner.BannerCode : string.Empty, team.IsPlayerGeneral, team.IsPlayerSergeant));
+                    GameNetwork.EndModuleEventAsServer();
+                }
+            }
+            catch(Exception ex)
+            {
+                StackTrace myTrace = new StackTrace(0, true);
+                PersistentEmpiresHarmonySubModule.RglExceptionThrown(myTrace, ex);
+                // Max 1 retry per connecting player
+                if (counter < 2)
+                {
+                    SendTeamsToPeer(peer, ++counter);
+                }
             }
         }
 
@@ -216,10 +231,23 @@ namespace PersistentEmpiresHarmony.Patches
         }
 
 
-        private static void CallPrivateFunction(string function, MissionNetwork __instance, object[] parameters)
+        private static void CallPrivateFunction(string function, MissionNetwork __instance, object[] parameters, bool useRetry = false, int counter = 0)
         {
-            MethodInfo dynMethod = __instance.GetType().GetMethod(function, BindingFlags.NonPublic | BindingFlags.Instance);
-            dynMethod.Invoke(__instance, parameters);
+            try
+            {
+                MethodInfo dynMethod = __instance.GetType().GetMethod(function, BindingFlags.NonPublic | BindingFlags.Instance);
+                dynMethod.Invoke(__instance, parameters);
+            }
+            catch(Exception ex)
+            {
+                StackTrace myTrace = new StackTrace(0, true);
+                PersistentEmpiresHarmonySubModule.RglExceptionThrown(myTrace, ex);
+                // Max 1 retry per connecting player
+                if (useRetry && counter < 2)
+                {
+                    CallPrivateFunction(function, __instance, parameters, useRetry, ++counter);
+                }
+            }
         }
 
         private static void SynchronizeMissionObjectsToPeer(NetworkCommunicator networkPeer, List<MissionObject> cachedMissionObjects)
@@ -289,9 +317,20 @@ namespace PersistentEmpiresHarmony.Patches
                 return;
             }
 
-            List<MissionObject> toBeSend = chunkedMissionObjects[syncingTrack.chunkIndex];
-            
-            SynchronizeMissionObjectsToPeer(syncingTrack.peer, toBeSend);
+            var toBeSend = chunkedMissionObjects[syncingTrack.chunkIndex].ToList();
+
+            try
+            {
+                SynchronizeMissionObjectsToPeer(syncingTrack.peer, toBeSend);
+            }
+            catch(Exception ex)
+            {
+                StackTrace myTrace = new StackTrace(0, true);
+                PersistentEmpiresHarmonySubModule.RglExceptionThrown(myTrace, ex);
+                // do nothing, will try again next tick
+                return;
+            }
+
             syncingTrack.chunkIndex = syncingTrack.chunkIndex + 1;
             
             if (syncingTrack.chunkIndex >= chunkedMissionObjects.Count)

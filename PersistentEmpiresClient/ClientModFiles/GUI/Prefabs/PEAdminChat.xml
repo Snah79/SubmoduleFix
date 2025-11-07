@@ -13,7 +13,7 @@
             <TextWidget Text="Admin Chat" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginLeft="20" MarginBottom="10"></TextWidget>
             <Widget WidthSizePolicy="StretchToParent" VerticalAlignment="Center" HeightSizePolicy="Fixed" SuggestedHeight="55" MarginLeft="15" MarginRight="15" Sprite="StdAssets\Popup\text_input">
               <Children>
-                <EditableTextWidget Id="EditableLocalChat" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="MP.ChatLog.Text" Text="@TextInput"  MarginLeft="15" MarginRight="15"   GamepadNavigationIndex="0" />
+                <EditableTextWidget Id="EditableLocalChat" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="MP.ChatLog.Text" RealText="@TextInput"  MarginLeft="15" MarginRight="15"   GamepadNavigationIndex="0" />
               </Children>
             </Widget>
 

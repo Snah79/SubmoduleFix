@@ -16,6 +16,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public long LastCheckedAt = 0;
         public long Duration = 10;
+        private object _lock = new object();
+        private List<Agent> _agentsToRemove = new List<Agent>();
 
         public override void AfterStart()
         {
@@ -33,9 +35,43 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             this.LowerLimit = lowerLimit.GetGlobalFrame().origin.Z;
             this.LastCheckedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         }
-        
+
+        public override void OnAgentHit(Agent affectedAgent, Agent affectorAgent, in MissionWeapon affectorWeapon, in Blow blow, in AttackCollisionData attackCollisionData)
+        {
+            if (this.IsSetProperly && affectedAgent.IsActive() && !affectedAgent.IsHuman && affectedAgent.Position.Z < UpperLimit && affectedAgent.Position.Z > LowerLimit)
+            {
+                if(affectedAgent.Health < blow.InflictedDamage)
+                {
+                    // Restore health which was already removed for agent and mark him for fading out.
+                    affectedAgent.Health += blow.InflictedDamage;
+                    lock(_lock)
+                    {
+                        _agentsToRemove.Add(affectedAgent);
+                    }
+                }
+            }
+        }
+
         public override void OnMissionTick(float dt)
         {
+            if(_agentsToRemove.Any())
+            {
+                lock (_lock)
+                {
+                    var agentCount = _agentsToRemove.Count();
+
+                    for (int i = 0; i < agentCount; i++)
+                    {
+                        _agentsToRemove[i].FadeOut(false, false);
+                    }
+
+                    _agentsToRemove.Clear();
+                }
+                
+                // Don't check drowning on this tick
+                return;
+            }
+
             if (LastCheckedAt + this.Duration < DateTimeOffset.UtcNow.ToUnixTimeSeconds() && this.IsSetProperly)
             {
                 var delAgentList = new List<Agent>();

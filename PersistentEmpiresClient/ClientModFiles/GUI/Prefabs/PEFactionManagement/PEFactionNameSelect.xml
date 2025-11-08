@@ -32,7 +32,7 @@
                       <Children>
                         <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="55" MarginTop="15" Sprite="General\CharacterCreation\name_input_area">
                           <Children>
-                            <EditableTextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="ClanNaming.NameInput.Text" Text="@FactionName" GamepadNavigationIndex="0" />
+                            <EditableTextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="ClanNaming.NameInput.Text" RealText="@FactionName" GamepadNavigationIndex="0" />
                           </Children>
                         </Widget>
                         <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="7" MarginLeft="10" MarginRight="10" Text="@FactionNameNotApplicable" Brush="ClanNaming.DisabledReason.Text" />

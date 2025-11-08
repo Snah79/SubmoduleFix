@@ -38,7 +38,7 @@ namespace PersistentEmpires.Views
             {
                 var path = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\"));
 
-                path += $"Error_{DateTime.Now.ToString("yyyyMMdd_hhmmss")}.txt";
+                path += $"Error_{DateTime.Now.ToString("yyyyMMdd_hhmmss_fff")}.txt";
                 using (FileStream fs = File.Create(path))
                 {
                     using (var sw = new StreamWriter(fs))
@@ -69,7 +69,7 @@ namespace PersistentEmpires.Views
             {
                 var path = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\"));
 
-                path += $"Error_{DateTime.Now.ToString("yyyyMMdd_hhmmss")}.txt";
+                path += $"Error_{DateTime.Now.ToString("yyyyMMdd_hhmmss_fff")}.txt";
                 using (FileStream fs = File.Create(path))
                 {
                     using (var sw = new StreamWriter(fs))

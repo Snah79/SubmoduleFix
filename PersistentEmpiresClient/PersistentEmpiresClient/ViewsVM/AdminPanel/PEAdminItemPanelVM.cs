@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Core;
@@ -30,27 +31,32 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
 
         private void TryToFindItem()
         {
-            var item = MBObjectManager.Instance.GetObject<ItemObject>(Find);
+            try
+            {
+                var items = MBObjectManager.Instance.GetObjects<ItemObject>(Find);
 
-            if(item != null)
-            {
-                tmpFoundItems.Add(item.StringId);
-                TryToFindItem();
-            }
-            else
-            {
-                if(tmpFoundItems.Any())
+                tmpFoundItems = new List<string>();
+                tmpFoundItems.AddRange(items.Select(x => x.StringId));
+                //if (item != null)
+                //{
+                //    tmpFoundItems.Add(item.StringId);
+                //    TryToFindItem();
+                //}
+                //else
+                //{
+                if (tmpFoundItems.Any())
                 {
-                    if(tmpFoundItems.Count() == 1)
+                    if (tmpFoundItems.Count() == 1)
                     {
                         ItemId = tmpFoundItems[0];
+                        RefreshValues();
                     }
                     else
                     {
                         MBInformationManager.ShowMultiSelectionInquiry(
                     new MultiSelectionInquiryData(GameTexts.FindText("PEAdminItemPanelInqCaption", null).ToString()
                     , GameTexts.FindText("PEAdminItemPanelInqText", null).ToString()
-                    , tmpFoundItems.OrderBy(x=> x).Select(x => new InquiryElement(x, $"{x}", null)).ToList()
+                    , tmpFoundItems.OrderBy(x => x).Select(x => new InquiryElement(x, $"{x}", null)).ToList()
                     , true
                     , 1
                     , 1
@@ -60,6 +66,11 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
                     , DoCancel));
                     }
                 }
+                //}
+            }
+            catch (Exception ex)
+            {
+
             }
         }
 
@@ -73,6 +84,7 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
             var itemId = list.FirstOrDefault().Identifier as string;
 
             ItemId = itemId;
+            RefreshValues();
         }        
 
         [DataSourceProperty]
@@ -86,9 +98,9 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
                     this._itemId = value;
                     base.OnPropertyChangedWithValue(value, "ItemId");
 
-                    if(_itemId.EndsWith("*"))
+                    if (_itemId.EndsWith("*"))
                     {
-                        tmp = _itemId.TrimEnd('*').ToLower();
+                        tmp = _itemId?.TrimEnd('*')?.ToLower();
                         if (_itemId.Length > 3)
                         {
                             tmpFoundItems = new List<string>();

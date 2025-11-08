@@ -29,7 +29,7 @@
                     <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" MarginRight="20" Text="Item Id"></TextWidget>
                     <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="55" Sprite="General\CharacterCreation\name_input_area">
                       <Children>
-                        <EditableTextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="ClanNaming.NameInput.Text" Text="@ItemId" GamepadNavigationIndex="0" />
+                        <EditableTextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="ClanNaming.NameInput.Text" RealText="@ItemId" GamepadNavigationIndex="0" />
                       </Children>
                     </Widget>
                   </Children>

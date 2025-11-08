@@ -32,7 +32,7 @@
                         <TextWidget WidthSizePolicy="StretchToParent" Text="Search For Player" MarginTop="45"></TextWidget>
                         <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="55" MarginLeft="15" MarginRight="15" MarginTop="15" Sprite="General\CharacterCreation\name_input_area">
                           <Children>
-                            <EditableTextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="ClanNaming.NameInput.Text" Text="@SearchPlayer" GamepadNavigationIndex="0" />
+                            <EditableTextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="ClanNaming.NameInput.Text" RealText="@SearchPlayer" GamepadNavigationIndex="0" />
                           </Children>
                         </Widget>
                       </Children>

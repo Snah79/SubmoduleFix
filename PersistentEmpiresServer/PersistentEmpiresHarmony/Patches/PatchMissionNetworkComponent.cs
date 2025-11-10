@@ -307,7 +307,7 @@ namespace PersistentEmpiresHarmony.Patches
 
         public static void OnTick()
         {
-            if (peerSyncingQueue.Count <= 0) return;
+            if (!peerSyncingQueue.Any() || !chunkedMissionObjects.Any()) return;
 
             SyncingTrack syncingTrack = peerSyncingQueue.Peek();
             

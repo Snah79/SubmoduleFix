@@ -58,21 +58,6 @@ namespace PersistentEmpiresLib.SceneScripts
         private bool destructed = false;
         private long destructedAt = 0;
 
-        public float MaxHitPoint = 100f;
-        protected float _hitPoint;
-
-        public float HitPoint
-        {
-            get => this._hitPoint;
-            set
-            {
-                if (!this._hitPoint.Equals(value))
-                {
-                    this._hitPoint = MathF.Max(value, 0f);
-                }
-            }
-        }
-
         protected override void OnInit()
         {
             base.OnInit();

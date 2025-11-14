@@ -27,7 +27,7 @@ namespace PersistentEmpiresLib.SceneScripts
         public int DropAmount { get; set; }
         public float DropBelowHit { get; set; }
     }
-    public class PE_DestructibleWithItem : UsableMissionObject
+    public class PE_DestructibleWithItem : PE_DestructableComponent
     {
 
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
@@ -149,7 +149,7 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         
-        public void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
+        public override void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
             this.HitPoint = hitPoint;
 
@@ -243,11 +243,6 @@ namespace PersistentEmpiresLib.SceneScripts
             SetHitPoint(HitPoint - damage, impactDirection, attackerScriptComponentBehavior);
 
             return false;
-        }
-
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
-        {
-            return new TextObject("");
         }
     }
 }

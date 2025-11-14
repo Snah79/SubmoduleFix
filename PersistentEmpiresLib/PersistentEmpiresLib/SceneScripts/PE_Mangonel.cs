@@ -338,6 +338,7 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 return;
             }
+#if SERVER
             if (!GameNetwork.IsClientOrReplay)
             {
                 foreach (StandingPointWithWeaponRequirement standingPointWithWeaponRequirement in this.AmmoPickUpStandingPoints)
@@ -367,6 +368,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                 }
             }
+#endif
             switch (base.State)
             {
                 case RangedSiegeWeapon.WeaponState.LoadingAmmo:

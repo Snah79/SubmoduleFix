@@ -24,7 +24,7 @@ namespace PersistentEmpires.Views.Views
                 if (render.RenderBanner == null) return;
 
                 Locked = true;
-                render.RenderBanner.GetTableauTextureLarge((Texture t) =>
+                render.RenderBanner.GetTableauTextureLarge(new TaleWorlds.MountAndBlade.View.Tableaus.Thumbnails.BannerDebugInfo(), (Texture t) =>
                 {
                     BannerRenderer.OnBannerTableauRenderDone(render.RenderOnTo, t);
                     Locked = false;

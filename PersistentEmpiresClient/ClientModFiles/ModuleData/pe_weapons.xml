@@ -6796,6 +6796,7 @@
           Type="Arrows"
           item_holsters="quiver_back_middle:quiver_bolts_2:quiver_bolts"
           holster_position_shift="0.0,0.0,0.15">
+		<AmmoComponent stack_amount="26" />
         <ItemComponent>
             <Weapon weapon_class="Arrow"
                     stack_amount="26"

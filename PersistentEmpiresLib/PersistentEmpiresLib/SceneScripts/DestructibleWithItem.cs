@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
 
@@ -26,7 +27,7 @@ namespace PersistentEmpiresLib.SceneScripts
         public int DropAmount { get; set; }
         public float DropBelowHit { get; set; }
     }
-    public class PE_DestructibleWithItem : PE_DestructableComponent
+    public class PE_DestructibleWithItem : UsableMissionObject
     {
 
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
@@ -57,6 +58,20 @@ namespace PersistentEmpiresLib.SceneScripts
         private bool destructed = false;
         private long destructedAt = 0;
 
+        public float MaxHitPoint = 100f;
+        protected float _hitPoint;
+
+        public float HitPoint
+        {
+            get => this._hitPoint;
+            set
+            {
+                if (!this._hitPoint.Equals(value))
+                {
+                    this._hitPoint = MathF.Max(value, 0f);
+                }
+            }
+        }
 
         protected override void OnInit()
         {
@@ -90,12 +105,12 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
-        public void TriggerOnHit(Agent attackerAgent, int inflictedDamage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior)
-        {
-            bool flag;
-            float flag2;
-            this.OnHit(attackerAgent, inflictedDamage, impactPosition, impactDirection, weapon, attackerScriptComponentBehavior, out flag, out flag2);
-        }
+        //public void TriggerOnHit(Agent attackerAgent, int inflictedDamage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior)
+        //{
+        //    bool flag;
+        //    float flag2;
+        //    this.OnHit(attackerAgent, inflictedDamage, impactPosition, impactDirection, weapon, attackerScriptComponentBehavior, out flag, out flag2);
+        //}
 
         private void SpawnItem(Agent agent, ItemObject item)
         {
@@ -133,8 +148,8 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
-
-        public override void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
+        
+        public void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
             this.HitPoint = hitPoint;
 
@@ -168,7 +183,7 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
             reportDamage = true;
             MissionWeapon missionWeapon = weapon;
@@ -228,6 +243,11 @@ namespace PersistentEmpiresLib.SceneScripts
             SetHitPoint(HitPoint - damage, impactDirection, attackerScriptComponentBehavior);
 
             return false;
+        }
+
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        {
+            return new TextObject("");
         }
     }
 }

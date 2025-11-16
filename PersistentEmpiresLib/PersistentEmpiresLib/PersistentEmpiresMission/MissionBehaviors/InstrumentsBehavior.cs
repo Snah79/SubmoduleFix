@@ -189,7 +189,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             {
                 if (key != null && key.IsActive())
                 {
+                    AgentsPlayingSound[key].Pause();
                     AgentsPlayingSound[key].SetPosition(key.Position);
+                    AgentsPlayingSound[key].Resume();
                 }
             }
         }
@@ -255,8 +257,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (AgentsPlayingSound[agent].IsValid && this.AgentsPlayingSound[agent].IsPlaying())
             {
                 AgentsPlayingSound[agent].Stop();
-                AnimationSystemData animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_warrior"), agent.Character.GetStepSize(), false);
-                agent.SetActionSet(ref animationSystemData);
+
+                if (agent.IsHuman)
+                {
+                    AnimationSystemData animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_warrior"), agent.Character.GetStepSize(), false);
+                    agent.SetActionSet(ref animationSystemData);
+                }
                 agent.SetActionChannel(0, ActionIndexCache.act_none, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
             }
             
@@ -276,8 +282,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 var animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_musician"), agent.Character.GetStepSize(), false);
 
                 agent.SetActionSet(ref animationSystemData);
-                agent.SetActionChannel(0, instrument.Animation, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
             }
+            agent.SetActionChannel(0, instrument.Animation, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
         }
 #endif
     }

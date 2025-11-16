@@ -5,10 +5,10 @@
       "commandLineArgs": "/multiplayer _MODULES_*Native*Multiplayer*PersistentEmpires*PERoleplay*_MODULES_ /no_watchdog",
       "workingDirectory": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Mount & Blade II Bannerlord\\bin\\Win64_Shipping_Client"
     },
-    "PERP": {
+    "PERoleplay": {
       "commandName": "Executable",
       "executablePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Mount & Blade II Bannerlord\\bin\\Win64_Shipping_Client\\Bannerlord.exe",
-      "commandLineArgs": "/multiplayer _MODULES_*Native*Multiplayer*PERP*_MODULES_ /no_watchdog",
+      "commandLineArgs": "/multiplayer _MODULES_*Native*Multiplayer*PERoleplay*_MODULES_ /no_watchdog",
       "workingDirectory": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Mount & Blade II Bannerlord\\bin\\Win64_Shipping_Client"
     },
     "PE": {

@@ -270,11 +270,14 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             eventRef.SetPosition(agent.Position);
             eventRef.Play();
             AgentsPlayingSound[agent] = eventRef;
-            
-            var animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_musician"), agent.Character.GetStepSize(), false);
-            
-            agent.SetActionSet(ref animationSystemData);
-            agent.SetActionChannel(0, instrument.Animation, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
+
+            if (agent.IsHuman)
+            {
+                var animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_musician"), agent.Character.GetStepSize(), false);
+
+                agent.SetActionSet(ref animationSystemData);
+                agent.SetActionChannel(0, instrument.Animation, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
+            }
         }
 #endif
     }

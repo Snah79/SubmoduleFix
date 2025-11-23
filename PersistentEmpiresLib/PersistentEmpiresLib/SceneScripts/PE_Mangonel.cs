@@ -341,7 +341,7 @@ namespace PersistentEmpiresLib.SceneScripts
 #if SERVER
             if (!GameNetwork.IsClientOrReplay)
             {
-                foreach (StandingPointWithWeaponRequirement standingPointWithWeaponRequirement in this.AmmoPickUpStandingPoints)
+                foreach (StandingPointWithWeaponRequirement standingPointWithWeaponRequirement in this.AmmoPickUpPoints)
                 {
                     if (standingPointWithWeaponRequirement.HasUser)
                     {

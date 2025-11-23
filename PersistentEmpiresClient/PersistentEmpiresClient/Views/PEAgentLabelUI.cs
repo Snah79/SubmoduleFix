@@ -286,7 +286,7 @@ namespace PersistentEmpires.Views.Views
         public override void OnMissionScreenFinalize()
         {
             base.OnMissionScreenFinalize();
-            base.Mission.OnMainAgentChanged-= this.OnMainAgentChanged;
+            base.Mission.OnMainAgentChanged -= this.OnMainAgentChanged;
             base.MissionScreen.OnSpectateAgentFocusIn -= this.HandleSpectateAgentFocusIn;
             base.MissionScreen.OnSpectateAgentFocusOut -= this.HandleSpectateAgentFocusOut;
         }
@@ -369,7 +369,7 @@ namespace PersistentEmpires.Views.Views
                 Material tableauMaterial = Material.GetFromResource("agent_label_with_tableau");
                 if (agent.Origin.Banner != null || peerBanner != null)
                 {
-                    texture = (peerBanner ?? agent.Origin.Banner).GetTableauTextureSmall(null);
+                    texture = (peerBanner ?? agent.Origin.Banner).GetTableauTextureSmall(new TaleWorlds.MountAndBlade.View.Tableaus.Thumbnails.BannerDebugInfo(), null);
                 }
                 if (copy != null && tableauMaterial != null)
                 {
@@ -388,7 +388,7 @@ namespace PersistentEmpires.Views.Views
                         };
                         if (agent.Origin.Banner != null || peerBanner != null)
                         {
-                            texture = (peerBanner ?? agent.Origin.Banner).GetTableauTextureSmall(setAction);
+                            texture = (peerBanner ?? agent.Origin.Banner).GetTableauTextureSmall(new TaleWorlds.MountAndBlade.View.Tableaus.Thumbnails.BannerDebugInfo(), setAction);
                         }
                         tableauMaterial.SetTexture(Material.MBTextureType.DiffuseMap2, fromResource);
                         this._labelMaterials.Add(texture, tableauMaterial);
@@ -413,7 +413,7 @@ namespace PersistentEmpires.Views.Views
 
         public void AddStealthItem(string item)
         {
-            if(!_validStealthItems.Contains(item))
+            if (!_validStealthItems.Contains(item))
             {
                 _validStealthItems.Add(item);
             }
@@ -483,7 +483,7 @@ namespace PersistentEmpires.Views.Views
                 this.UpdateVisibilityOfAgentMesh(agent);
             }
         }
-        
+
         // Token: 0x06000300 RID: 768 RVA: 0x0001A664 File Offset: 0x00018864
         private void HandleSpectateAgentFocusIn(Agent agent)
         {

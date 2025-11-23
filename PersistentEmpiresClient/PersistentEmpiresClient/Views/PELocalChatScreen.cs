@@ -109,7 +109,7 @@ namespace PersistentEmpires.Views.Views
         {
             if (this.IsActive) return;
 
-            this._gauntletLayer = new GauntletLayer(this.ViewOrderPriority);
+            this._gauntletLayer = new GauntletLayer("PELocalChatScreen", ViewOrderPriority);
             this._gauntletLayer.IsFocusLayer = true;
 
             Agent.EventControlFlag controls = 0;

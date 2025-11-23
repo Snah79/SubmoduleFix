@@ -70,7 +70,7 @@ namespace PersistentEmpires.Views.Views
             else
             {
                 IsActive = true;
-                _gauntletLayer = new GauntletLayer(102);
+                _gauntletLayer = new GauntletLayer("RulesMissionView_GauntletLayer", 102);
                 _gauntletLayer.IsFocusLayer = false;
                 _gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All);
                 _gauntletLayer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericPanelGameKeyCategory"));

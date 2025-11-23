@@ -37,7 +37,7 @@ namespace PersistentEmpires.Views.Views.AdminPanel
         public void OnOpen()
         {
             this._dataSource.RefreshValues();
-            this._gauntletLayer = new GauntletLayer(2);
+            this._gauntletLayer = new GauntletLayer("PEAdminGoldView", 2);
             this._gauntletLayer.LoadMovie("PEAdminGoldPanel", this._dataSource);
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.Mouse);
             base.MissionScreen.AddLayer(this._gauntletLayer);

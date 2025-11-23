@@ -33,7 +33,7 @@ namespace PersistentEmpires.Views.Views
         {
             base.EarlyStart();
             this._dataSource = new PEHungerVM(100, base.Mission, base.MissionScreen.CombatCamera, new Func<float>(base.MissionScreen.GetCameraToggleProgress));
-            this._gauntletLayer = new GauntletLayer(this.ViewOrderPriority);
+            this._gauntletLayer = new GauntletLayer("PEAgentStatusView", ViewOrderPriority);
             this._gauntletLayer.LoadMovie("PEAgentStatusMain", this._dataSource);
             base.MissionScreen.AddLayer(this._gauntletLayer);
             this._dataSource.TakenDamageController.SetIsEnabled(BannerlordConfig.EnableDamageTakenVisuals);

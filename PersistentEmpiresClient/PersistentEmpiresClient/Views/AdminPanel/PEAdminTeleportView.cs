@@ -42,7 +42,7 @@ namespace PersistentEmpires.Views.Views.AdminPanel
         public void OnOpen()
         {
             _dataSource.RefreshValues();
-            _gauntletLayer = new GauntletLayer(2);
+            _gauntletLayer = new GauntletLayer("PEAdminTeleportView", 2);
             _gauntletLayer.LoadMovie("PEAdminTeleport", _dataSource);
             _gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.Mouse);
             MissionScreen.AddLayer(_gauntletLayer);

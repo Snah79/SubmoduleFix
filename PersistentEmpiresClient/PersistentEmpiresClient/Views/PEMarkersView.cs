@@ -16,7 +16,7 @@ namespace PersistentEmpires.Views.Views
         {
             base.OnMissionScreenInitialize();
             this._dataSource = new PEMarkerVM(base.MissionScreen.CombatCamera);
-            this._gauntletLayer = new GauntletLayer(1, "GauntletLayer", false);
+            this._gauntletLayer = new GauntletLayer("PEMarkersView_GauntletLayer", 1, false);
             this._gauntletLayer.LoadMovie("PEMarkers", this._dataSource);
             base.MissionScreen.AddLayer(this._gauntletLayer);
             this.localChatComponent = base.Mission.GetMissionBehavior<LocalChatComponent>();

@@ -46,7 +46,7 @@ namespace PersistentEmpires.Views.Views.FactionManagement
         protected virtual void OnOpen()
         {
             this._dataSource.RefreshValues();
-            this._gauntletLayer = new GauntletLayer(2);
+            this._gauntletLayer = new GauntletLayer("PEMenuItem", 2);
             this._gauntletLayer.LoadMovie(this._screenName, this._dataSource);
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.Mouse);
             base.MissionScreen.AddLayer(this._gauntletLayer);

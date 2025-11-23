@@ -98,7 +98,7 @@ namespace PersistentEmpires.Views.Views
             else
             {
                 IsActive = true;
-                _gauntletLayer = new GauntletLayer(100);
+                _gauntletLayer = new GauntletLayer("PEMessageLogScreen", 100);
                 _gauntletLayer.IsFocusLayer = false;
                 _gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All);
                 _gauntletLayer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericPanelGameKeyCategory"));

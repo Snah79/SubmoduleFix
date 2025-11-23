@@ -35,7 +35,7 @@ namespace PersistentEmpires.Views.Views
         {
             base.OnMissionScreenInitialize();
             this._dataSource = new PEDeathVM();
-            this._gauntletLayer = new GauntletLayer(this.ViewOrderPriority, "GauntletLayer", false);
+            this._gauntletLayer = new GauntletLayer("GauntletLayer_PEDeathView", ViewOrderPriority, false);
             this._gauntletLayer.LoadMovie("PEDeathView", this._dataSource);
             base.MissionScreen.AddLayer(this._gauntletLayer);
             base.Mission.GetMissionBehavior<MultiplayerMissionAgentVisualSpawnComponent>().OnMyAgentVisualSpawned += this.OnMainAgentVisualSpawned;

@@ -200,7 +200,7 @@ namespace PersistentEmpires.Views.Views
             {
                 this.OnFactionAdded(this._factionsBehavior.Factions[key], key);
             }
-            this._gauntletLayer = new GauntletLayer(2);
+            this._gauntletLayer = new GauntletLayer("PETabMenuView", 2);
             this._gauntletLayer.LoadMovie("PETabMenu", this._dataSource);
             this._gauntletLayer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("ScoreboardHotKeyCategory"));
 

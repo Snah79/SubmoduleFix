@@ -16,7 +16,7 @@ namespace PersistentEmpires.Views.Views
             base.OnMissionScreenInitialize();
             this._dataSource = new PEUseProgressVM();
             PEUseProgressScreen.Instance = this;
-            this._gauntletLayer = new GauntletLayer(100000);
+            this._gauntletLayer = new GauntletLayer("PEUseProgressScreen", 100000);
 
             this._gauntletLayer.LoadMovie("PEUseProgress", this._dataSource);
             base.MissionScreen.AddLayer(this._gauntletLayer);

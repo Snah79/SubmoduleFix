@@ -109,7 +109,7 @@ namespace PersistentEmpires.Views.Views
                 this._dataSource.SetItems(playerInventory);
                 this._dataSource.SetRequestedItems(requestedInventory);
             }
-            this._gauntletLayer = new GauntletLayer(this.ViewOrderPriority);
+            this._gauntletLayer = new GauntletLayer("PEInventoryScreen", ViewOrderPriority);
             this._gauntletLayer.IsFocusLayer = false;
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All);
             this._gauntletLayer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericPanelGameKeyCategory"));

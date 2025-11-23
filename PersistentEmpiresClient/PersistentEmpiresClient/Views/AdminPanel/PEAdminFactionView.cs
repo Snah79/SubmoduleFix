@@ -38,7 +38,7 @@ namespace PersistentEmpires.Views.Views.AdminPanel
         {
             this._dataSource.RefreshValues();
             this._dataSource.RefreshValues(this._factionsBehavior.Factions);
-            this._gauntletLayer = new GauntletLayer(2);
+            this._gauntletLayer = new GauntletLayer("PEAdminFactionView", 2);
             this._gauntletLayer.LoadMovie("PEAdminFactionPanel", this._dataSource);
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.Mouse);
             base.MissionScreen.AddLayer(this._gauntletLayer);

@@ -43,7 +43,7 @@ namespace PersistentEmpiresClient.Views
             if (this.IsActive) return;
             this._dataSource.RefreshValues(items, playerInventory);
             this._dataSource.PlayerInventory.SetEquipmentSlots(AgentHelpers.GetCurrentAgentEquipment(GameNetwork.MyPeer.ControlledAgent));
-            this._gauntletLayer = new GauntletLayer(50);
+            this._gauntletLayer = new GauntletLayer("PEBaseItemList", 50);
             this._gauntletLayer.IsFocusLayer = true;
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All);
             this._gauntletLayer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericPanelGameKeyCategory"));

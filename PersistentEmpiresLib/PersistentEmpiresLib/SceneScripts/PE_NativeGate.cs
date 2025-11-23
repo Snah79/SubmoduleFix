@@ -988,12 +988,17 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public Vec3 GetPhysicsGlobalBoxMax()
         {
-            return GameEntity.PhysicsGlobalBoxMax;
+            return GameEntity.GlobalBoxMax;
         }
 
         public Vec3 GetPhysicsGlobalBoxMin()
         {
-            return GameEntity.PhysicsGlobalBoxMin;
+            return GameEntity.GlobalBoxMin ;
+        }
+
+        public (Vec3, Vec3) ComputeGlobalPhysicsBoundingBoxMinMax()
+        {
+            return (this.GetPhysicsGlobalBoxMin(), this.GetPhysicsGlobalBoxMax());
         }
 
         // Token: 0x04001139 RID: 4409

@@ -266,7 +266,7 @@ namespace PersistentEmpires.Views.Views
         }
         private void OpenOptionsMenu()
         {
-            this._gauntletLayer = new GauntletLayer(2);
+            this._gauntletLayer = new GauntletLayer("PEProximityChatView", 2);
             this._gauntletLayer.LoadMovie("PEVoiceChatOptions", this._dataSource);
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.Mouse);
             base.MissionScreen.AddLayer(this._gauntletLayer);

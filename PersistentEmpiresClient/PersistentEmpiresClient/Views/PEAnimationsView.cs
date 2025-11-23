@@ -135,7 +135,7 @@ namespace PersistentEmpires.Views.Views
             if (this.IsActive) return;
             if (base.MissionScreen != null)
             {
-                this._gauntletLayer = new GauntletLayer(50);
+                this._gauntletLayer = new GauntletLayer("PEAnimationsView", 50);
                 this._gauntletLayer.LoadMovie("PEAnimationMenu", this._dataSource);
                 base.MissionScreen.AddLayer(this._gauntletLayer);
                 this.IsActive = true;

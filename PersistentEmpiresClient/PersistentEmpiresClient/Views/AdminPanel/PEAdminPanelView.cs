@@ -50,7 +50,7 @@ namespace PersistentEmpires.Views.Views
         private void OpenPanelMenu()
         {
             this._dataSource.RefreshItems(this.GetList());
-            this._gauntletLayer = new GauntletLayer(2);
+            this._gauntletLayer = new GauntletLayer("PEAdminPanelView", 2);
             this._gauntletLayer.LoadMovie("PEAdminPanel", this._dataSource);
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.Mouse);
             base.MissionScreen.AddLayer(this._gauntletLayer);

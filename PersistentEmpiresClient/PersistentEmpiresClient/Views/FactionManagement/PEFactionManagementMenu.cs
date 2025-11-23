@@ -124,7 +124,7 @@ namespace PersistentEmpires.Views.Views.FactionManagement
         private void OpenManagementMenu()
         {
             this._dataSource.RefreshItems(this.GetList());
-            this._gauntletLayer = new GauntletLayer(2);
+            this._gauntletLayer = new GauntletLayer("PEFactionManagementMenu", 2);
             this._gauntletLayer.LoadMovie("PEFactionManagementMenu", this._dataSource);
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.Mouse);
             base.MissionScreen.AddLayer(this._gauntletLayer);

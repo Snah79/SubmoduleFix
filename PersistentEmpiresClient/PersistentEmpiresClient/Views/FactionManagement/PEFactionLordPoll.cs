@@ -32,7 +32,7 @@ namespace PersistentEmpires.Views.Views.FactionManagement
             this._factionPollComponent.OnPollUpdate += this.OnPollUpdated;
             this._factionPollComponent.OnPollClosed += this.OnPollClosed;
             this._dataSource = new PEFactionLordPollVM();
-            this._gauntletLayer = new GauntletLayer(24, "GauntletLayer", false);
+            this._gauntletLayer = new GauntletLayer("PEFactionLordPoll_GauntletLayer", 24, false);
             this._gauntletLayer.LoadMovie("MultiplayerPollingProgress", this._dataSource);
             this._input.RegisterHotKeyCategory(HotKeyManager.GetCategory("PollHotkeyCategory"));
             this._dataSource.AddKey(HotKeyManager.GetCategory("PollHotkeyCategory").GetGameKey(106));

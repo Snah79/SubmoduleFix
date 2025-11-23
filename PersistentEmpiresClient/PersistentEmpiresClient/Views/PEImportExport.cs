@@ -66,7 +66,7 @@ namespace PersistentEmpires.Views.Views
             this.ActiveEntity = ImportExportEntity;
             this._dataSource.RefreshValues(ImportExportEntity, PlayerInventory, this.ExportItem, this.ImportItem);
             this._dataSource.PlayerInventory.SetEquipmentSlots(AgentHelpers.GetCurrentAgentEquipment(GameNetwork.MyPeer.ControlledAgent));
-            this._gauntletLayer = new GauntletLayer(50);
+            this._gauntletLayer = new GauntletLayer("PEImportExport", 50);
             this._gauntletLayer.IsFocusLayer = true;
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All);
             this._gauntletLayer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericPanelGameKeyCategory"));

@@ -47,7 +47,7 @@ namespace PersistentEmpires.Views.Views
             }
             GameKey hotkey = HotKeyManager.GetCategory("CombatHotKeyCategory").GetGameKey(CombatHotKeyCategory.Action);
 
-            this._gauntletLayer = new GauntletLayer(1);
+            this._gauntletLayer = new GauntletLayer("PESpawnMissionView", 1);
             this._dataSource.ActionMessage = "Press " + hotkey.ToString() + " To Respawn";
             this._gauntletLayer.LoadMovie("PESpawnUi", this._dataSource);
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All);

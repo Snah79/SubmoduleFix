@@ -71,7 +71,7 @@ namespace PersistentEmpires.Views.Views
             if (this.IsActive) return;
             this.ActiveEntity = Bank;
             this._dataSource.RefreshValues(amount, 100 - taxes);
-            this._gauntletLayer = new GauntletLayer(50);
+            this._gauntletLayer = new GauntletLayer("PEBankView", 50);
             this._gauntletLayer.IsFocusLayer = true;
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All);
             this._gauntletLayer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericPanelGameKeyCategory"));

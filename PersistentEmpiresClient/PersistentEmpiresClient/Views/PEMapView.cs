@@ -30,7 +30,7 @@ namespace PersistentEmpires.Views.Views
             entity.GetCameraParamsFromCameraScript(this.MapCamera, ref vec);
 
             this._dataSource = new PEMapVM(MapCamera);
-            this._gauntletLayer = new GauntletLayer(1, "GauntletLayer", false);
+            this._gauntletLayer = new GauntletLayer("PEMapView_GauntletLayer", 1, false);
             this._gauntletLayer.LoadMovie("PEMapView", this._dataSource);
             base.MissionScreen.AddLayer(this._gauntletLayer);
         }

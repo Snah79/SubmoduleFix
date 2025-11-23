@@ -157,7 +157,7 @@ namespace PersistentEmpires.Views.Views
             if (this.IsActive) return;
             this.ActiveEntity = chest;
             this._dataSource.RefreshValues((int)chest.Gold);
-            this._gauntletLayer = new GauntletLayer(50);
+            this._gauntletLayer = new GauntletLayer("PEMoneyChestView", 50);
             this._gauntletLayer.IsFocusLayer = true;
             this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All);
             this._gauntletLayer.Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericPanelGameKeyCategory"));

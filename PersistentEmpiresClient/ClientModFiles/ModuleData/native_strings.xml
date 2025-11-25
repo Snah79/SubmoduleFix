@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <strings>
-	<!--PERP-->
-	<string id="str_multiplayer_official_game_type_name.PERP" text="{=PERPstr00}Persistent Empires Roleplay" />
-	<string id="str_multiplayer_game_type.PERP" text="{=PERPstr0}Persistent Empires Roleplay" />
-	<string id="str_multiplayer_official_game_type_description.PERP" text="{=PERPstr1}This is a Persistent Empires Roleplay server. Please ensure you are familiar with the rules before playing  (press F1 when spawned). Loading may take a while the first time you join." />
-	<string id="str_multiplayer_official_game_type_explainer.PERP" text="{=PERPstr2}This is a Persistent Empires Roleplay server. Please ensure you are familiar with the rules before playing  (press F1 when spawned). Loading may take a while the first time you join." />
-	<string id="str_multiplayer_official_game_type_objective_info.PERP" text="{=PERPstr3}This is a Persistent Empires Roleplay server. Please ensure you are familiar with the rules before playing  (press F1 when spawned). Loading may take a while the first time you join." />
+	<!--PERoleplay-->
+	<string id="str_multiplayer_official_game_type_name.PERoleplay" text="{=PERoleplaystr00}Persistent Empires Roleplay" />
+	<string id="str_multiplayer_game_type.PERoleplay" text="{=PERoleplaystr0}Persistent Empires Roleplay" />
+	<string id="str_multiplayer_official_game_type_description.PERoleplay" text="{=PERoleplaystr1}This is a Persistent Empires Roleplay server. Please ensure you are familiar with the rules before playing  (press F1 when spawned). Loading may take a while the first time you join." />
+	<string id="str_multiplayer_official_game_type_explainer.PERoleplay" text="{=PERoleplaystr2}This is a Persistent Empires Roleplay server. Please ensure you are familiar with the rules before playing  (press F1 when spawned). Loading may take a while the first time you join." />
+	<string id="str_multiplayer_official_game_type_objective_info.PERoleplay" text="{=PERoleplaystr3}This is a Persistent Empires Roleplay server. Please ensure you are familiar with the rules before playing  (press F1 when spawned). Loading may take a while the first time you join." />
 	<!--Persistent Empires old-->
 	<string id="str_multiplayer_official_game_type_name.PersistentEmpires" text="{=PEstr00}Persistent Empires" />
 	<string id="str_multiplayer_game_type.PersistentEmpires" text="{=PEstr0}Persistent Empires" />

@@ -41,14 +41,14 @@ namespace PersistentEmpiresServer.ChatCommands.Commands
 
         public bool Execute(NetworkCommunicator networkPeer, string[] args)
         {
-            if (args.Count() == 2)
+            if (args.Count() == 1)
             {
-                if (string.IsNullOrEmpty(args[1]))
+                if (string.IsNullOrEmpty(args[0]))
                 {
                     return true;
                 }
 
-                var cooridnates = args[1].Split(',');
+                var cooridnates = args[0].Split(',');
 
                 if (cooridnates.Count() != 3)
                 {

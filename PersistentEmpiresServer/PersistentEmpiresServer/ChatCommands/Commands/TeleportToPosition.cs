@@ -79,7 +79,7 @@ namespace PersistentEmpiresServer.ChatCommands.Commands
                 }
                 z = tmpFloat;
 
-                LoggerHelper.LogAnAction(networkPeer, LogAction.TeleportToPosition, new AffectedPlayer[0], new object[] { args[1] });
+                LoggerHelper.LogAnAction(networkPeer, LogAction.TeleportToPosition, new AffectedPlayer[0], new object[] { args[0] });
 
                 networkPeer.ControlledAgent.TeleportToPosition(new Vec3(x, y, z));
             }

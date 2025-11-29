@@ -40,13 +40,13 @@ REM Create the client target directory if it doesn't exist
 if not exist "%clientTargetDir%" mkdir "%clientTargetDir%"
 
 REM Delete existing files in the server target directory
-if exist "%serverTargetDir%\*.dll" del "%serverTargetDir%\*.dll"
+REM if exist "%serverTargetDir%\*.dll" del "%serverTargetDir%\*.dll"
 
 REM Copy server DLLs to the target directory
 copy "%serverSourceDir%\*.dll" "%serverTargetDir%"
 
 REM Delete existing files in the client target directory
-if exist "%clientTargetDir%\*.dll" del "%clientTargetDir%\*.dll"
+REM if exist "%clientTargetDir%\*.dll" del "%clientTargetDir%\*.dll"
 
 REM Copy client DLLs from Win64_Shipping_Client to the target directory
 copy "%clientSourceDir%\*.dll" "%clientTargetDir%"
@@ -58,7 +58,7 @@ REM Copy client DLLs from Modules\Native\bin\Win64_Shipping_Client to the target
 copy "%clientSourceDirNative%\*.dll" "%clientTargetDir%"
 
 REM Delete the "Modules\Native\Videos" directory in the client installation
-rd /s /q "%mbClientFolder%\Modules\Native\Videos"
+REM rd /s /q "%mbClientFolder%\Modules\Native\Videos"
 
 echo DLL files copied successfully.
 echo "Modules\Native\Videos" directory deleted successfully.

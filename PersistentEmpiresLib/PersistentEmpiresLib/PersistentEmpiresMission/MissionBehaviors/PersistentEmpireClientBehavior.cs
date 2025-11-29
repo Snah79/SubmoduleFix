@@ -112,15 +112,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         }
 
-        public static XmlDocument Rules = null;
-        private static List<KeyValuePair<int, string>> tmpList = null;
+        public XmlDocument Rules = null;
+        private List<KeyValuePair<int, string>> tmpList = null;
         private void HandleFromServerSendRulesToNewClientMessage(SendRulesToNewClientMessage message)
         {
-            if (tmpList == null)
-            {
-                tmpList = new List<KeyValuePair<int, string>>();
-            }
-
             tmpList.Add(new KeyValuePair<int, string>(message.MessageId, message.ConfigChunk));
 
             if (message.PackageId == message.PackageCount)

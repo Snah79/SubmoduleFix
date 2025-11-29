@@ -29,7 +29,10 @@ namespace PersistentEmpires.Views.Views
         public override void OnMissionTick(float dt)
         {
             base.OnMissionTick(dt);
-            if (MissionScreen.InputManager.IsKeyPressed(InputKey.F1) && PersistentEmpireClientBehavior.Rules != null)
+            
+            var tmp = Mission.GetMissionBehavior< PersistentEmpireClientBehavior >();
+
+            if (MissionScreen.InputManager.IsKeyPressed(InputKey.F1) && tmp != null && tmp != null)
             {
                 if (IsActive)
                 {
@@ -78,7 +81,12 @@ namespace PersistentEmpires.Views.Views
                 MissionScreen.AddLayer(this._gauntletLayer);
                 ScreenManager.TrySetFocus(this._gauntletLayer);
 
-                _dataSource.Init(PersistentEmpireClientBehavior.Rules);
+                var tmp = Mission.GetMissionBehavior<PersistentEmpireClientBehavior>();
+
+                if (tmp != null && tmp != null)
+                {
+                    _dataSource.Init(tmp.Rules);
+                }
             }
         }
 

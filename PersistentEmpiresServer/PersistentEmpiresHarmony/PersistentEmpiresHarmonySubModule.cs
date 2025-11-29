@@ -75,12 +75,6 @@ namespace PersistentEmpiresHarmony
                .Where(o => o.GetType().FullName != "PersistentEmpiresLib.SceneScripts.PE_TeleportDoor")
                .Where(o => o.GetType().FullName != "PersistentEmpiresLib.SceneScripts.PE_CastleBanner")
                .Where(o => o.GetType().FullName != "PersistentEmpiresLib.SceneScripts.PE_ImportExport")
-               .Where(o => o.GetType().FullName != "PERoleplay.SceneScripts.Rp_PE_ItemGathering")
-               .Where(o => o.GetType().FullName != "PERoleplay.SceneScripts.Rp_DestructibleWithItem")
-               .Where(o => o.GetType().FullName != "PERoleplay.SceneScripts.Rp_Lock_PE_TeleportDoor")
-               .Where(o => o.GetType().FullName != "PERoleplay.SceneScripts.Rp_AnimalSpawner")
-               .Where(o => o.GetType().FullName != "PERoleplay.SceneScripts.RpUsableFromDistance")
-               .Where(o => o.GetType().FullName != "PERoleplay.SceneScripts.Rp_UpgradeableBuildings")
                .ToList();
             PatchMissionNetworkComponent.chunkedMissionObjects = PatchMissionNetworkComponent.ChunkList<MissionObject>(100, cachedMissionObjects);
 

@@ -142,7 +142,7 @@ namespace PersistentEmpires.Views
             {
                 int num = (item.Weapons.Count > 1 && propertyBasedTooltipVM.IsExtended) ? 1 : 0;
                 WeaponComponentData weaponComponentData = item.Weapons[num];
-                propertyBasedTooltipVM.AddProperty(new TextObject("{=sqdzHOPe}Class", null).ToString(), GameTexts.FindText("str_inventory_weapon", ((int)weaponComponentData.WeaponClass).ToString()).ToString(), 0, TooltipProperty.TooltipPropertyFlags.None);
+                propertyBasedTooltipVM.AddProperty(new TextObject("{=sqdzHOPe}Class", null).ToString(), GameTexts.FindText("str_inventory_weapon", weaponComponentData.WeaponClass.ToString()).ToString(), 0, TooltipProperty.TooltipPropertyFlags.None);
                 ItemObject.ItemTypeEnum itemTypeFromWeaponClass = WeaponComponentData.GetItemTypeFromWeaponClass(weaponComponentData.WeaponClass);
                 if (itemTypeFromWeaponClass == ItemObject.ItemTypeEnum.OneHandedWeapon || itemTypeFromWeaponClass == ItemObject.ItemTypeEnum.TwoHandedWeapon || itemTypeFromWeaponClass == ItemObject.ItemTypeEnum.Polearm)
                 {

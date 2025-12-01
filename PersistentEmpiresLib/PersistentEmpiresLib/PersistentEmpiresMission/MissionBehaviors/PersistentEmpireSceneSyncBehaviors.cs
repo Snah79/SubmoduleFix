@@ -135,6 +135,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 GameNetwork.WriteMessage(new UpdateItemGatheringDestroyed(itemGathering, itemGathering.IsDestroyed));
                 GameNetwork.EndModuleEventAsServer();
             }
+            track.chunkIndex = track.chunkIndex + 1;
 
         }
         private void SendDestructableHitPointsInQueue(SyncingTrack track, Queue<SyncingTrack> q)

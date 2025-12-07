@@ -119,9 +119,9 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 GameEntity.SetVisibilityExcludeParents(true);
             }
-            base.GameEntity.RemovePhysics();
+            //base.GameEntity.RemovePhysics();
             base.GameEntity.SetGlobalFrame(initialFrame);
-            base.GameEntity.AddPhysics(base.GameEntity.Mass, base.GameEntity.CenterOfMass, base.GameEntity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName(this.PhysicMaterial), true, 0);
+            //base.GameEntity.AddPhysics(base.GameEntity.Mass, base.GameEntity.CenterOfMass, base.GameEntity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName(this.PhysicMaterial), true, 0);
             this.HitPoint = this.MaxHitPoint;
             this.destructed = false;
 

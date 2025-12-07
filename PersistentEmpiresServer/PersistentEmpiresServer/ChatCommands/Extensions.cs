@@ -24,7 +24,7 @@ namespace PersistentEmpiresServer.ChatCommands
 
                 if (d < distance)
                 {
-                    InformationComponent.Instance.SendMessage(message, color, player);
+                    InformationComponent.Instance.SendMessage(message, color, otherPlayer);
 
                     if (bubble)
                     {

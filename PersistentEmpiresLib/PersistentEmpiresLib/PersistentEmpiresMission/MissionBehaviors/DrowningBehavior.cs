@@ -10,7 +10,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 {
     public class DrowningBehavior : MissionLogic
     {
-        public DrowningBehavior _instance;
+        public static DrowningBehavior _instance;
         public bool IsSetProperly = false;
         public float UpperLimit;
         public float LowerLimit;

@@ -10,6 +10,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 {
     public class DrowningBehavior : MissionLogic
     {
+        public DrowningBehavior _instance;
         public bool IsSetProperly = false;
         public float UpperLimit;
         public float LowerLimit;
@@ -19,9 +20,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private object _lock = new object();
         private List<Agent> _agentsToRemove = new List<Agent>();
 
+        public DrowningBehavior()
+        {
+            _instance = this;
+        }
+
         public override void AfterStart()
         {
-
             GameEntity upperLimit = base.Mission.Scene.FindEntityWithTag("drowning_upper_limit");
             GameEntity lowerLimit = base.Mission.Scene.FindEntityWithTag("drowning_lower_limit");
 
@@ -80,7 +85,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
                 foreach (Agent agent in base.Mission.Agents)
                 {
-                    if (agent.IsActive() && agent.Position.Z < UpperLimit && agent.Position.Z > LowerLimit)
+                    if (IsInWater(agent))
                     //if (agent.IsActive() && !agent.IsHuman)
                     {
                         delAgentList.Add(agent);                        
@@ -121,6 +126,21 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 });
                 delAgentList.Clear();
             }
+        }
+
+        public bool IsInWater(Agent agent)
+        {
+            if(!IsSetProperly)
+            {
+                return false;
+            }
+
+            if (agent.IsActive() && agent.Position.Z < UpperLimit && agent.Position.Z > LowerLimit)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

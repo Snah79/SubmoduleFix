@@ -156,7 +156,7 @@ namespace PersistentEmpiresLib.Helpers
             if (GameNetwork.IsServerOrRecorder)
             {
                 GameNetwork.BeginBroadcastModuleEvent();
-                GameNetwork.WriteMessage(new SpawnWeaponWithNewEntity(weapon, spawnFlags, firstScriptOfType.Id.Id, frame, attachedMissionObject == null ? MissionObjectId.Invalid : attachedMissionObject.Id, true, hasLifeTime));
+                GameNetwork.WriteMessage(new SpawnWeaponWithNewEntity(weapon, spawnFlags, firstScriptOfType.Id.Id, frame, attachedMissionObject == null ? MissionObjectId.Invalid : attachedMissionObject.Id, true, hasLifeTime, false));
                 GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
                 for (int i = 0; i < weapon.GetAttachedWeaponsCount(); i++)
                 {

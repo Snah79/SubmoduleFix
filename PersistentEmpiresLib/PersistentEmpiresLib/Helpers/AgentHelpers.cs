@@ -53,7 +53,7 @@ namespace PersistentEmpiresLib.Helpers
                     agent.AgentVisuals.ClearVisualComponents(false);
                     agent.Mission.OnEquipItemsFromSpawnEquipment(agent, Agent.CreationType.FromCharacterObj);
                     agent.CheckEquipmentForCapeClothSimulationStateChange();
-                    agent.EquipItemsFromSpawnEquipment(true, false);
+                    agent.EquipItemsFromSpawnEquipment(true, false, false, -1);
                     agent.UpdateAgentProperties();
                     agent.PreloadForRendering();
                     if (OnResetAgentArmorMeshRequested != null)

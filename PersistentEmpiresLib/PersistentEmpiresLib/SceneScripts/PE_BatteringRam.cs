@@ -714,8 +714,7 @@ namespace PersistentEmpiresLib.SceneScripts
             return false;
         }
 
-        // Token: 0x06002BB3 RID: 11187 RVA: 0x000A99F4 File Offset: 0x000A7BF4
-        public override void OnAfterReadFromNetwork(ValueTuple<BaseSynchedMissionObjectReadableRecord, ISynchedMissionObjectReadableRecord> synchedMissionObjectReadableRecord)
+        public override void OnAfterReadFromNetwork((BaseSynchedMissionObjectReadableRecord, ISynchedMissionObjectReadableRecord) synchedMissionObjectReadableRecord, bool allowVisibilityUpdate = true)
         {
             base.OnAfterReadFromNetwork(synchedMissionObjectReadableRecord);
             PE_BatteringRam.BatteringRamRecord batteringRamRecord = (PE_BatteringRam.BatteringRamRecord)synchedMissionObjectReadableRecord.Item2;

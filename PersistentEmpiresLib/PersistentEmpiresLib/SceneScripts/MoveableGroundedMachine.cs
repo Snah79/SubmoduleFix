@@ -54,9 +54,26 @@ namespace PersistentEmpiresLib.SceneScripts
                 this.receipt.Add(new RepairReceipt(receiptId, count));
             }
         }
+        public void PreInit()
+        {
+            if (this.RidingSkillId != "")
+            {
+                this.RidingSkill = MBObjectManager.Instance.GetObject<SkillObject>(this.RidingSkillId);
+            }
+            if (this.RepairingSkillId != "")
+            {
+                this.RepairSkill = MBObjectManager.Instance.GetObject<SkillObject>(this.RepairingSkillId);
+            }
+            this.ParseRepairReceipts();
+            this.ResetStrayDuration();
+            this.HitPoint = this.MaxHitPoint;
+            this.AlwaysAlignToTerritory = true;
+        }
 
+        private bool initCompleted = false;
         protected override void OnInit()
         {
+            initCompleted = false;
             base.OnInit();
             if (this.RidingSkillId != "")
             {
@@ -70,6 +87,7 @@ namespace PersistentEmpiresLib.SceneScripts
             this.ResetStrayDuration();
             this.HitPoint = this.MaxHitPoint;
             this.AlwaysAlignToTerritory = true;
+            initCompleted = true;
         }
 
         public bool IsAgentFullyUsing(Agent usingAgent)
@@ -138,6 +156,12 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnTick(float dt)
         {
             if (base.GameEntity == null) return;
+
+            if (!initCompleted)
+            {
+                return;
+            }
+
             base.OnTick(dt);
             if (GameNetwork.IsServer)
             {
@@ -233,9 +257,58 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
+        protected override void OnFixedTick(float fixedDt)
+        {
+            if (!initCompleted)
+            {
+                return;
+            }
+            base.OnFixedTick(fixedDt);
+        }
+
+        protected override void OnParallelFixedTick(float fixedDt)
+        {
+            if (!initCompleted)
+            {
+                return;
+            }
+            base.OnParallelFixedTick(fixedDt);
+        }
+
+        protected override void OnTickOccasionally(float currentFrameDeltaTime)
+        {
+            if (!initCompleted)
+            {
+                return;
+            }
+            base.OnTickOccasionally(currentFrameDeltaTime);
+        }
+
+        protected override void OnTickParallel2(float dt)
+        {
+            if (!initCompleted)
+            {
+                return;
+            }
+            base.OnTickParallel2(dt);
+        }
+
+        protected override void OnTickParallel3(float dt)
+        {
+            if (!initCompleted)
+            {
+                return;
+            }
+            base.OnTickParallel3(dt);
+        }
 
         protected override void OnTickParallel(float dt)
         {
+            if (!initCompleted)
+            {
+                return;
+            }
+
             base.OnTickParallel(dt);
             if (!base.GameEntity.IsVisibleIncludeParents())
             {

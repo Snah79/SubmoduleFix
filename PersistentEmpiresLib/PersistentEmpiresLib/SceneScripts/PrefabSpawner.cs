@@ -192,7 +192,28 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private void DefaultAction(GameEntity entity)
         {
+            if(entity.Name == "pe_mangoneltest1")
+            {
+                var childs = new List<GameEntity>();
+                entity.Root.GetChildrenRecursive(ref childs);
+                childs.Add(entity);
 
+                var tmp = childs.Where(x => x.HasScriptOfType<PE_MoveableGroundedMachine>()).FirstOrDefault();
+                var pre_MoveableGroundedMachine = tmp.GetFirstScriptOfType<PE_MoveableGroundedMachine>();
+
+                if (pre_MoveableGroundedMachine != null)
+                {
+                    pre_MoveableGroundedMachine.PreInit();
+                }
+
+                var tmp2 = childs.Where(x => x.HasScriptOfType<PE_Mangonel>()).FirstOrDefault();
+                var peMangonel = tmp2.GetFirstScriptOfType<PE_Mangonel>();
+
+                if (peMangonel != null)
+                {
+                    peMangonel.PreInit();
+                }
+            }
         }
 
         private void DespawnSpawnedPrefab(WeakGameEntity spawnedPrefab)

@@ -4,6 +4,7 @@ using PersistentEmpiresLib.SceneScripts.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Core;
+using TaleWorlds.DotNet;
 using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
@@ -74,25 +75,42 @@ namespace PersistentEmpiresLib.SceneScripts
             this._loadAmmoBeginAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoBeginActionName);
             this._loadAmmoEndAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoEndActionName);
             this._reload2IdleActionIndex = ActionIndexCache.Create(this.Reload2IdleActionName);
+            //this.SkeletonOwnerObjects = new SynchedMissionObject[2];
+            //this.Skeletons = new Skeleton[2];
+            //this.SkeletonNames = new string[1];
+            //this.FireAnimations = new string[2];
+            //this.FireAnimationIndices = new int[2];
+            //this.SetUpAnimations = new string[2];
+            //this.SetUpAnimationIndices = new int[2];
+            //this.SkeletonOwnerObjects[0] = this._body;
+            //this.Skeletons[0] = this._body.GameEntity.Skeleton;
+            //this.SkeletonNames[0] = this.MangonelBodySkeleton;
+            //this.FireAnimations[0] = this.MangonelBodyFire;
+            //this.FireAnimationIndices[0] = MBAnimation.GetAnimationIndexWithName(this.MangonelBodyFire);
+            //this.SetUpAnimations[0] = this.MangonelBodyReload;
+            //this.SetUpAnimationIndices[0] = MBAnimation.GetAnimationIndexWithName(this.MangonelBodyReload);
+            //this.SkeletonOwnerObjects[1] = this._rope;
+            //this.Skeletons[1] = this._rope.GameEntity.Skeleton;
+            //this.FireAnimations[1] = this.MangonelRopeFire;
+            //this.FireAnimationIndices[1] = MBAnimation.GetAnimationIndexWithName(this.MangonelRopeFire);
+            //this.SetUpAnimations[1] = this.MangonelRopeReload;
+            //this.SetUpAnimationIndices[1] = MBAnimation.GetAnimationIndexWithName(this.MangonelRopeReload);
+            //this._missileBoneName = this.ProjectileBoneName;
+            //this._idleAnimationActionIndex = ActionIndexCache.Create(this.IdleActionName);
+            //this._shootAnimationActionIndex = ActionIndexCache.Create(this.ShootActionName);
+            //this._reload1AnimationActionIndex = ActionIndexCache.Create(this.Reload1ActionName);
+            //this._reload2AnimationActionIndex = ActionIndexCache.Create(this.Reload2ActionName);
+            //this._rotateLeftAnimationActionIndex = ActionIndexCache.Create(this.RotateLeftActionName);
+            //this._rotateRightAnimationActionIndex = ActionIndexCache.Create(this.RotateRightActionName);
+            //this._loadAmmoBeginAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoBeginActionName);
+            //this._loadAmmoEndAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoEndActionName);
+            //this._reload2IdleActionIndex = ActionIndexCache.Create(this.Reload2IdleActionName);
         }
 
         // Token: 0x06002CC0 RID: 11456 RVA: 0x000AFE28 File Offset: 0x000AE028
         public override UsableMachineAIBase CreateAIBehaviorObject()
         {
             return new PE_MangonelAI(this);
-        }
-
-        // Token: 0x06002CC1 RID: 11457 RVA: 0x000AFE30 File Offset: 0x000AE030
-        public override void AfterMissionStart()
-        {
-            /*if (this.AmmoPickUpStandingPoints != null)
-			{
-				foreach (StandingPointWithWeaponRequirement standingPointWithWeaponRequirement in this.AmmoPickUpStandingPoints)
-				{
-					standingPointWithWeaponRequirement.LockUserFrames = true;
-				}
-			}*/
-            this.UpdateProjectilePosition();
         }
 
         // Token: 0x06002CC2 RID: 11458 RVA: 0x000AFE90 File Offset: 0x000AE090
@@ -105,27 +123,85 @@ namespace PersistentEmpiresLib.SceneScripts
             return DefaultSiegeEngineTypes.Onager;
         }
 
-        protected override void UpdateAmmoMesh()
-        {
-            /*GameEntity gameEntity = this.AmmoPickUpStandingPoints[0].GameEntity;
-			int num = 20 - this.AmmoCount;
-			while (gameEntity.Parent != null)
-			{
-				for (int i = 0; i < gameEntity.MultiMeshComponentCount; i++)
-				{
-					MetaMesh metaMesh = gameEntity.GetMetaMesh(i);
-					for (int j = 0; j < metaMesh.MeshCount; j++)
-					{
-						metaMesh.GetMeshAtIndex(j).SetVectorArgument(0f, (float)num, 0f, 0f);
-					}
-				}
-				gameEntity = gameEntity.Parent;
-			}*/
-        }
-
         // Token: 0x06002CC3 RID: 11459 RVA: 0x000AFEA8 File Offset: 0x000AE0A8
+        private bool initCompleted = false;
         protected override void OnInit()
         {
+            initCompleted = false;            
+            var synchedMissionObjectList = GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("rope");
+            //AmmoPickUpTag = null;
+
+            if (synchedMissionObjectList.Count > 0)
+            {
+                _rope = synchedMissionObjectList[0];
+            }
+            synchedMissionObjectList = GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("body");
+            _body = synchedMissionObjectList.Count > 0 ? synchedMissionObjectList[0] : this;
+            RotationObject = _body;
+            
+            var list2 = GameEntity.CollectChildrenEntitiesWithTag("vertical_adjuster");
+            _verticalAdjuster = list2[0];
+            
+            if (_verticalAdjuster.Skeleton != null)
+            {
+                _verticalAdjusterSkeleton = _verticalAdjuster.Skeleton;
+
+                if ((NativeObject)this._verticalAdjusterSkeleton != (NativeObject)null)
+                    this._verticalAdjusterSkeleton.SetAnimationAtChannel(this.MangonelAimAnimation, 0, 1f, -1f, 0.0f);
+            }
+            _verticalAdjusterStartingLocalFrame = _verticalAdjuster.GetFrame();
+            _verticalAdjusterStartingLocalFrame = _body.GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToLocal(_verticalAdjusterStartingLocalFrame);
+            //RegisterAnimationParameters();
+            this.InitiateMoveSynch();
+            base.OnInit();
+            TimeGapBetweenShootActionAndProjectileLeaving = 0.23f;
+            TimeGapBetweenShootingEndAndReloadingStart = 0f;
+            this._rotateStandingPoints = new List<StandingPoint>();
+            if (this.StandingPoints != null)
+            {
+                foreach (StandingPoint standingPoint in (List<StandingPoint>)this.StandingPoints)
+                {
+                    if (standingPoint.GameEntity.HasTag("rotate"))
+                    {
+                        if (standingPoint.GameEntity.HasTag("left") && this._rotateStandingPoints.Count > 0)
+                            this._rotateStandingPoints.Insert(0, standingPoint);
+                        else
+                            this._rotateStandingPoints.Add(standingPoint);
+                    }
+                }
+                WeakGameEntity gameEntity = this._body.GameEntity;
+                MatrixFrame frame = gameEntity.GetGlobalFrame();
+                this._standingPointLocalIKFrames = new MatrixFrame[this.StandingPoints.Count];
+                for (int index1 = 0; index1 < this.StandingPoints.Count; ++index1)
+                {
+                    MatrixFrame[] pointLocalIkFrames = this._standingPointLocalIKFrames;
+                    int index2 = index1;
+                    gameEntity = this.StandingPoints[index1].GameEntity;
+                    MatrixFrame localNonOrthogonal = gameEntity.GetGlobalFrame().TransformToLocalNonOrthogonal(in frame);
+                    pointLocalIkFrames[index2] = localNonOrthogonal;
+                    this.StandingPoints[index1].AddComponent((UsableMissionObjectComponent)new ClearHandInverseKinematicsOnStopUsageComponent());
+                }
+            }
+            _missileBoneIndex = Skeleton.GetBoneIndexFromName(SkeletonOwnerObjects[0].GameEntity.Skeleton.GetName(), _missileBoneName);
+            ApplyAimChange();
+
+            foreach (StandingPoint reloadStandingPoint in this.ReloadStandingPoints)
+            {
+                if (reloadStandingPoint != this.PilotStandingPoint)
+                    this._reloadWithoutPilot = reloadStandingPoint;
+            }
+            if (!GameNetwork.IsClientOrReplay)
+                this.SetActivationLoadAmmoPoint(false);
+            this.EnemyRangeToStopUsing = 7f;
+            this.SetScriptComponentToTick(this.GetTickRequirement());
+            if (this.AmmoPickUpPoints != null)
+            {
+                foreach (UsableMissionObject ammoPickUpPoint in this.AmmoPickUpPoints)
+                    ammoPickUpPoint.LockUserFrames = true;
+            }
+            this.UpdateProjectilePosition();            
+            //HitPoint = MaxHitPoint;
+            /*
             var list = GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("rope");
             
             AmmoPickUpTag = null;
@@ -204,7 +280,47 @@ namespace PersistentEmpiresLib.SceneScripts
             EnemyRangeToStopUsing = 7f;
             moverStandingPoint = GameEntity.GetFirstChildEntityWithTag(MoverStandingPointTag).GetFirstScriptOfType<StandingPoint>();
             SetScriptComponentToTick(GetTickRequirement());
+            */
+            initCompleted = true;
         }
+        // Token: 0x06002CC1 RID: 11457 RVA: 0x000AFE30 File Offset: 0x000AE030
+        //     public override void AfterMissionStart()
+        //     {
+        //         /*if (this.AmmoPickUpStandingPoints != null)
+        //{
+        //	foreach (StandingPointWithWeaponRequirement standingPointWithWeaponRequirement in this.AmmoPickUpStandingPoints)
+        //	{
+        //		standingPointWithWeaponRequirement.LockUserFrames = true;
+        //	}
+        //}*/
+        //         this.UpdateProjectilePosition();
+        //     }
+
+
+
+        protected override void UpdateAmmoMesh()
+        {
+            /*GameEntity gameEntity = this.AmmoPickUpStandingPoints[0].GameEntity;
+			int num = 20 - this.AmmoCount;
+			while (gameEntity.Parent != null)
+			{
+				for (int i = 0; i < gameEntity.MultiMeshComponentCount; i++)
+				{
+					MetaMesh metaMesh = gameEntity.GetMetaMesh(i);
+					for (int j = 0; j < metaMesh.MeshCount; j++)
+					{
+						metaMesh.GetMeshAtIndex(j).SetVectorArgument(0f, (float)num, 0f, 0f);
+					}
+				}
+				gameEntity = gameEntity.Parent;
+			}*/
+        }
+
+        public void PreInit()
+        {
+            
+        }
+        
 
         // Token: 0x06002CC4 RID: 11460 RVA: 0x000B0180 File Offset: 0x000AE380
         protected override void OnEditorInit()
@@ -321,9 +437,59 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
+        protected override void OnFixedTick(float fixedDt)
+        {
+            if (!initCompleted)
+            {
+                return;
+            }
+            base.OnFixedTick(fixedDt);
+        }
+
+        protected override void OnTickOccasionally(float currentFrameDeltaTime)
+        {
+            if (!initCompleted)
+            {
+                return;
+            }
+            base.OnTickOccasionally(currentFrameDeltaTime);
+        }
+
+        protected override void OnTickParallel2(float dt)
+        {
+            if (!initCompleted)
+            {
+                return;
+            }
+            base.OnTickParallel2(dt);
+        }
+
+        protected override void OnTickParallel3(float dt)
+        {
+            if (!initCompleted)
+            {
+                return;
+            }
+            base.OnTickParallel3(dt);
+        }
+
+        protected override void OnParallelFixedTick(float fixedDt)
+        {
+            if (!initCompleted)
+            {
+                return;
+            }
+            base.OnParallelFixedTick(fixedDt);
+        }
+
         // Token: 0x06002CC7 RID: 11463 RVA: 0x000B01C0 File Offset: 0x000AE3C0
         protected override void OnTick(float dt)
         {
+            if(!initCompleted)
+            {
+                return;
+            }
+
             base.OnTick(dt);
             this.MoveControl();
 
@@ -452,6 +618,11 @@ namespace PersistentEmpiresLib.SceneScripts
         // Token: 0x06002CC8 RID: 11464 RVA: 0x000B05F4 File Offset: 0x000AE7F4
         protected override void OnTickParallel(float dt)
         {
+            if (!initCompleted)
+            {
+                return;
+            }
+
             base.OnTickParallel(dt);
             if (!GameEntity.IsVisibleIncludeParents())
             {
@@ -1000,6 +1171,8 @@ namespace PersistentEmpiresLib.SceneScripts
 
         // Token: 0x040011C0 RID: 4544
         private WeakGameEntity _verticalAdjuster;
+        
+        private Skeleton _verticalAdjusterSkeleton;
 
         // Token: 0x040011C1 RID: 4545
         private MatrixFrame _verticalAdjusterStartingLocalFrame;

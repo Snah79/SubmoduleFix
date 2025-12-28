@@ -1,885 +1,555 @@
-﻿#region Assembly TaleWorlds.MountAndBlade, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// location unknown
-// Decompiled with ICSharpCode.Decompiler 8.1.1.7464
-#endregion
-
+﻿using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.SceneScripts.Extensions;
+using PersistentEmpiresLib.SceneScripts.Interfaces;
 using System.Collections.Generic;
+using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
-using TaleWorlds.MountAndBlade.Objects.Siege;
+using TaleWorlds.MountAndBlade;
 
-namespace TaleWorlds.MountAndBlade;
-
-public class Mangonel : RangedSiegeWeapon, ISpawnable
+namespace PersistentEmpiresLib.SceneScripts
 {
-    private const string BodyTag = "body";
-
-    private const string RopeTag = "rope";
-
-    private const string RotateTag = "rotate";
-
-    private const string LeftTag = "left";
-
-    private const string VerticalAdjusterTag = "vertical_adjuster";
-
-    private string _missileBoneName = "end_throwarm";
-
-    private List<StandingPoint> _rotateStandingPoints;
-
-    private SynchedMissionObject _body;
-
-    private SynchedMissionObject _rope;
-
-    private GameEntity _verticalAdjuster;
-
-    private MatrixFrame _verticalAdjusterStartingLocalFrame;
-
-    private Skeleton _verticalAdjusterSkeleton;
-
-    private Skeleton _bodySkeleton;
-
-    private float _timeElapsedAfterLoading;
-
-    private MatrixFrame[] _standingPointLocalIKFrames;
-
-    private StandingPoint _reloadWithoutPilot;
-
-    public string MangonelBodySkeleton = "mangonel_skeleton";
-
-    public string MangonelBodyFire = "mangonel_fire";
-
-    public string MangonelBodyReload = "mangonel_set_up";
-
-    public string MangonelRopeFire = "mangonel_holder_fire";
-
-    public string MangonelRopeReload = "mangonel_holder_set_up";
-
-    public string MangonelAimAnimation = "mangonel_a_anglearm_state";
-
-    public string ProjectileBoneName = "end_throwarm";
-
-    public string IdleActionName;
-
-    public string ShootActionName;
-
-    public string Reload1ActionName;
-
-    public string Reload2ActionName;
-
-    public string RotateLeftActionName;
-
-    public string RotateRightActionName;
-
-    public string LoadAmmoBeginActionName;
-
-    public string LoadAmmoEndActionName;
-
-    public string Reload2IdleActionName;
-
-    public float ProjectileSpeed = 40f;
-
-    private ActionIndexCache _idleAnimationActionIndex;
-
-    private ActionIndexCache _shootAnimationActionIndex;
-
-    private ActionIndexCache _reload1AnimationActionIndex;
-
-    private ActionIndexCache _reload2AnimationActionIndex;
-
-    private ActionIndexCache _rotateLeftAnimationActionIndex;
-
-    private ActionIndexCache _rotateRightAnimationActionIndex;
-
-    private ActionIndexCache _loadAmmoBeginAnimationActionIndex;
-
-    private ActionIndexCache _loadAmmoEndAnimationActionIndex;
-
-    private ActionIndexCache _reload2IdleActionIndex;
-
-    private sbyte _missileBoneIndex;
-
-    protected override float MaximumBallisticError => 1.5f;
-
-    protected override float ShootingSpeed => ProjectileSpeed;
-
-    protected override float HorizontalAimSensitivity
+    public sealed class PE_MangonelAI : RangedSiegeWeaponAi
     {
-        get
+        // Token: 0x06001084 RID: 4228 RVA: 0x00035E83 File Offset: 0x00034083
+        public PE_MangonelAI(PE_Mangonel mangonel) : base(mangonel)
         {
-            if (DefaultSide == BattleSideEnum.Defender)
-            {
-                return 0.25f;
-            }
+        }
+    }
+    public class PE_Mangonel : Mangonel, ISpawnable, IMoveable
+    {
+        protected override float MaximumBallisticError => 1.5f;
+        protected override float ShootingSpeed => ProjectileSpeed;
+        public bool IsMovingForward { get; set; }
+        public bool IsMovingBackward { get; set; }
+        public bool IsTurningRight { get; set; }
+        public bool IsTurningLeft { get; set; }
+        public bool IsMovingUp { get; set; }
+        public bool IsMovingDown { get; set; }
+        public bool DestroyedByStoneOnly = false;
+        public float HitPoint;
+        public float MaxHitPoint = 200f;
+        public string ParticleEffectOnDestroy = "psys_siege_sturgia_wall_destruction";
+        public string SoundEffectOnDestroy = "event:/mission/siege/generic/stone_destroy";
+        private StandingPoint moverStandingPoint;
+        public string MoverStandingPointTag = "mover";
+        private float _timeElapsedAfterLoading;
+        private ActionIndexCache _loadAmmoEndAnimationActionIndex;
+        private ActionIndexCache _loadAmmoBeginAnimationActionIndex;
 
-            float num = 0.05f;
-            foreach (StandingPoint rotateStandingPoint in _rotateStandingPoints)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        {
+            if (!gameEntity.HasTag(this.AmmoPickUpTag))
             {
-                if (rotateStandingPoint.HasUser && !rotateStandingPoint.UserAgent.IsInBeingStruckAction)
+                return new TextObject("{=NbpcDXtJ}Mangonel", null);
+            }
+            return new TextObject("{=pzfbPbWW}Boulder", null);
+        }
+
+        // Token: 0x06002CD5 RID: 11477 RVA: 0x000B0E1C File Offset: 0x000AF01C
+        public override TextObject GetActionTextForStandingPoint(UsableMissionObject usableGameObject)
+        {
+            TextObject textObject;
+            if (usableGameObject.GameEntity.HasTag("reload"))
+            {
+                textObject = new TextObject((base.PilotStandingPoint == usableGameObject) ? "{=fEQAPJ2e}{KEY} Use" : "{=Na81xuXn}{KEY} Rearm", null);
+            }
+            else if (usableGameObject.GameEntity.HasTag("rotate"))
+            {
+                textObject = new TextObject("{=5wx4BF5h}{KEY} Rotate", null);
+            }
+            else if (usableGameObject.GameEntity.HasTag(this.AmmoPickUpTag))
+            {
+                textObject = new TextObject("{=bNYm3K6b}{KEY} Pick Up", null);
+            }
+            else if (usableGameObject.GameEntity.HasTag("ammoload"))
+            {
+                textObject = new TextObject("{=ibC4xPoo}{KEY} Load Ammo", null);
+            }
+            else
+            {
+                textObject = new TextObject("{=fEQAPJ2e}{KEY} Use", null);
+            }
+            textObject.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
+            return textObject;
+        }
+        public override UsableMachineAIBase CreateAIBehaviorObject()
+        {
+            return new PE_MangonelAI(this);
+        }
+
+        protected override void OnInit()
+        {
+            AmmoPickUpTag = null;
+
+            base.OnInit();
+            this.InitiateMoveSynch();
+            this.HitPoint = MaxHitPoint;
+            LoadAmmoStandingPoint.InitRequiredWeaponClasses(new WeaponClass[] { OriginalMissileItem.PrimaryWeapon.WeaponClass });
+            LoadAmmoStandingPoint.InitRequiredWeapon(null);
+            LoadAmmoStandingPoint.InitGivenWeapon(null);
+
+            EnemyRangeToStopUsing = 7f;
+            moverStandingPoint = GameEntity.GetFirstChildEntityWithTag(MoverStandingPointTag).GetFirstScriptOfType<StandingPoint>();
+
+            _loadAmmoEndAnimationActionIndex = ActionIndexCache.Create(LoadAmmoEndActionName);
+            _loadAmmoBeginAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoBeginActionName);
+            //if (base.AmmoPickUpPoints != null)
+            //{
+            //    foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
+            //    {
+            //        ammoPickUpPoint.LockUserFrames = true;
+            //    }
+            //}
+
+            //UpdateProjectilePosition();
+        }
+
+        public Agent GetPilotAgent()
+        {
+            StandingPoint pilotStandingPoint = this.moverStandingPoint;
+            if (pilotStandingPoint == null)
+            {
+                return null;
+            }
+            return pilotStandingPoint.UserAgent;
+        }
+
+        protected void MoveControl()
+        {
+            if (GameNetwork.IsServer)
+            {
+                if (this.GetPilotAgent() != null)
                 {
-                    num += 0.1f;
+                    if (this.GetPilotAgent().Position.Distance(base.GameEntity.GlobalPosition) > 5f)
+                    {
+                        this.GetPilotAgent().StopUsingGameObjectMT(false);
+                    }
                 }
             }
 
-            return num;
-        }
-    }
-
-    protected override float VerticalAimSensitivity => 0.1f;
-
-    protected override Vec3 ShootingDirection
-    {
-        get
-        {
-            Mat3 rotation = _body.GameEntity.GetGlobalFrame().rotation;
-            rotation.RotateAboutSide(0f - CurrentReleaseAngle);
-            Vec3 v = new Vec3(0f, -1f);
-            return rotation.TransformToParent(in v);
-        }
-    }
-
-    protected override bool HasAmmo
-    {
-        get
-        {
-            if (!base.HasAmmo && base.CurrentlyUsedAmmoPickUpPoint == null && !LoadAmmoStandingPoint.HasUser)
+            if (GameNetwork.IsClient)
             {
-                return LoadAmmoStandingPoint.HasAIMovingTo;
+                if (Agent.Main != null && this.GetPilotAgent() == Agent.Main)
+                {
+                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.W))
+                    {
+                        this.RequestMovingForward();
+                    }
+                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.W))
+                    {
+                        this.RequestStopMovingForward();
+                    }
+                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.S))
+                    {
+                        this.RequestMovingBackward();
+                    }
+                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.S))
+                    {
+                        this.RequestStopMovingBackward();
+                    }
+                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.A))
+                    {
+                        this.RequestTurningLeft();
+                    }
+                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.A))
+                    {
+                        this.RequestStopTurningLeft();
+                    }
+                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.D))
+                    {
+                        this.RequestTurningRight();
+                    }
+                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.D))
+                    {
+                        this.RequestStopTurningRight();
+                    }
+                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.Space))
+                    {
+                        this.RequestMovingUp();
+                    }
+                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.Space))
+                    {
+                        this.RequestStopMovingUp();
+                    }
+                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.LeftShift))
+                    {
+                        this.RequestMovingDown();
+                    }
+                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.LeftShift))
+                    {
+                        this.RequestStopMovingDown();
+                    }
+                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.F))
+                    {
+                        GameNetwork.MyPeer.ControlledAgent.HandleStopUsingAction();
+                        ActionIndexCache ac = ActionIndexCache.act_none;
+                        this.GetPilotAgent().SetActionChannel(0, ac, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0, false, -0.2f, 0, true);
+                    }
+                }
+            }
+            if (this.GetPilotAgent() == null)
+            {
+                if (this.IsMovingBackward) this.StopMovingBackward();
+                if (this.IsMovingDown) this.StopMovingDown();
+                if (this.IsMovingForward) this.StopMovingForward();
+                if (this.IsMovingUp) this.StopMovingUp();
+                if (this.IsTurningLeft) this.StopTurningLeft();
+                if (this.IsTurningRight) this.StopTurningRight();
+            }
+        }
+
+        protected override bool CanRotate()
+        {
+            if (base.State != 0 && base.State != WeaponState.LoadingAmmo)
+            {
+                return base.State == WeaponState.WaitingBeforeIdle;
             }
 
             return true;
         }
-        set
+
+        public override TickRequirement GetTickRequirement()
         {
-            base.HasAmmo = value;
-        }
-    }
-
-    protected override void RegisterAnimationParameters()
-    {
-        SkeletonOwnerObjects = new SynchedMissionObject[2];
-        Skeletons = new Skeleton[2];
-        SkeletonNames = new string[1];
-        FireAnimations = new string[2];
-        FireAnimationIndices = new int[2];
-        SetUpAnimations = new string[2];
-        SetUpAnimationIndices = new int[2];
-        SkeletonOwnerObjects[0] = _body;
-        Skeletons[0] = _body.GameEntity.Skeleton;
-        SkeletonNames[0] = MangonelBodySkeleton;
-        FireAnimations[0] = MangonelBodyFire;
-        FireAnimationIndices[0] = MBAnimation.GetAnimationIndexWithName(MangonelBodyFire);
-        SetUpAnimations[0] = MangonelBodyReload;
-        SetUpAnimationIndices[0] = MBAnimation.GetAnimationIndexWithName(MangonelBodyReload);
-        SkeletonOwnerObjects[1] = _rope;
-        Skeletons[1] = _rope.GameEntity.Skeleton;
-        FireAnimations[1] = MangonelRopeFire;
-        FireAnimationIndices[1] = MBAnimation.GetAnimationIndexWithName(MangonelRopeFire);
-        SetUpAnimations[1] = MangonelRopeReload;
-        SetUpAnimationIndices[1] = MBAnimation.GetAnimationIndexWithName(MangonelRopeReload);
-        _missileBoneName = ProjectileBoneName;
-        _idleAnimationActionIndex = ActionIndexCache.Create(IdleActionName);
-        _shootAnimationActionIndex = ActionIndexCache.Create(ShootActionName);
-        _reload1AnimationActionIndex = ActionIndexCache.Create(Reload1ActionName);
-        _reload2AnimationActionIndex = ActionIndexCache.Create(Reload2ActionName);
-        _rotateLeftAnimationActionIndex = ActionIndexCache.Create(RotateLeftActionName);
-        _rotateRightAnimationActionIndex = ActionIndexCache.Create(RotateRightActionName);
-        _loadAmmoBeginAnimationActionIndex = ActionIndexCache.Create(LoadAmmoBeginActionName);
-        _loadAmmoEndAnimationActionIndex = ActionIndexCache.Create(LoadAmmoEndActionName);
-        _reload2IdleActionIndex = ActionIndexCache.Create(Reload2IdleActionName);
-    }
-
-    public override UsableMachineAIBase CreateAIBehaviorObject()
-    {
-        return new MangonelAI(this);
-    }
-
-    public override SiegeEngineType GetSiegeEngineType()
-    {
-        if (DefaultSide != BattleSideEnum.Attacker)
-        {
-            return DefaultSiegeEngineTypes.Catapult;
-        }
-
-        return DefaultSiegeEngineTypes.Onager;
-    }
-
-    protected internal override void OnInit()
-    {
-        List<SynchedMissionObject> list = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("rope");
-        if (list.Count > 0)
-        {
-            _rope = list[0];
-        }
-
-        list = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("body");
-        _body = list[0];
-        _bodySkeleton = _body.GameEntity.Skeleton;
-        RotationObject = _body;
-        List<WeakGameEntity> list2 = base.GameEntity.CollectChildrenEntitiesWithTag("vertical_adjuster");
-        _verticalAdjuster = TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(list2[0]);
-        _verticalAdjusterSkeleton = _verticalAdjuster.Skeleton;
-        if (_verticalAdjusterSkeleton != null)
-        {
-            _verticalAdjusterSkeleton.SetAnimationAtChannel(MangonelAimAnimation, 0);
-        }
-
-        _verticalAdjusterStartingLocalFrame = _verticalAdjuster.GetFrame();
-        _verticalAdjusterStartingLocalFrame = _body.GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToLocal(in _verticalAdjusterStartingLocalFrame);
-        base.OnInit();
-        TimeGapBetweenShootActionAndProjectileLeaving = 0.23f;
-        TimeGapBetweenShootingEndAndReloadingStart = 0f;
-        _rotateStandingPoints = new List<StandingPoint>();
-        if (base.StandingPoints != null)
-        {
-            foreach (StandingPoint standingPoint in base.StandingPoints)
+            if (base.GameEntity.IsVisibleIncludeParents())
             {
-                if (standingPoint.GameEntity.HasTag("rotate"))
+                return base.GetTickRequirement() | TickRequirement.Tick | TickRequirement.TickParallel;
+            }
+
+            return base.GetTickRequirement();
+        }
+
+        protected override void OnTick(float dt)
+        {
+            base.OnTick(dt);
+            MoveControl();
+
+            if (GameNetwork.IsServer)
+            {
+                MatrixFrame frame = this.MoveObjectTick(dt);
+                base.SetFrameSynched(ref frame);
+            }
+            if (!base.GameEntity.IsVisibleIncludeParents())
+            {
+                return;
+            }
+
+#if SERVER
+            if (!GameNetwork.IsClientOrReplay)
+            {
+                foreach (StandingPointWithWeaponRequirement standingPointWithWeaponRequirement in this.AmmoPickUpPoints)
                 {
-                    if (standingPoint.GameEntity.HasTag("left") && _rotateStandingPoints.Count > 0)
+                    if (standingPointWithWeaponRequirement.HasUser)
                     {
-                        _rotateStandingPoints.Insert(0, standingPoint);
-                    }
-                    else
-                    {
-                        _rotateStandingPoints.Add(standingPoint);
-                    }
-                }
-            }
-
-            MatrixFrame frame = _body.GameEntity.GetGlobalFrame();
-            _standingPointLocalIKFrames = new MatrixFrame[base.StandingPoints.Count];
-            for (int i = 0; i < base.StandingPoints.Count; i++)
-            {
-                _standingPointLocalIKFrames[i] = base.StandingPoints[i].GameEntity.GetGlobalFrame().TransformToLocalNonOrthogonal(in frame);
-                base.StandingPoints[i].AddComponent(new ClearHandInverseKinematicsOnStopUsageComponent());
-            }
-        }
-
-        _missileBoneIndex = Skeleton.GetBoneIndexFromName(Skeletons[0].GetName(), _missileBoneName);
-        ApplyAimChange();
-        foreach (StandingPoint reloadStandingPoint in ReloadStandingPoints)
-        {
-            if (reloadStandingPoint != base.PilotStandingPoint)
-            {
-                _reloadWithoutPilot = reloadStandingPoint;
-            }
-        }
-
-        if (!GameNetwork.IsClientOrReplay)
-        {
-            SetActivationLoadAmmoPoint(activate: false);
-        }
-
-        EnemyRangeToStopUsing = 9f;
-        SetScriptComponentToTick(GetTickRequirement());
-        if (base.AmmoPickUpPoints != null)
-        {
-            foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
-            {
-                ammoPickUpPoint.LockUserFrames = true;
-            }
-        }
-
-        UpdateProjectilePosition();
-    }
-
-    protected internal override void OnEditorInit()
-    {
-    }
-
-    public override void OnPilotAssignedDuringSpawn()
-    {
-        base.PilotAgent.SetActionChannel(1, in _idleAnimationActionIndex, ignorePriority: false, (AnimFlags)0uL);
-        MatrixFrame globalFrame = base.PilotStandingPoint.GameEntity.GetGlobalFrame();
-        base.PilotAgent.TeleportToPosition(globalFrame.origin);
-        base.PilotAgent.DisableScriptedMovement();
-        Agent pilotAgent = base.PilotAgent;
-        Vec2 direction = globalFrame.rotation.f.AsVec2.Normalized();
-        pilotAgent.SetMovementDirection(in direction);
-    }
-
-    protected override bool CanRotate()
-    {
-        if (base.State != 0 && base.State != WeaponState.LoadingAmmo)
-        {
-            return base.State == WeaponState.WaitingBeforeIdle;
-        }
-
-        return true;
-    }
-
-    public override TickRequirement GetTickRequirement()
-    {
-        if (base.GameEntity.IsVisibleIncludeParents())
-        {
-            return base.GetTickRequirement() | TickRequirement.Tick | TickRequirement.TickParallel;
-        }
-
-        return base.GetTickRequirement();
-    }
-
-    protected internal override void OnTick(float dt)
-    {
-        base.OnTick(dt);
-        if (!base.GameEntity.IsVisibleIncludeParents())
-        {
-            return;
-        }
-
-        if (!GameNetwork.IsClientOrReplay)
-        {
-            foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
-            {
-                if (!ammoPickUpPoint.HasUser)
-                {
-                    continue;
-                }
-
-                Agent userAgent = ammoPickUpPoint.UserAgent;
-                ActionIndexCache currentAction = userAgent.GetCurrentAction(1);
-                if (currentAction == ActionIndexCache.act_pickup_boulder_begin)
-                {
-                    continue;
-                }
-
-                if (currentAction == ActionIndexCache.act_pickup_boulder_end)
-                {
-                    MissionWeapon weapon = new MissionWeapon(OriginalMissileItem, null, null, 1);
-                    userAgent.EquipWeaponToExtraSlotAndWield(ref weapon);
-                    userAgent.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.None);
-                    ConsumeAmmo();
-                    if (userAgent.IsAIControlled)
-                    {
-                        if (!LoadAmmoStandingPoint.HasUser && !LoadAmmoStandingPoint.IsDeactivated)
+                        Agent userAgent = standingPointWithWeaponRequirement.UserAgent;
+                        ActionIndexCache currentAction = userAgent.GetCurrentAction(1);
+                        if (!(currentAction == ActionIndexCache.act_pickup_boulder_begin))
                         {
-                            userAgent.AIMoveToGameObjectEnable(LoadAmmoStandingPoint, this, base.Ai.GetScriptedFrameFlags(userAgent));
-                            continue;
+                            if (currentAction == ActionIndexCache.act_pickup_boulder_end)
+                            {
+                                MissionWeapon missionWeapon = new MissionWeapon(this.OriginalMissileItem, null, null, 1);
+                                userAgent.EquipWeaponToExtraSlotAndWield(ref missionWeapon);
+                                userAgent.StopUsingGameObject(true);
+                                this.ConsumeAmmo();
+                                if (userAgent.IsAIControlled)
+                                {
+                                    return;
+                                }
+                            }
+                            else if (!userAgent.SetActionChannel(1, ActionIndexCache.act_pickup_boulder_begin, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && userAgent.Controller != AgentControllerType.AI)
+                            {
+                                userAgent.StopUsingGameObject(true);
+                            }
                         }
-
-                        if (ReloaderAgentOriginalPoint != null && !ReloaderAgentOriginalPoint.HasUser && !ReloaderAgentOriginalPoint.HasAIMovingTo)
-                        {
-                            userAgent.AIMoveToGameObjectEnable(ReloaderAgentOriginalPoint, this, base.Ai.GetScriptedFrameFlags(userAgent));
-                            continue;
-                        }
-
-                        ReloaderAgent?.Formation?.AttachUnit(ReloaderAgent);
-                        ReloaderAgent = null;
                     }
                 }
-                else if (!userAgent.SetActionChannel(1, in ActionIndexCache.act_pickup_boulder_begin, ignorePriority: false, (AnimFlags)0uL) && userAgent.Controller != AgentControllerType.AI)
-                {
-                    userAgent.StopUsingGameObject();
-                }
             }
-        }
-
-        switch (base.State)
-        {
-            case WeaponState.WaitingBeforeIdle:
-                _timeElapsedAfterLoading += dt;
-                if (_timeElapsedAfterLoading > 1f)
-                {
-                    base.State = WeaponState.Idle;
-                }
-
-                break;
-            case WeaponState.LoadingAmmo:
-                if (GameNetwork.IsClientOrReplay)
-                {
+#endif
+            switch (base.State)
+            {
+                case RangedSiegeWeapon.WeaponState.LoadingAmmo:
+                    if (!GameNetwork.IsClientOrReplay)
+                    {
+                        if (this.LoadAmmoStandingPoint.HasUser)
+                        {
+                            Agent userAgent2 = this.LoadAmmoStandingPoint.UserAgent;
+                            if (userAgent2.GetCurrentAction(1) == this._loadAmmoEndAnimationActionIndex)
+                            {
+                                EquipmentIndex wieldedItemIndex = userAgent2.GetPrimaryWieldedItemIndex();// GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                                Debug.Print(wieldedItemIndex.ToString());
+                                if (wieldedItemIndex != EquipmentIndex.None && userAgent2.Equipment[wieldedItemIndex].CurrentUsageItem.WeaponClass == this.OriginalMissileItem.PrimaryWeapon.WeaponClass)
+                                {
+                                    base.ChangeProjectileEntityServer(userAgent2, userAgent2.Equipment[wieldedItemIndex].Item.StringId);
+                                    userAgent2.RemoveEquippedWeapon(wieldedItemIndex);
+                                    this._timeElapsedAfterLoading = 0f;
+                                    base.Projectile.SetVisibleSynched(true, false);
+                                    base.State = RangedSiegeWeapon.WeaponState.WaitingBeforeIdle;
+                                    return;
+                                }
+                                userAgent2.StopUsingGameObject(true);
+                                if (!userAgent2.IsPlayerControlled)
+                                {
+                                    base.SendAgentToAmmoPickup(userAgent2);
+                                    return;
+                                }
+                            }
+                            else if (userAgent2.GetCurrentAction(1) != this._loadAmmoBeginAnimationActionIndex && !userAgent2.SetActionChannel(1, this._loadAmmoBeginAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true))
+                            {
+                                for (EquipmentIndex equipmentIndex = EquipmentIndex.WeaponItemBeginSlot; equipmentIndex < EquipmentIndex.NumAllWeaponSlots; equipmentIndex++)
+                                {
+                                    if (!userAgent2.Equipment[equipmentIndex].IsEmpty && userAgent2.Equipment[equipmentIndex].CurrentUsageItem.WeaponClass == this.OriginalMissileItem.PrimaryWeapon.WeaponClass)
+                                    {
+                                        userAgent2.RemoveEquippedWeapon(equipmentIndex);
+                                    }
+                                }
+                                userAgent2.StopUsingGameObject(true);
+                                if (!userAgent2.IsPlayerControlled)
+                                {
+                                    base.SendAgentToAmmoPickup(userAgent2);
+                                    return;
+                                }
+                            }
+                        }
+                        else if (this.LoadAmmoStandingPoint.HasAIMovingTo)
+                        {
+                            Agent movingAgent = this.LoadAmmoStandingPoint.MovingAgent;
+                            EquipmentIndex wieldedItemIndex2 = movingAgent.GetPrimaryWieldedItemIndex();// WieldedItemIndex(Agent.HandIndex.MainHand);
+                            if (wieldedItemIndex2 == EquipmentIndex.None || movingAgent.Equipment[wieldedItemIndex2].CurrentUsageItem.WeaponClass != this.OriginalMissileItem.PrimaryWeapon.WeaponClass)
+                            {
+                                movingAgent.StopUsingGameObject(true);
+                                base.SendAgentToAmmoPickup(movingAgent);
+                            }
+                        }
+                    }
                     break;
-                }
-
-                if (LoadAmmoStandingPoint.HasUser)
-                {
-                    Agent userAgent2 = LoadAmmoStandingPoint.UserAgent;
-                    if (userAgent2.GetCurrentAction(1) == _loadAmmoEndAnimationActionIndex)
+                case RangedSiegeWeapon.WeaponState.WaitingBeforeIdle:
+                    this._timeElapsedAfterLoading += dt;
+                    if (this._timeElapsedAfterLoading > 1f)
                     {
-                        EquipmentIndex primaryWieldedItemIndex = userAgent2.GetPrimaryWieldedItemIndex();
-                        if (primaryWieldedItemIndex != EquipmentIndex.None && userAgent2.Equipment[primaryWieldedItemIndex].CurrentUsageItem.WeaponClass == OriginalMissileItem.PrimaryWeapon.WeaponClass)
-                        {
-                            ChangeProjectileEntityServer(userAgent2, userAgent2.Equipment[primaryWieldedItemIndex].Item.StringId);
-                            userAgent2.RemoveEquippedWeapon(primaryWieldedItemIndex);
-                            _timeElapsedAfterLoading = 0f;
-                            base.Projectile.SetVisibleSynched(value: true);
-                            base.State = WeaponState.WaitingBeforeIdle;
-                        }
-                        else
-                        {
-                            userAgent2.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.None);
-                            if (!userAgent2.IsPlayerControlled)
-                            {
-                                SendAgentToAmmoPickup(userAgent2);
-                            }
-                        }
+                        base.State = RangedSiegeWeapon.WeaponState.Idle;
+                        return;
                     }
-                    else
+                    break;
+                case RangedSiegeWeapon.WeaponState.Reloading:
+                case RangedSiegeWeapon.WeaponState.ReloadingPaused:
+                    break;
+                default:
+                    return;
+            }
+        }
+
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
+        {
+            reportDamage = true;
+            MissionWeapon missionWeapon = weapon;
+            WeaponComponentData currentUsageItem = missionWeapon.CurrentUsageItem;
+
+            if (this.DestroyedByStoneOnly)
+            {
+                if (currentUsageItem == null || (currentUsageItem.WeaponClass != WeaponClass.Stone && currentUsageItem.WeaponClass != WeaponClass.Boulder) || !currentUsageItem.WeaponFlags.HasAnyFlag(WeaponFlags.NotUsableWithOneHand))
+                {
+                    damage = 0;
+                }
+            }
+            if (impactDirection == null) impactDirection = Vec3.Zero;
+
+
+            SetHitPoint(this.HitPoint - damage, impactDirection);
+            if (GameNetwork.IsServer)
+            {
+                LoggerHelper.LogAnAction(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerHitToDestructable, null, new object[] { this.GetType().Name });
+            }
+
+            finalDamage = damage;
+
+            return false;
+        }
+
+        protected override void SetActivationLoadAmmoPoint(bool activate)
+        {
+            //LoadAmmoStandingPoint.SetIsDeactivatedSynched(!activate);
+        }
+
+        //protected override void OnRangedSiegeWeaponStateChange()
+        //{
+        //    base.OnRangedSiegeWeaponStateChange();
+        //    RangedSiegeWeapon.WeaponState state = base.State;
+        //    if (state != RangedSiegeWeapon.WeaponState.Idle)
+        //    {
+        //        if (state != RangedSiegeWeapon.WeaponState.Shooting)
+        //        {
+        //            if (state == RangedSiegeWeapon.WeaponState.WaitingBeforeIdle)
+        //            {
+        //                this.UpdateProjectilePosition();
+        //                return;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            if (!GameNetwork.IsClientOrReplay)
+        //            {
+        //                base.Projectile.SetVisibleSynched(false, false);
+        //                return;
+        //            }
+        //            base.Projectile.GameEntity.SetVisibilityExcludeParents(false);
+        //            return;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        if (!GameNetwork.IsClientOrReplay)
+        //        {
+        //            base.Projectile.SetVisibleSynched(true, false);
+        //            return;
+        //        }
+        //        base.Projectile.GameEntity.SetVisibilityExcludeParents(true);
+        //    }
+        //}
+
+        protected override void GetSoundEventIndices()
+        {
+            MoveSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/move");
+            ReloadSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/reload");
+            FireSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/fire");
+        }
+
+        //public override TargetFlags GetTargetFlags()
+        //{
+        //    TargetFlags targetFlags = TargetFlags.None;
+        //    targetFlags |= TargetFlags.IsFlammable;
+        //    targetFlags |= TargetFlags.IsSiegeEngine;
+        //    targetFlags |= TargetFlags.IsAttacker;
+        //    if (base.IsDestroyed || this.IsDeactivated)
+        //    {
+        //        targetFlags |= TargetFlags.NotAThreat;
+        //    }
+        //    if (this.Side == BattleSideEnum.Attacker && DebugSiegeBehavior.DebugDefendState == DebugSiegeBehavior.DebugStateDefender.DebugDefendersToMangonels)
+        //    {
+        //        targetFlags |= TargetFlags.DebugThreat;
+        //    }
+        //    if (this.Side == BattleSideEnum.Defender && DebugSiegeBehavior.DebugAttackState == DebugSiegeBehavior.DebugStateAttacker.DebugAttackersToMangonels)
+        //    {
+        //        targetFlags |= TargetFlags.DebugThreat;
+        //    }
+        //    return targetFlags;
+        //}
+
+        //public override float ProcessTargetValue(float baseValue, TargetFlags flags)
+        //{
+        //    if (flags.HasAnyFlag(TargetFlags.NotAThreat))
+        //    {
+        //        return -1000f;
+        //    }
+        //    if (flags.HasAnyFlag(TargetFlags.IsSiegeEngine))
+        //    {
+        //        baseValue *= 1.5f;
+        //    }
+        //    if (flags.HasAnyFlag(TargetFlags.IsStructure))
+        //    {
+        //        baseValue *= 2.5f;
+        //    }
+        //    if (flags.HasAnyFlag(TargetFlags.IsSmall))
+        //    {
+        //        baseValue *= 0.5f;
+        //    }
+        //    if (flags.HasAnyFlag(TargetFlags.IsMoving))
+        //    {
+        //        baseValue *= 0.8f;
+        //    }
+        //    if (flags.HasAnyFlag(TargetFlags.DebugThreat))
+        //    {
+        //        baseValue *= 10000f;
+        //    }
+        //    return baseValue;
+        //}
+
+        public void SetHitPoint(float hitPoint, Vec3 impactDirection)
+        {
+            this.HitPoint = hitPoint;
+
+            MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
+            if (this.HitPoint > this.MaxHitPoint) this.HitPoint = this.MaxHitPoint;
+            if (this.HitPoint < 0) this.HitPoint = 0;
+
+            if (this.HitPoint == 0)
+            {
+                for (int i = 0; i < base.StandingPoints.Count; i++)
+                {
+                    if (this.StandingPoints[i].HasUser)
                     {
-                        if (!(userAgent2.GetCurrentAction(1) != _loadAmmoBeginAnimationActionIndex) || userAgent2.SetActionChannel(1, in _loadAmmoBeginAnimationActionIndex, ignorePriority: false, (AnimFlags)0uL))
-                        {
-                            break;
-                        }
-
-                        for (EquipmentIndex equipmentIndex = EquipmentIndex.WeaponItemBeginSlot; equipmentIndex < EquipmentIndex.NumAllWeaponSlots; equipmentIndex++)
-                        {
-                            if (!userAgent2.Equipment[equipmentIndex].IsEmpty && userAgent2.Equipment[equipmentIndex].CurrentUsageItem.WeaponClass == OriginalMissileItem.PrimaryWeapon.WeaponClass)
-                            {
-                                userAgent2.RemoveEquippedWeapon(equipmentIndex);
-                            }
-                        }
-
-                        userAgent2.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.None);
-                        if (!userAgent2.IsPlayerControlled)
-                        {
-                            SendAgentToAmmoPickup(userAgent2);
-                        }
+                        this.StandingPoints[i].UserAgent.StopUsingGameObjectMT(false);
                     }
                 }
-                else if (LoadAmmoStandingPoint.HasAIMovingTo)
+                if (this.ParticleEffectOnDestroy != "")
                 {
-                    Agent movingAgent = LoadAmmoStandingPoint.MovingAgent;
-                    EquipmentIndex primaryWieldedItemIndex2 = movingAgent.GetPrimaryWieldedItemIndex();
-                    if (primaryWieldedItemIndex2 == EquipmentIndex.None || movingAgent.Equipment[primaryWieldedItemIndex2].CurrentUsageItem.WeaponClass != OriginalMissileItem.PrimaryWeapon.WeaponClass)
-                    {
-                        movingAgent.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.None);
-                        SendAgentToAmmoPickup(movingAgent);
-                    }
+                    Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnDestroy), globalFrame);
+                }
+                if (this.SoundEffectOnDestroy != "")
+                {
+                    Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
                 }
 
-                break;
-            case WeaponState.Reloading:
-            case WeaponState.ReloadingPaused:
-                break;
-        }
-    }
-
-    protected internal override void OnTickParallel(float dt)
-    {
-        base.OnTickParallel(dt);
-        if (!base.GameEntity.IsVisibleIncludeParents())
-        {
-            return;
-        }
-
-        if (base.State == WeaponState.WaitingBeforeProjectileLeaving)
-        {
-            UpdateProjectilePosition();
-        }
-
-        if (_verticalAdjusterSkeleton != null)
-        {
-            float parameter = MBMath.ClampFloat((CurrentReleaseAngle - BottomReleaseAngleRestriction) / (TopReleaseAngleRestriction - BottomReleaseAngleRestriction), 0f, 1f);
-            _verticalAdjusterSkeleton.SetAnimationParameterAtChannel(0, parameter);
-        }
-
-        MatrixFrame frame = Skeletons[0].GetBoneEntitialFrameWithIndex(0).TransformToParent(in _verticalAdjusterStartingLocalFrame);
-        _verticalAdjuster.SetFrame(ref frame);
-        MatrixFrame boundEntityGlobalFrame = _body.GameEntity.GetGlobalFrame();
-        for (int i = 0; i < base.StandingPoints.Count; i++)
-        {
-            if (!base.StandingPoints[i].HasUser)
-            {
-                continue;
-            }
-
-            if (base.StandingPoints[i].UserAgent.IsInBeingStruckAction || base.AmmoPickUpPoints.IndexOf(base.StandingPoints[i]) >= 0)
-            {
-                base.StandingPoints[i].UserAgent.ClearHandInverseKinematics();
-                continue;
-            }
-
-            ActionIndexCache currentAction = base.StandingPoints[i].UserAgent.GetCurrentAction(1);
-            float currentActionProgress = base.StandingPoints[i].UserAgent.GetCurrentActionProgress(1);
-            if (currentAction != _reload2IdleActionIndex && (currentAction != _reload2AnimationActionIndex || currentActionProgress > 0.1f) && (currentAction != _shootAnimationActionIndex || currentActionProgress < 0.15f))
-            {
-                base.StandingPoints[i].UserAgent.SetHandInverseKinematicsFrameForMissionObjectUsage(in _standingPointLocalIKFrames[i], in boundEntityGlobalFrame);
-            }
-            else
-            {
-                base.StandingPoints[i].UserAgent.ClearHandInverseKinematics();
+                base.GameEntity.Remove(0);
             }
         }
 
-        if (!GameNetwork.IsClientOrReplay)
+        public void SetSpawnedFromSpawner()
         {
-            for (int j = 0; j < _rotateStandingPoints.Count; j++)
-            {
-                StandingPoint standingPoint = _rotateStandingPoints[j];
-                if (standingPoint.HasUser)
-                {
-                    Agent userAgent = standingPoint.UserAgent;
-                    ActionIndexCache actionIndexCache = ((j == 0) ? _rotateLeftAnimationActionIndex : _rotateRightAnimationActionIndex);
-                    if (!userAgent.SetActionChannel(1, in actionIndexCache, ignorePriority: false, (AnimFlags)0uL) && standingPoint.UserAgent.Controller != AgentControllerType.AI)
-                    {
-                        standingPoint.UserAgent.StopUsingGameObjectMT();
-                    }
-                }
-            }
-
-            if (base.PilotAgent != null)
-            {
-                ActionIndexCache currentAction2 = base.PilotAgent.GetCurrentAction(1);
-                if (base.State == WeaponState.WaitingBeforeProjectileLeaving)
-                {
-                    if (base.PilotAgent.IsInBeingStruckAction)
-                    {
-                        if (currentAction2 != ActionIndexCache.act_none && currentAction2 != ActionIndexCache.act_strike_bent_over)
-                        {
-                            base.PilotAgent.SetActionChannel(1, in ActionIndexCache.act_strike_bent_over, ignorePriority: false, (AnimFlags)0uL);
-                        }
-                    }
-                    else if (!base.PilotAgent.SetActionChannel(1, in _shootAnimationActionIndex, ignorePriority: false, (AnimFlags)0uL) && base.PilotAgent.Controller != AgentControllerType.AI)
-                    {
-                        base.PilotAgent.StopUsingGameObjectMT();
-                    }
-                }
-                else if (!base.PilotAgent.SetActionChannel(1, in _idleAnimationActionIndex, ignorePriority: false, (AnimFlags)0uL) && currentAction2 != _reload1AnimationActionIndex && currentAction2 != _shootAnimationActionIndex && base.PilotAgent.Controller != AgentControllerType.AI)
-                {
-                    base.PilotAgent.StopUsingGameObjectMT();
-                }
-            }
-
-            if (_reloadWithoutPilot.HasUser)
-            {
-                Agent userAgent2 = _reloadWithoutPilot.UserAgent;
-                if (!userAgent2.SetActionChannel(1, in _reload2IdleActionIndex, ignorePriority: false, (AnimFlags)0uL) && userAgent2.GetCurrentAction(1) != _reload2AnimationActionIndex && userAgent2.Controller != AgentControllerType.AI)
-                {
-                    userAgent2.StopUsingGameObjectMT();
-                }
-            }
+            this._spawnedFromSpawner = true;
         }
 
-        if (base.State != WeaponState.Reloading)
+        public void OnSpawnedByPrefab(PE_PrefabSpawner spawner)
         {
-            return;
+            this._spawnedFromSpawner = true;
         }
 
-        foreach (StandingPoint reloadStandingPoint in ReloadStandingPoints)
+        public UsableMachine GetAttachedObject()
         {
-            if (!reloadStandingPoint.HasUser)
-            {
-                continue;
-            }
-
-            ActionIndexCache currentAction3 = reloadStandingPoint.UserAgent.GetCurrentAction(1);
-            if (currentAction3 == _reload1AnimationActionIndex || currentAction3 == _reload2AnimationActionIndex)
-            {
-                reloadStandingPoint.UserAgent.SetCurrentActionProgress(1, _bodySkeleton.GetAnimationParameterAtChannel(0));
-            }
-            else if (!GameNetwork.IsClientOrReplay)
-            {
-                ActionIndexCache actionIndexCache2 = ((reloadStandingPoint == base.PilotStandingPoint) ? _reload1AnimationActionIndex : _reload2AnimationActionIndex);
-                if (!reloadStandingPoint.UserAgent.SetActionChannel(1, in actionIndexCache2, ignorePriority: false, (AnimFlags)0uL, 0f, 1f, -0.2f, 0.4f, _bodySkeleton.GetAnimationParameterAtChannel(0)) && reloadStandingPoint.UserAgent.Controller != AgentControllerType.AI)
-                {
-                    reloadStandingPoint.UserAgent.StopUsingGameObjectMT();
-                }
-            }
-        }
-    }
-
-    protected override void SetActivationLoadAmmoPoint(bool activate)
-    {
-        LoadAmmoStandingPoint.SetIsDeactivatedSynched(!activate);
-    }
-
-    protected override void UpdateProjectilePosition()
-    {
-        MatrixFrame frame = Skeletons[0].GetBoneEntitialFrameWithIndex(_missileBoneIndex);
-        base.Projectile.GameEntity.SetFrame(ref frame);
-    }
-
-    protected override void OnRangedSiegeWeaponStateChange()
-    {
-        base.OnRangedSiegeWeaponStateChange();
-        switch (base.State)
-        {
-            case WeaponState.WaitingBeforeIdle:
-                UpdateProjectilePosition();
-                break;
-            case WeaponState.Shooting:
-                if (!GameNetwork.IsClientOrReplay)
-                {
-                    base.Projectile.SetVisibleSynched(value: false);
-                }
-                else
-                {
-                    base.Projectile.GameEntity.SetVisibilityExcludeParents(visible: false);
-                }
-
-                break;
-            case WeaponState.Idle:
-                if (!GameNetwork.IsClientOrReplay)
-                {
-                    base.Projectile.SetVisibleSynched(value: true);
-                }
-                else
-                {
-                    base.Projectile.GameEntity.SetVisibilityExcludeParents(visible: true);
-                }
-
-                break;
-        }
-    }
-
-    protected override void GetSoundEventIndices()
-    {
-        MoveSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/move");
-        ReloadSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/reload");
-        FireSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/fire");
-    }
-
-    protected override void ApplyAimChange()
-    {
-        base.ApplyAimChange();
-        ShootingDirection.Normalize();
-    }
-
-    public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
-    {
-        if (!gameEntity.HasTag(AmmoPickUpTag))
-        {
-            return new TextObject("{=NbpcDXtJ}Mangonel");
+            return this;
         }
 
-        return new TextObject("{=pzfbPbWW}Boulder");
-    }
+        //public void SetFrameAfterTick(MatrixFrame frame)
+        //{
+        //    this._setFrameAfterTick = frame;
+        //    this._frameSetFlag = true;
+        //}
 
-    public override TextObject GetActionTextForStandingPoint(UsableMissionObject usableGameObject)
-    {
-        TextObject textObject = (usableGameObject.GameEntity.HasTag("reload") ? new TextObject((base.PilotStandingPoint == usableGameObject) ? "{=fEQAPJ2e}{KEY} Use" : "{=Na81xuXn}{KEY} Rearm") : (usableGameObject.GameEntity.HasTag("rotate") ? new TextObject("{=5wx4BF5h}{KEY} Rotate") : (usableGameObject.GameEntity.HasTag(AmmoPickUpTag) ? new TextObject("{=bNYm3K6b}{KEY} Pick Up") : ((!usableGameObject.GameEntity.HasTag("ammoload")) ? new TextObject("{=fEQAPJ2e}{KEY} Use") : new TextObject("{=ibC4xPoo}{KEY} Load Ammo")))));
-        textObject.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
-        return textObject;
-    }
-
-    public override TargetFlags GetTargetFlags()
-    {
-        TargetFlags targetFlags = TargetFlags.None;
-        targetFlags |= TargetFlags.IsFlammable;
-        targetFlags |= TargetFlags.IsSiegeEngine;
-        if (Side == BattleSideEnum.Attacker)
+        public float GetAdvanceSpeed()
         {
-            targetFlags |= TargetFlags.IsAttacker;
+            return 1f;
         }
 
-        if (base.IsDestroyed || IsDeactivated)
+        public float GetRotationSpeed()
         {
-            targetFlags |= TargetFlags.NotAThreat;
+            return 0.3f;
         }
 
-        if (Side == BattleSideEnum.Attacker && DebugSiegeBehavior.DebugDefendState == DebugSiegeBehavior.DebugStateDefender.DebugDefendersToMangonels)
+        public float GetElevationSpeed()
         {
-            targetFlags |= TargetFlags.DebugThreat;
+            return 1f;
         }
 
-        if (Side == BattleSideEnum.Defender && DebugSiegeBehavior.DebugAttackState == DebugSiegeBehavior.DebugStateAttacker.DebugAttackersToMangonels)
+        public bool GetCanAdvance()
         {
-            targetFlags |= TargetFlags.DebugThreat;
+            return true;
         }
 
-        return targetFlags;
-    }
-
-    public override float GetTargetValue(List<Vec3> weaponPos)
-    {
-        return 40f * GetUserMultiplierOfWeapon() * GetDistanceMultiplierOfWeapon(weaponPos[0]) * GetHitPointMultiplierOfWeapon();
-    }
-
-    public override float ProcessTargetValue(float baseValue, TargetFlags flags)
-    {
-        if (flags.HasAnyFlag(TargetFlags.NotAThreat))
+        public bool GetCanRotate()
         {
-            return -1000f;
+            return true;
         }
 
-        if (flags.HasAnyFlag(TargetFlags.IsSiegeEngine))
+        public bool GetCanElevate()
         {
-            baseValue *= 10000f;
+            return false;
         }
 
-        if (flags.HasAnyFlag(TargetFlags.IsStructure))
+        public bool GetAlwaysAlignToTerritory()
         {
-            baseValue *= 2.5f;
+            return true;
         }
-
-        if (flags.HasAnyFlag(TargetFlags.IsSmall))
-        {
-            baseValue *= 8f;
-        }
-
-        if (flags.HasAnyFlag(TargetFlags.IsMoving))
-        {
-            baseValue *= 8f;
-        }
-
-        if (flags.HasAnyFlag(TargetFlags.DebugThreat))
-        {
-            baseValue *= 10000f;
-        }
-
-        if (flags.HasAnyFlag(TargetFlags.IsSiegeTower))
-        {
-            baseValue *= 8f;
-        }
-
-        return baseValue;
-    }
-
-    protected override float GetDetachmentWeightAux(BattleSideEnum side)
-    {
-        return GetDetachmentWeightAuxForExternalAmmoWeapons(side);
-    }
-
-    public void SetSpawnedFromSpawner()
-    {
-        _spawnedFromSpawner = true;
     }
 }
-#if false // Decompilation log
-'41' items in cache
-------------------
-Resolve: 'netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'
-Found single assembly: 'netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\Facades\netstandard.dll'
-------------------
-Resolve: 'TaleWorlds.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.Core.dll'
-------------------
-Resolve: 'TaleWorlds.DotNet, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.DotNet, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.DotNet.dll'
-------------------
-Resolve: 'TaleWorlds.MountAndBlade.Diamond, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.MountAndBlade.Diamond, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.MountAndBlade.Diamond.dll'
-------------------
-Resolve: 'TaleWorlds.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.Library.dll'
-------------------
-Resolve: 'TaleWorlds.PlayerServices, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.PlayerServices, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.PlayerServices.dll'
-------------------
-Resolve: 'TaleWorlds.Engine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.Engine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.Engine.dll'
-------------------
-Resolve: 'TaleWorlds.Localization, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.Localization, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.Localization.dll'
-------------------
-Resolve: 'TaleWorlds.InputSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.InputSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.InputSystem.dll'
-------------------
-Resolve: 'TaleWorlds.PlatformService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Could not find by name: 'TaleWorlds.PlatformService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-------------------
-Resolve: 'TaleWorlds.ObjectSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.ObjectSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.ObjectSystem.dll'
-------------------
-Resolve: 'TaleWorlds.ModuleManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.ModuleManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.ModuleManager.dll'
-------------------
-Resolve: 'TaleWorlds.SaveSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Could not find by name: 'TaleWorlds.SaveSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-------------------
-Resolve: 'TaleWorlds.ScreenSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Could not find by name: 'TaleWorlds.ScreenSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-------------------
-Resolve: 'TaleWorlds.MountAndBlade.Helpers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Could not find by name: 'TaleWorlds.MountAndBlade.Helpers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-------------------
-Resolve: 'TaleWorlds.LinQuick, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Could not find by name: 'TaleWorlds.LinQuick, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-------------------
-Resolve: 'TaleWorlds.PSAI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Could not find by name: 'TaleWorlds.PSAI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-------------------
-Resolve: 'TaleWorlds.Diamond, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'TaleWorlds.Diamond, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.Diamond.dll'
-------------------
-Resolve: 'TaleWorlds.AchievementSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Could not find by name: 'TaleWorlds.AchievementSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-------------------
-Resolve: 'TaleWorlds.ActivitySystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Could not find by name: 'TaleWorlds.ActivitySystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-------------------
-Resolve: 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\mscorlib.dll'
-------------------
-Resolve: 'System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Core.dll'
-------------------
-Resolve: 'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.dll'
-------------------
-Resolve: 'System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Data.dll'
-------------------
-Resolve: 'System.Diagnostics.Tracing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
-Could not find by name: 'System.Diagnostics.Tracing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
-------------------
-Resolve: 'System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
-Found single assembly: 'System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Drawing.dll'
-------------------
-Resolve: 'System.IO.Compression, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Could not find by name: 'System.IO.Compression, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-------------------
-Resolve: 'System.IO.Compression.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'System.IO.Compression.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.IO.Compression.FileSystem.dll'
-------------------
-Resolve: 'System.ComponentModel.Composition, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Could not find by name: 'System.ComponentModel.Composition, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-------------------
-Resolve: 'System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
-Found single assembly: 'System.Net.Http, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
-WARN: Version mismatch. Expected: '4.0.0.0', Got: '4.2.0.0'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Net.Http.dll'
-------------------
-Resolve: 'System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Numerics.dll'
-------------------
-Resolve: 'System.Runtime.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'System.Runtime.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Runtime.Serialization.dll'
-------------------
-Resolve: 'System.Transactions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Could not find by name: 'System.Transactions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-------------------
-Resolve: 'System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
-Found single assembly: 'System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Web.dll'
-------------------
-Resolve: 'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Xml.dll'
-------------------
-Resolve: 'System.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'System.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Xml.Linq.dll'
-------------------
-Resolve: 'System.Web.ApplicationServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
-Could not find by name: 'System.Web.ApplicationServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
-------------------
-Resolve: 'System.Runtime.InteropServices, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null'
-Could not find by name: 'System.Runtime.InteropServices, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null'
-------------------
-Resolve: 'System.Runtime.CompilerServices.Unsafe, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
-WARN: Version mismatch. Expected: '2.0.0.0', Got: '4.0.4.1'
-Load from: 'C:\Users\Snah\.nuget\packages\system.runtime.compilerservices.unsafe\4.5.3\ref\net461\System.Runtime.CompilerServices.Unsafe.dll'
-#endif

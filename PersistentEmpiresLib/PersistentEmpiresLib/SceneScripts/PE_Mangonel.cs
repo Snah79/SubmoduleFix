@@ -1,6 +1,7 @@
 ﻿using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.SceneScripts.Extensions;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Core;
@@ -213,6 +214,10 @@ namespace PersistentEmpiresLib.SceneScripts
             }
 
             return DefaultSiegeEngineTypes.Onager;
+        }
+
+        public void PreInit()
+        {
         }
 
         protected override void OnInit()
@@ -991,6 +996,6 @@ namespace PersistentEmpiresLib.SceneScripts
             finalDamage = damage;
 
             return false;
-        }
+        }        
     }
 }

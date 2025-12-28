@@ -3,1045 +3,319 @@
 // Decompiled with ICSharpCode.Decompiler 8.1.1.7464
 #endregion
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using NetworkMessages.FromClient;
-using NetworkMessages.FromServer;
 using TaleWorlds.Core;
-using TaleWorlds.DotNet;
 using TaleWorlds.Engine;
+using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
-using TaleWorlds.MountAndBlade.Network.Messages;
+using TaleWorlds.Localization;
+using TaleWorlds.MountAndBlade.Objects.Siege;
 
 namespace TaleWorlds.MountAndBlade;
 
-public abstract class RangedSiegeWeapon : SiegeWeapon
+public class Mangonel : RangedSiegeWeapon, ISpawnable
 {
-    [DefineSynchedMissionObjectType(typeof(RangedSiegeWeapon))]
-    public struct RangedSiegeWeaponRecord : ISynchedMissionObjectReadableRecord
-    {
-        public int State { get; private set; }
+    private const string BodyTag = "body";
 
-        public float TargetDirection { get; private set; }
+    private const string RopeTag = "rope";
 
-        public float TargetReleaseAngle { get; private set; }
+    private const string RotateTag = "rotate";
 
-        public int AmmoCount { get; private set; }
+    private const string LeftTag = "left";
 
-        public int ProjectileIndex { get; private set; }
+    private const string VerticalAdjusterTag = "vertical_adjuster";
 
-        public bool ReadFromNetwork(ref bool bufferReadValid)
-        {
-            State = GameNetworkMessage.ReadIntFromPacket(CompressionMission.RangedSiegeWeaponStateCompressionInfo, ref bufferReadValid);
-            TargetDirection = GameNetworkMessage.ReadFloatFromPacket(CompressionBasic.RadianCompressionInfo, ref bufferReadValid);
-            TargetReleaseAngle = GameNetworkMessage.ReadFloatFromPacket(CompressionBasic.RadianCompressionInfo, ref bufferReadValid);
-            AmmoCount = GameNetworkMessage.ReadIntFromPacket(CompressionMission.RangedSiegeWeaponAmmoCompressionInfo, ref bufferReadValid);
-            ProjectileIndex = GameNetworkMessage.ReadIntFromPacket(CompressionMission.RangedSiegeWeaponAmmoIndexCompressionInfo, ref bufferReadValid);
-            return bufferReadValid;
-        }
-    }
+    private string _missileBoneName = "end_throwarm";
 
-    public enum WeaponState
-    {
-        Invalid = -1,
-        Idle,
-        WaitingBeforeProjectileLeaving,
-        Shooting,
-        WaitingAfterShooting,
-        WaitingBeforeReloading,
-        LoadingAmmo,
-        WaitingBeforeIdle,
-        Reloading,
-        ReloadingPaused,
-        NumberOfStates
-    }
+    private List<StandingPoint> _rotateStandingPoints;
 
-    public enum FiringFocus
-    {
-        Troops,
-        Walls,
-        RangedSiegeWeapons,
-        PrimarySiegeWeapons
-    }
+    private SynchedMissionObject _body;
 
-    public enum CameraState
-    {
-        StickToWeapon,
-        DontMove,
-        MoveDownToReload,
-        RememberLastShotDirection,
-        FreeMove,
-        ApproachToCamera
-    }
+    private SynchedMissionObject _rope;
 
-    public enum ForceUseState
-    {
-        NotForced,
-        ForcefullyWatched,
-        ForcefullyUsed
-    }
+    private GameEntity _verticalAdjuster;
 
-    public delegate void OnSiegeWeaponReloadDone();
+    private MatrixFrame _verticalAdjusterStartingLocalFrame;
 
-    private const float DefaultMissileRadius = 0.01f;
+    private Skeleton _verticalAdjusterSkeleton;
 
-    public const float DefaultDirectionRestriction = (float)Math.PI * 2f / 3f;
+    private Skeleton _bodySkeleton;
 
-    public const string CanGoAmmoPickupTag = "can_pick_up_ammo";
+    private float _timeElapsedAfterLoading;
 
-    public const string DontApplySidePenaltyTag = "no_ammo_pick_up_penalty";
+    private MatrixFrame[] _standingPointLocalIKFrames;
 
-    public const string ReloadTag = "reload";
+    private StandingPoint _reloadWithoutPilot;
 
-    public const string AmmoLoadTag = "ammoload";
+    public string MangonelBodySkeleton = "mangonel_skeleton";
 
-    public const string CameraHolderTag = "cameraHolder";
+    public string MangonelBodyFire = "mangonel_fire";
 
-    public const string ProjectileTag = "projectile";
+    public string MangonelBodyReload = "mangonel_set_up";
 
-    public string MissileItemID;
+    public string MangonelRopeFire = "mangonel_holder_fire";
 
-    protected bool UsesMouseForAiming;
+    public string MangonelRopeReload = "mangonel_holder_set_up";
 
-    [EditableScriptComponentVariable(true, "")]
-    protected int MultipleProjectileCount = 5;
+    public string MangonelAimAnimation = "mangonel_a_anglearm_state";
 
-    private WeaponState _state;
+    public string ProjectileBoneName = "end_throwarm";
 
-    public FiringFocus Focus;
+    public string IdleActionName;
 
-    private int _projectileIndex;
+    public string ShootActionName;
 
-    protected GameEntity MissileStartingPositionEntityForSimulation;
+    public string Reload1ActionName;
 
-    protected Skeleton[] Skeletons;
+    public string Reload2ActionName;
 
-    protected SynchedMissionObject[] SkeletonOwnerObjects;
+    public string RotateLeftActionName;
 
-    protected string[] SkeletonNames;
+    public string RotateRightActionName;
 
-    protected string[] FireAnimations;
+    public string LoadAmmoBeginActionName;
 
-    protected string[] SetUpAnimations;
+    public string LoadAmmoEndActionName;
 
-    protected int[] FireAnimationIndices;
+    public string Reload2IdleActionName;
 
-    protected int[] SetUpAnimationIndices;
+    public float ProjectileSpeed = 40f;
 
-    protected SynchedMissionObject RotationObject;
+    private ActionIndexCache _idleAnimationActionIndex;
 
-    private MatrixFrame _rotationObjectInitialFrame;
+    private ActionIndexCache _shootAnimationActionIndex;
 
-    protected SoundEvent MoveSound;
+    private ActionIndexCache _reload1AnimationActionIndex;
 
-    protected SoundEvent ReloadSound;
+    private ActionIndexCache _reload2AnimationActionIndex;
 
-    protected int MoveSoundIndex = -1;
+    private ActionIndexCache _rotateLeftAnimationActionIndex;
 
-    protected int ReloadSoundIndex = -1;
+    private ActionIndexCache _rotateRightAnimationActionIndex;
 
-    protected int FireSoundIndex = -1;
+    private ActionIndexCache _loadAmmoBeginAnimationActionIndex;
 
-    protected ItemObject OriginalMissileItem;
+    private ActionIndexCache _loadAmmoEndAnimationActionIndex;
 
-    protected WeaponStatsData OriginalMissileWeaponStatsDataForTargeting;
+    private ActionIndexCache _reload2IdleActionIndex;
 
-    private ItemObject _loadedMissileItem;
+    private sbyte _missileBoneIndex;
 
-    protected List<StandingPoint> CanPickUpAmmoStandingPoints;
+    protected override float MaximumBallisticError => 1.5f;
 
-    protected List<StandingPoint> ReloadStandingPoints;
+    protected override float ShootingSpeed => ProjectileSpeed;
 
-    protected StandingPointWithWeaponRequirement LoadAmmoStandingPoint;
-
-    protected Dictionary<StandingPoint, float> PilotReservePriorityValues = new Dictionary<StandingPoint, float>();
-
-    protected Agent ReloaderAgent;
-
-    protected StandingPoint ReloaderAgentOriginalPoint;
-
-    protected bool AttackClickWillReload;
-
-    protected bool WeaponNeedsClickToReload;
-
-    protected float FinalReloadSpeed = 1f;
-
-    protected float BaseReloadSpeed = 1f;
-
-    public int StartingAmmoCount = 20;
-
-    protected int CurrentAmmo = 1;
-
-    protected float TargetDirection;
-
-    protected float TargetReleaseAngle;
-
-    protected float CameraDirection;
-
-    protected float CameraReleaseAngle;
-
-    protected float ReloadTargetReleaseAngle;
-
-    private MatrixFrame _cameraHolderInitialFrame;
-
-    protected float MaxRotateSpeed;
-
-    private CameraState _cameraState;
-
-    private bool _inputGiven;
-
-    protected float DontMoveTimer;
-
-    private float _inputX;
-
-    private float _inputY;
-
-    private bool _exactInputGiven;
-
-    private float _inputTargetX;
-
-    private float _inputTargetY;
-
-    private Vec3 _ammoPickupCenter;
-
-    private float _lastSyncedDirection;
-
-    private float _lastSyncedReleaseAngle;
-
-    private float _syncTimer;
-
-    public float TopReleaseAngleRestriction = (float)Math.PI / 2f;
-
-    public float BottomReleaseAngleRestriction = -(float)Math.PI / 2f;
-
-    protected float CurrentDirection;
-
-    protected float CurrentReleaseAngle;
-
-    protected float ReleaseAngleRestrictionCenter;
-
-    protected float ReleaseAngleRestrictionAngle;
-
-    private float _animationTimeElapsed;
-
-    protected float TimeGapBetweenShootingEndAndReloadingStart = 0.6f;
-
-    protected float TimeGapBetweenShootActionAndProjectileLeaving;
-
-    private int _currentReloaderCount;
-
-    protected Agent LastShooterAgent;
-
-    private float _lastCanPickUpAmmoStandingPointsSortedAngle = -(float)Math.PI;
-
-    protected BattleSideEnum DefaultSide;
-
-    private bool _aiRequestsShoot;
-
-    private bool _aiRequestsManualReload;
-
-    private bool _hasFrameChangedInPreviousFrame;
-
-    private string _lastLoadedMissileItemId;
-
-    private float _projectileRadiusCached;
-
-    public virtual string MultipleFireProjectileId => "grapeshot_fire_stack";
-
-    public virtual string MultipleFireProjectileFlyingId => "grapeshot_fire_projectile";
-
-    public virtual string MultipleProjectileId => "grapeshot_stack";
-
-    public virtual string MultipleProjectileFlyingId => "grapeshot_projectile";
-
-    public virtual string SingleFireProjectileId => "pot";
-
-    public virtual string SingleFireProjectileFlyingId => "pot_projectile";
-
-    public virtual string SingleProjectileId => "boulder";
-
-    public virtual string SingleProjectileFlyingId => "boulder_projectile";
-
-    public WeaponState State
+    protected override float HorizontalAimSensitivity
     {
         get
         {
-            return _state;
-        }
-        set
-        {
-            if (_state != value)
+            if (DefaultSide == BattleSideEnum.Defender)
             {
-                if (GameNetwork.IsServerOrRecorder)
+                return 0.25f;
+            }
+
+            float num = 0.05f;
+            foreach (StandingPoint rotateStandingPoint in _rotateStandingPoints)
+            {
+                if (rotateStandingPoint.HasUser && !rotateStandingPoint.UserAgent.IsInBeingStruckAction)
                 {
-                    GameNetwork.BeginBroadcastModuleEvent();
-                    GameNetwork.WriteMessage(new SetRangedSiegeWeaponState(base.Id, value));
-                    GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord);
+                    num += 0.1f;
                 }
-
-                _state = value;
-                OnRangedSiegeWeaponStateChange();
             }
+
+            return num;
         }
     }
 
-    protected virtual float MaximumBallisticError => 1f;
+    protected override float VerticalAimSensitivity => 0.1f;
 
-    protected abstract float ShootingSpeed { get; }
-
-    public virtual Vec3 CanShootAtPointCheckingOffset => Vec3.Zero;
-
-    public GameEntity CameraHolder { get; private set; }
-
-    protected SynchedMissionObject Projectile { get; private set; }
-
-    protected Vec3 MissileStartingGlobalPositionForSimulation
+    protected override Vec3 ShootingDirection
     {
         get
         {
-            if (MissileStartingPositionEntityForSimulation != null)
+            Mat3 rotation = _body.GameEntity.GetGlobalFrame().rotation;
+            rotation.RotateAboutSide(0f - CurrentReleaseAngle);
+            Vec3 v = new Vec3(0f, -1f);
+            return rotation.TransformToParent(in v);
+        }
+    }
+
+    protected override bool HasAmmo
+    {
+        get
+        {
+            if (!base.HasAmmo && base.CurrentlyUsedAmmoPickUpPoint == null && !LoadAmmoStandingPoint.HasUser)
             {
-                return MissileStartingPositionEntityForSimulation.GlobalPosition;
+                return LoadAmmoStandingPoint.HasAIMovingTo;
             }
 
-            return Projectile?.GameEntity.GlobalPosition ?? Vec3.Zero;
-        }
-    }
-
-    protected string SkeletonName
-    {
-        set
-        {
-            SkeletonNames = new string[1] { value };
-        }
-    }
-
-    protected string FireAnimation
-    {
-        set
-        {
-            FireAnimations = new string[1] { value };
-        }
-    }
-
-    protected string SetUpAnimation
-    {
-        set
-        {
-            SetUpAnimations = new string[1] { value };
-        }
-    }
-
-    protected int FireAnimationIndex
-    {
-        set
-        {
-            FireAnimationIndices = new int[1] { value };
-        }
-    }
-
-    protected int SetUpAnimationIndex
-    {
-        set
-        {
-            SetUpAnimationIndices = new int[1] { value };
-        }
-    }
-
-    protected ItemObject LoadedMissileItem
-    {
-        get
-        {
-            return _loadedMissileItem;
+            return true;
         }
         set
         {
-            _loadedMissileItem = value;
-            OnLoadedMissileItemChanged();
+            base.HasAmmo = value;
         }
     }
 
-    protected virtual bool WeaponMovesDownToReload => false;
-
-    public int AmmoCount
+    protected override void RegisterAnimationParameters()
     {
-        get
-        {
-            return CurrentAmmo;
-        }
-        protected set
-        {
-            CurrentAmmo = value;
-        }
+        SkeletonOwnerObjects = new SynchedMissionObject[2];
+        Skeletons = new Skeleton[2];
+        SkeletonNames = new string[1];
+        FireAnimations = new string[2];
+        FireAnimationIndices = new int[2];
+        SetUpAnimations = new string[2];
+        SetUpAnimationIndices = new int[2];
+        SkeletonOwnerObjects[0] = _body;
+        Skeletons[0] = _body.GameEntity.Skeleton;
+        SkeletonNames[0] = MangonelBodySkeleton;
+        FireAnimations[0] = MangonelBodyFire;
+        FireAnimationIndices[0] = MBAnimation.GetAnimationIndexWithName(MangonelBodyFire);
+        SetUpAnimations[0] = MangonelBodyReload;
+        SetUpAnimationIndices[0] = MBAnimation.GetAnimationIndexWithName(MangonelBodyReload);
+        SkeletonOwnerObjects[1] = _rope;
+        Skeletons[1] = _rope.GameEntity.Skeleton;
+        FireAnimations[1] = MangonelRopeFire;
+        FireAnimationIndices[1] = MBAnimation.GetAnimationIndexWithName(MangonelRopeFire);
+        SetUpAnimations[1] = MangonelRopeReload;
+        SetUpAnimationIndices[1] = MBAnimation.GetAnimationIndexWithName(MangonelRopeReload);
+        _missileBoneName = ProjectileBoneName;
+        _idleAnimationActionIndex = ActionIndexCache.Create(IdleActionName);
+        _shootAnimationActionIndex = ActionIndexCache.Create(ShootActionName);
+        _reload1AnimationActionIndex = ActionIndexCache.Create(Reload1ActionName);
+        _reload2AnimationActionIndex = ActionIndexCache.Create(Reload2ActionName);
+        _rotateLeftAnimationActionIndex = ActionIndexCache.Create(RotateLeftActionName);
+        _rotateRightAnimationActionIndex = ActionIndexCache.Create(RotateRightActionName);
+        _loadAmmoBeginAnimationActionIndex = ActionIndexCache.Create(LoadAmmoBeginActionName);
+        _loadAmmoEndAnimationActionIndex = ActionIndexCache.Create(LoadAmmoEndActionName);
+        _reload2IdleActionIndex = ActionIndexCache.Create(Reload2IdleActionName);
     }
 
-    protected virtual bool HasAmmo { get; set; } = true;
-
-
-    public virtual float DirectionRestriction => (float)Math.PI * 2f / 3f;
-
-    protected virtual float HorizontalAimSensitivity => 0.2f;
-
-    protected virtual float VerticalAimSensitivity => 0.2f;
-
-    protected virtual float ReloadSpeedMultiplier => 1f;
-
-    public bool PlayerForceUse { get; private set; }
-
-    protected virtual Vec3 ShootingDirection => Projectile.GameEntity.GetGlobalFrame().rotation.u.NormalizedCopy();
-
-    public virtual Vec3 ProjectileEntityCurrentGlobalPosition => Projectile.GameEntity.GetGlobalFrame().origin;
-
-    public override BattleSideEnum Side
+    public override UsableMachineAIBase CreateAIBehaviorObject()
     {
-        get
-        {
-            if (base.PilotAgent != null)
-            {
-                return base.PilotAgent.Team.Side;
-            }
-
-            return DefaultSide;
-        }
+        return new MangonelAI(this);
     }
 
-    public event Action<RangedSiegeWeapon, Agent> OnAgentLoadsMachine;
-
-    public event OnSiegeWeaponReloadDone OnReloadDone;
-
-    protected abstract void RegisterAnimationParameters();
-
-    protected abstract void GetSoundEventIndices();
-
-    protected virtual void ConsumeAmmo()
+    public override SiegeEngineType GetSiegeEngineType()
     {
-        AmmoCount--;
-        if (GameNetwork.IsServerOrRecorder)
+        if (DefaultSide != BattleSideEnum.Attacker)
         {
-            GameNetwork.BeginBroadcastModuleEvent();
-            GameNetwork.WriteMessage(new SetRangedSiegeWeaponAmmo(base.Id, AmmoCount));
-            GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord);
+            return DefaultSiegeEngineTypes.Catapult;
         }
 
-        UpdateAmmoMesh();
-        CheckAmmo();
-    }
-
-    public virtual void SetAmmo(int ammoLeft)
-    {
-        if (AmmoCount != ammoLeft)
-        {
-            AmmoCount = ammoLeft;
-            UpdateAmmoMesh();
-            CheckAmmo();
-        }
-    }
-
-    public virtual void SetStartAmmo(int ammoLeft)
-    {
-        if (AmmoCount != ammoLeft)
-        {
-            AmmoCount = ammoLeft;
-            UpdateAmmoMesh();
-            CheckAmmo();
-        }
-    }
-
-    protected virtual void CheckAmmo()
-    {
-        if (AmmoCount > 0 || StartingAmmoCount <= 0)
-        {
-            return;
-        }
-
-        HasAmmo = false;
-        SetForcedUse(value: false);
-        foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
-        {
-            ammoPickUpPoint.IsDeactivated = true;
-        }
-    }
-
-    protected void ChangeProjectileEntityServer(Agent loadingAgent, string missileItemID)
-    {
-        List<SynchedMissionObject> list = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("projectile");
-        for (int i = 0; i < list.Count; i++)
-        {
-            if (list[i].GameEntity.HasTag(missileItemID))
-            {
-                Projectile = list[i];
-                _projectileIndex = i;
-                break;
-            }
-        }
-
-        LoadedMissileItem = Game.Current.ObjectManager.GetObject<ItemObject>(missileItemID);
-        if (GameNetwork.IsServerOrRecorder)
-        {
-            GameNetwork.BeginBroadcastModuleEvent();
-            GameNetwork.WriteMessage(new RangedSiegeWeaponChangeProjectile(base.Id, _projectileIndex));
-            GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord);
-        }
-
-        this.OnAgentLoadsMachine?.Invoke(this, loadingAgent);
-    }
-
-    public void ChangeProjectileEntityClient(int index)
-    {
-        List<SynchedMissionObject> list = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("projectile");
-        Projectile = list[index];
-        _projectileIndex = index;
+        return DefaultSiegeEngineTypes.Onager;
     }
 
     protected internal override void OnInit()
     {
-        base.OnInit();
-        DetermineDefaultBattleSide();
-        ReleaseAngleRestrictionCenter = (TopReleaseAngleRestriction + BottomReleaseAngleRestriction) * 0.5f;
-        ReleaseAngleRestrictionAngle = TopReleaseAngleRestriction - BottomReleaseAngleRestriction;
-        CurrentReleaseAngle = (_lastSyncedReleaseAngle = ReleaseAngleRestrictionCenter);
-        OriginalMissileItem = Game.Current.ObjectManager.GetObject<ItemObject>(MissileItemID);
-        _projectileRadiusCached = -1f;
-        LoadedMissileItem = OriginalMissileItem;
-        OriginalMissileWeaponStatsDataForTargeting = new MissionWeapon(OriginalMissileItem, null, null).GetWeaponStatsDataForUsage(0);
-        if (RotationObject == null)
-        {
-            RotationObject = this;
-        }
-
-        _rotationObjectInitialFrame = RotationObject.GameEntity.GetFrame();
-        CurrentDirection = (_lastSyncedDirection = 0f);
-        _syncTimer = 0f;
-        List<WeakGameEntity> list = base.GameEntity.CollectChildrenEntitiesWithTag("cameraHolder");
+        List<SynchedMissionObject> list = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("rope");
         if (list.Count > 0)
         {
-            CameraHolder = TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(list[0]);
-            _cameraHolderInitialFrame = CameraHolder.GetFrame();
-            if (GameNetwork.IsClientOrReplay)
-            {
-                MakeVisibilityCheck = false;
-            }
+            _rope = list[0];
         }
 
-        List<SynchedMissionObject> list2 = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("projectile");
-        foreach (SynchedMissionObject item in list2)
+        list = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("body");
+        _body = list[0];
+        _bodySkeleton = _body.GameEntity.Skeleton;
+        RotationObject = _body;
+        List<WeakGameEntity> list2 = base.GameEntity.CollectChildrenEntitiesWithTag("vertical_adjuster");
+        _verticalAdjuster = TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(list2[0]);
+        _verticalAdjusterSkeleton = _verticalAdjuster.Skeleton;
+        if (_verticalAdjusterSkeleton != null)
         {
-            item.GameEntity.SetVisibilityExcludeParents(visible: false);
+            _verticalAdjusterSkeleton.SetAnimationAtChannel(MangonelAimAnimation, 0);
         }
 
-        Projectile = list2.FirstOrDefault((SynchedMissionObject x) => x.GameEntity.HasTag(MissileItemID));
-        _projectileIndex = list2.IndexOf(Projectile);
-        Projectile.GameEntity.SetVisibilityExcludeParents(visible: true);
-        WeakGameEntity weakEntity = base.GameEntity.GetChildren().FirstOrDefault((WeakGameEntity x) => x.Name == "clean");
-        if (weakEntity.IsValid)
-        {
-            weakEntity = weakEntity.GetChildren().FirstOrDefault((WeakGameEntity x) => x.Name == "projectile_leaving_position");
-        }
-
-        MissileStartingPositionEntityForSimulation = TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(weakEntity);
-        TargetDirection = CurrentDirection;
-        TargetReleaseAngle = CurrentReleaseAngle;
-        CanPickUpAmmoStandingPoints = new List<StandingPoint>();
-        ReloadStandingPoints = new List<StandingPoint>();
+        _verticalAdjusterStartingLocalFrame = _verticalAdjuster.GetFrame();
+        _verticalAdjusterStartingLocalFrame = _body.GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToLocal(in _verticalAdjusterStartingLocalFrame);
+        base.OnInit();
+        TimeGapBetweenShootActionAndProjectileLeaving = 0.23f;
+        TimeGapBetweenShootingEndAndReloadingStart = 0f;
+        _rotateStandingPoints = new List<StandingPoint>();
         if (base.StandingPoints != null)
         {
             foreach (StandingPoint standingPoint in base.StandingPoints)
             {
-                standingPoint.AddComponent(new ResetAnimationOnStopUsageComponent(ActionIndexCache.act_none, alwaysResetWithAction: false));
-                if (standingPoint.GameEntity.HasTag("reload"))
+                if (standingPoint.GameEntity.HasTag("rotate"))
                 {
-                    ReloadStandingPoints.Add(standingPoint);
+                    if (standingPoint.GameEntity.HasTag("left") && _rotateStandingPoints.Count > 0)
+                    {
+                        _rotateStandingPoints.Insert(0, standingPoint);
+                    }
+                    else
+                    {
+                        _rotateStandingPoints.Add(standingPoint);
+                    }
                 }
-
-                if (standingPoint.GameEntity.HasTag("can_pick_up_ammo"))
-                {
-                    CanPickUpAmmoStandingPoints.Add(standingPoint);
-                }
             }
-        }
 
-        List<StandingPointWithWeaponRequirement> list3 = base.StandingPoints.OfType<StandingPointWithWeaponRequirement>().ToList();
-        List<StandingPointWithWeaponRequirement> list4 = new List<StandingPointWithWeaponRequirement>();
-        foreach (StandingPointWithWeaponRequirement item2 in list3)
-        {
-            if (item2.GameEntity.HasTag(AmmoPickUpTag))
+            MatrixFrame frame = _body.GameEntity.GetGlobalFrame();
+            _standingPointLocalIKFrames = new MatrixFrame[base.StandingPoints.Count];
+            for (int i = 0; i < base.StandingPoints.Count; i++)
             {
-                item2.InitGivenWeapon(OriginalMissileItem);
-                item2.SetupOnUsingStoppedBehavior(autoAttach: false, OnAmmoPickupUsingCancelled);
-                continue;
+                _standingPointLocalIKFrames[i] = base.StandingPoints[i].GameEntity.GetGlobalFrame().TransformToLocalNonOrthogonal(in frame);
+                base.StandingPoints[i].AddComponent(new ClearHandInverseKinematicsOnStopUsageComponent());
             }
-
-            list4.Add(item2);
-            item2.SetupOnUsingStoppedBehavior(autoAttach: false, OnLoadingAmmoPointUsingCancelled);
-            item2.InitRequiredWeaponClasses(new WeaponClass[1] { OriginalMissileItem.PrimaryWeapon.WeaponClass });
         }
 
-        if (base.AmmoPickUpPoints.Count > 1)
+        _missileBoneIndex = Skeleton.GetBoneIndexFromName(Skeletons[0].GetName(), _missileBoneName);
+        ApplyAimChange();
+        foreach (StandingPoint reloadStandingPoint in ReloadStandingPoints)
         {
-            _ammoPickupCenter = default(Vec3);
-            foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
+            if (reloadStandingPoint != base.PilotStandingPoint)
             {
-                ((StandingPointWithWeaponRequirement)ammoPickUpPoint).SetHasAlternative(hasAlternative: true);
-                _ammoPickupCenter += ammoPickUpPoint.GameEntity.GlobalPosition;
-            }
-
-            _ammoPickupCenter /= (float)base.AmmoPickUpPoints.Count;
-        }
-        else
-        {
-            _ammoPickupCenter = base.GameEntity.GlobalPosition;
-        }
-
-        list4.Sort(delegate (StandingPointWithWeaponRequirement element1, StandingPointWithWeaponRequirement element2)
-        {
-            if (element1.GameEntity.GlobalPosition.DistanceSquared(_ammoPickupCenter) > element2.GameEntity.GlobalPosition.DistanceSquared(_ammoPickupCenter))
-            {
-                return 1;
-            }
-
-            return (element1.GameEntity.GlobalPosition.DistanceSquared(_ammoPickupCenter) < element2.GameEntity.GlobalPosition.DistanceSquared(_ammoPickupCenter)) ? (-1) : 0;
-        });
-        LoadAmmoStandingPoint = list4.FirstOrDefault();
-        SortCanPickUpAmmoStandingPoints();
-        Vec3 vec = base.PilotStandingPoint.GameEntity.GlobalPosition - base.GameEntity.GlobalPosition;
-        foreach (StandingPoint canPickUpAmmoStandingPoint in CanPickUpAmmoStandingPoints)
-        {
-            if (canPickUpAmmoStandingPoint != base.PilotStandingPoint)
-            {
-                float length = (canPickUpAmmoStandingPoint.GameEntity.GlobalPosition - base.GameEntity.GlobalPosition + vec).Length;
-                PilotReservePriorityValues.Add(canPickUpAmmoStandingPoint, length);
+                _reloadWithoutPilot = reloadStandingPoint;
             }
         }
 
-        AmmoCount = StartingAmmoCount - 1;
-        UpdateAmmoMesh();
-        RegisterAnimationParameters();
-        GetSoundEventIndices();
-        InitAnimations();
-        SetScriptComponentToTick(GetTickRequirement());
-    }
-
-    protected virtual void DetermineDefaultBattleSide()
-    {
-        DestructableComponent destructableComponent = base.GameEntity.GetScriptComponents<DestructableComponent>().FirstOrDefault();
-        DefaultSide = destructableComponent.BattleSide;
-    }
-
-    private void SortCanPickUpAmmoStandingPoints()
-    {
-        if (!(MBMath.GetSmallestDifferenceBetweenTwoAngles(_lastCanPickUpAmmoStandingPointsSortedAngle, CurrentDirection) > (float)Math.PI * 3f / 50f))
-        {
-            return;
-        }
-
-        _lastCanPickUpAmmoStandingPointsSortedAngle = CurrentDirection;
-        int signOfAmmoPile = Math.Sign(Vec3.DotProduct(base.GameEntity.GetGlobalFrame().rotation.s, _ammoPickupCenter - base.GameEntity.GlobalPosition));
-        CanPickUpAmmoStandingPoints.Sort(delegate (StandingPoint element1, StandingPoint element2)
-        {
-            Vec3 vec = _ammoPickupCenter - element1.GameEntity.GlobalPosition;
-            Vec3 vec2 = _ammoPickupCenter - element2.GameEntity.GlobalPosition;
-            float num = vec.LengthSquared;
-            float num2 = vec2.LengthSquared;
-            float num3 = Vec3.DotProduct(base.GameEntity.GetGlobalFrame().rotation.s, element1.GameEntity.GlobalPosition - base.GameEntity.GlobalPosition);
-            float num4 = Vec3.DotProduct(base.GameEntity.GetGlobalFrame().rotation.s, element2.GameEntity.GlobalPosition - base.GameEntity.GlobalPosition);
-            if (!element1.GameEntity.HasTag("no_ammo_pick_up_penalty") && signOfAmmoPile != Math.Sign(num3))
-            {
-                num += num3 * num3 * 64f;
-            }
-
-            if (!element2.GameEntity.HasTag("no_ammo_pick_up_penalty") && signOfAmmoPile != Math.Sign(num4))
-            {
-                num2 += num4 * num4 * 64f;
-            }
-
-            if (element1.GameEntity.HasTag(PilotStandingPointTag))
-            {
-                num += 25f;
-            }
-            else if (element2.GameEntity.HasTag(PilotStandingPointTag))
-            {
-                num2 += 25f;
-            }
-
-            if (num > num2)
-            {
-                return 1;
-            }
-
-            return (num < num2) ? (-1) : 0;
-        });
-    }
-
-    protected internal override void OnEditorInit()
-    {
-        List<SynchedMissionObject> list = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("projectile");
-        if (list.Count > 0)
-        {
-            Projectile = list[0];
-        }
-    }
-
-    private void InitAnimations()
-    {
-        for (int i = 0; i < Skeletons.Length; i++)
-        {
-            Skeletons[i].SetAnimationAtChannel(SetUpAnimations[i], 0, 1f, 0f);
-            Skeletons[i].SetAnimationParameterAtChannel(0, 1f);
-            Skeletons[i].TickAnimations(0.0001f, MatrixFrame.Identity, tickAnimsForChildren: true);
-        }
-    }
-
-    protected internal override void OnMissionReset()
-    {
-        base.OnMissionReset();
-        Projectile.GameEntity.SetVisibilityExcludeParents(visible: true);
-        foreach (StandingPoint standingPoint in base.StandingPoints)
-        {
-            standingPoint.UserAgent?.StopUsingGameObject();
-            standingPoint.IsDeactivated = false;
-        }
-
-        _state = WeaponState.Idle;
-        CurrentDirection = (_lastSyncedDirection = 0f);
-        _syncTimer = 0f;
-        CurrentReleaseAngle = (_lastSyncedReleaseAngle = ReleaseAngleRestrictionCenter);
-        TargetDirection = CurrentDirection;
-        TargetReleaseAngle = CurrentReleaseAngle;
-        ApplyCurrentDirectionToEntity();
-        AmmoCount = StartingAmmoCount - 1;
-        UpdateAmmoMesh();
-        if (MoveSound != null)
-        {
-            MoveSound.Stop();
-            MoveSound = null;
-        }
-
-        _hasFrameChangedInPreviousFrame = false;
-        Skeleton[] skeletons = Skeletons;
-        for (int i = 0; i < skeletons.Length; i++)
-        {
-            skeletons[i].Freeze(p: false);
-        }
-
-        foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
-        {
-            ammoPickUpPoint.IsDeactivated = false;
-        }
-
-        InitAnimations();
-        UpdateProjectilePosition();
         if (!GameNetwork.IsClientOrReplay)
         {
             SetActivationLoadAmmoPoint(activate: false);
         }
-    }
 
-    public override void WriteToNetwork()
-    {
-        base.WriteToNetwork();
-        GameNetworkMessage.WriteIntToPacket((int)State, CompressionMission.RangedSiegeWeaponStateCompressionInfo);
-        GameNetworkMessage.WriteFloatToPacket(TargetDirection, CompressionBasic.RadianCompressionInfo);
-        GameNetworkMessage.WriteFloatToPacket(TargetReleaseAngle, CompressionBasic.RadianCompressionInfo);
-        GameNetworkMessage.WriteIntToPacket(AmmoCount, CompressionMission.RangedSiegeWeaponAmmoCompressionInfo);
-        GameNetworkMessage.WriteIntToPacket(_projectileIndex, CompressionMission.RangedSiegeWeaponAmmoIndexCompressionInfo);
-    }
-
-    protected virtual void UpdateProjectilePosition()
-    {
-    }
-
-    public override bool IsInRangeToCheckAlternativePoints(Agent agent)
-    {
-        float num = ((base.AmmoPickUpPoints.Count > 0) ? (agent.GetInteractionDistanceToUsable(base.AmmoPickUpPoints[0]) + 2f) : 2f);
-        return _ammoPickupCenter.DistanceSquared(agent.Position) < num * num;
-    }
-
-    public override StandingPoint GetBestPointAlternativeTo(StandingPoint standingPoint, Agent agent)
-    {
-        if (base.AmmoPickUpPoints.Contains(standingPoint))
+        EnemyRangeToStopUsing = 9f;
+        SetScriptComponentToTick(GetTickRequirement());
+        if (base.AmmoPickUpPoints != null)
         {
-            IEnumerable<StandingPoint> enumerable = base.AmmoPickUpPoints.Where((StandingPoint sp) => !sp.IsDeactivated && (sp.IsInstantUse || (!sp.HasUser && !sp.HasAIMovingTo)) && !sp.IsDisabledForAgent(agent));
-            float num = standingPoint.GameEntity.GlobalPosition.DistanceSquared(agent.Position);
-            StandingPoint result = standingPoint;
+            foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
             {
-                foreach (StandingPoint item in enumerable)
-                {
-                    float num2 = item.GameEntity.GlobalPosition.DistanceSquared(agent.Position);
-                    if (num2 < num)
-                    {
-                        num = num2;
-                        result = item;
-                    }
-                }
-
-                return result;
+                ammoPickUpPoint.LockUserFrames = true;
             }
         }
 
-        return standingPoint;
+        UpdateProjectilePosition();
     }
 
-    protected virtual void OnRangedSiegeWeaponStateChange()
-    {
-        switch (State)
-        {
-            case WeaponState.Reloading:
-                if (ReloadSound != null && ReloadSound.IsValid)
-                {
-                    if (ReloadSound.IsPaused())
-                    {
-                        ReloadSound.Resume();
-                    }
-                    else
-                    {
-                        ReloadSound.PlayInPosition(base.GameEntity.GetGlobalFrame().origin);
-                    }
-                }
-                else
-                {
-                    ReloadSound = SoundEvent.CreateEvent(ReloadSoundIndex, base.Scene);
-                    ReloadSound.PlayInPosition(base.GameEntity.GetGlobalFrame().origin);
-                }
-
-                break;
-            case WeaponState.ReloadingPaused:
-                if (ReloadSound != null && ReloadSound.IsValid)
-                {
-                    ReloadSound.Pause();
-                }
-
-                break;
-            case WeaponState.WaitingBeforeProjectileLeaving:
-                AttackClickWillReload = WeaponNeedsClickToReload;
-                if (!GameNetwork.IsDedicatedServer)
-                {
-                    int fireSoundIndex = FireSoundIndex;
-                    MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
-                    SoundManager.StartOneShotEventWithIndex(fireSoundIndex, in globalFrame.origin);
-                }
-
-                break;
-            case WeaponState.Shooting:
-                if (CameraHolder != null)
-                {
-                    _cameraState = CameraState.DontMove;
-                    DontMoveTimer = 0.35f;
-                }
-
-                break;
-            case WeaponState.LoadingAmmo:
-                if (ReloadSound != null && ReloadSound.IsValid)
-                {
-                    ReloadSound.Stop();
-                }
-
-                ReloadSound = null;
-                break;
-            case WeaponState.WaitingAfterShooting:
-                AttackClickWillReload = WeaponNeedsClickToReload;
-                CheckAmmo();
-                break;
-            case WeaponState.WaitingBeforeReloading:
-                AttackClickWillReload = false;
-                if (CameraHolder != null && WeaponMovesDownToReload)
-                {
-                    _cameraState = CameraState.MoveDownToReload;
-                }
-
-                CheckAmmo();
-                break;
-            case WeaponState.Idle:
-            case WeaponState.WaitingBeforeIdle:
-                _cameraState = ((_cameraState == CameraState.FreeMove) ? CameraState.ApproachToCamera : CameraState.StickToWeapon);
-                break;
-            default:
-                Debug.FailedAssert("Invalid WeaponState.", "C:\\Develop\\MB3\\Source\\Bannerlord\\TaleWorlds.MountAndBlade\\Objects\\Siege\\RangedSiegeWeapon.cs", "OnRangedSiegeWeaponStateChange", 895);
-                break;
-        }
-
-        if (GameNetwork.IsClientOrReplay)
-        {
-            return;
-        }
-
-        switch (State)
-        {
-            case WeaponState.Reloading:
-                {
-                    for (int j = 0; j < SkeletonOwnerObjects.Length; j++)
-                    {
-                        if (SkeletonOwnerObjects[j].GameEntity.IsSkeletonAnimationPaused())
-                        {
-                            SkeletonOwnerObjects[j].ResumeSkeletonAnimationSynched();
-                        }
-                        else
-                        {
-                            SkeletonOwnerObjects[j].SetAnimationAtChannelSynched(SetUpAnimations[j], 0);
-                        }
-                    }
-
-                    _currentReloaderCount = 1;
-                    break;
-                }
-            case WeaponState.ReloadingPaused:
-                {
-                    SynchedMissionObject[] skeletonOwnerObjects = SkeletonOwnerObjects;
-                    for (int k = 0; k < skeletonOwnerObjects.Length; k++)
-                    {
-                        skeletonOwnerObjects[k].PauseSkeletonAnimationSynched();
-                    }
-
-                    break;
-                }
-            case WeaponState.WaitingBeforeProjectileLeaving:
-                {
-                    for (int i = 0; i < SkeletonOwnerObjects.Length; i++)
-                    {
-                        SkeletonOwnerObjects[i].SetAnimationAtChannelSynched(FireAnimations[i], 0);
-                    }
-
-                    break;
-                }
-            case WeaponState.Shooting:
-                ShootProjectile();
-                break;
-            case WeaponState.LoadingAmmo:
-                SetActivationLoadAmmoPoint(activate: true);
-                ReloaderAgent = null;
-                break;
-            case WeaponState.WaitingBeforeIdle:
-                SendReloaderAgentToOriginalPoint();
-                SetActivationLoadAmmoPoint(activate: false);
-                break;
-            default:
-                Debug.FailedAssert("Invalid WeaponState.", "C:\\Develop\\MB3\\Source\\Bannerlord\\TaleWorlds.MountAndBlade\\Objects\\Siege\\RangedSiegeWeapon.cs", "OnRangedSiegeWeaponStateChange", 971);
-                break;
-            case WeaponState.Idle:
-            case WeaponState.WaitingAfterShooting:
-            case WeaponState.WaitingBeforeReloading:
-                break;
-        }
-    }
-
-    protected virtual void SetActivationLoadAmmoPoint(bool activate)
+    protected internal override void OnEditorInit()
     {
     }
 
-    protected override float GetDetachmentWeightAux(BattleSideEnum side)
+    public override void OnPilotAssignedDuringSpawn()
     {
-        if (!HasAmmo)
-        {
-            return float.MinValue;
-        }
-
-        return base.GetDetachmentWeightAux(side);
+        base.PilotAgent.SetActionChannel(1, in _idleAnimationActionIndex, ignorePriority: false, (AnimFlags)0uL);
+        MatrixFrame globalFrame = base.PilotStandingPoint.GameEntity.GetGlobalFrame();
+        base.PilotAgent.TeleportToPosition(globalFrame.origin);
+        base.PilotAgent.DisableScriptedMovement();
+        Agent pilotAgent = base.PilotAgent;
+        Vec2 direction = globalFrame.rotation.f.AsVec2.Normalized();
+        pilotAgent.SetMovementDirection(in direction);
     }
 
-    protected float GetDetachmentWeightAuxForExternalAmmoWeapons(BattleSideEnum side)
+    protected override bool CanRotate()
     {
-        if (IsDisabledForBattleSideAI(side))
+        if (base.State != 0 && base.State != WeaponState.LoadingAmmo)
         {
-            return float.MinValue;
+            return base.State == WeaponState.WaitingBeforeIdle;
         }
 
-        _usableStandingPoints.Clear();
-        bool flag = false;
-        bool flag2 = false;
-        bool flag3 = !base.PilotStandingPoint.HasUser && !base.PilotStandingPoint.HasAIMovingTo && (ReloaderAgent == null || ReloaderAgentOriginalPoint != base.PilotStandingPoint);
-        int num = -1;
-        StandingPoint standingPoint = null;
-        bool flag4 = false;
-        for (int i = 0; i < base.StandingPoints.Count; i++)
-        {
-            StandingPoint standingPoint2 = base.StandingPoints[i];
-            if (!standingPoint2.GameEntity.HasTag("can_pick_up_ammo"))
-            {
-                continue;
-            }
-
-            if (ReloaderAgent == null || standingPoint2 != ReloaderAgentOriginalPoint)
-            {
-                if (standingPoint2.IsUsableBySide(side))
-                {
-                    if (!standingPoint2.HasAIMovingTo)
-                    {
-                        if (!flag2)
-                        {
-                            _usableStandingPoints.Clear();
-                            num = -1;
-                        }
-
-                        flag2 = true;
-                    }
-                    else if (flag2 || standingPoint2.MovingAgent.Formation.Team.Side != side)
-                    {
-                        continue;
-                    }
-
-                    flag = true;
-                    _usableStandingPoints.Add((i, standingPoint2));
-                    if (flag3 && base.PilotStandingPoint == standingPoint2)
-                    {
-                        num = _usableStandingPoints.Count - 1;
-                    }
-                }
-                else if (flag3 && standingPoint2.HasAIUser && (standingPoint == null || PilotReservePriorityValues[standingPoint2] > PilotReservePriorityValues[standingPoint] || flag4))
-                {
-                    standingPoint = standingPoint2;
-                    flag4 = false;
-                }
-            }
-            else if (flag3 && standingPoint == null)
-            {
-                standingPoint = standingPoint2;
-                flag4 = true;
-            }
-        }
-
-        if (standingPoint != null)
-        {
-            if (flag4)
-            {
-                ReloaderAgentOriginalPoint = base.PilotStandingPoint;
-            }
-            else
-            {
-                Agent userAgent = standingPoint.UserAgent;
-                userAgent.StopUsingGameObjectMT(isSuccessful: true, Agent.StopUsingGameObjectFlags.DoNotWieldWeaponAfterStoppingUsingGameObject);
-                userAgent.AIMoveToGameObjectEnable(base.PilotStandingPoint, this, base.Ai.GetScriptedFrameFlags(userAgent));
-            }
-
-            if (num != -1)
-            {
-                _usableStandingPoints.RemoveAt(num);
-            }
-        }
-
-        _areUsableStandingPointsVacant = flag2;
-        if (!flag)
-        {
-            return float.MinValue;
-        }
-
-        if (flag2)
-        {
-            return 1f;
-        }
-
-        if (_isDetachmentRecentlyEvaluated)
-        {
-            return 0.01f;
-        }
-
-        return 0.1f;
+        return true;
     }
 
     public override TickRequirement GetTickRequirement()
     {
         if (base.GameEntity.IsVisibleIncludeParents())
         {
-            return TickRequirement.Tick | base.GetTickRequirement();
+            return base.GetTickRequirement() | TickRequirement.Tick | TickRequirement.TickParallel;
         }
 
         return base.GetTickRequirement();
@@ -1057,1102 +331,555 @@ public abstract class RangedSiegeWeapon : SiegeWeapon
 
         if (!GameNetwork.IsClientOrReplay)
         {
-            UpdateState(dt);
-            if (base.PilotAgent != null && !base.PilotAgent.IsInBeingStruckAction)
+            foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
             {
-                if (base.PilotAgent.MovementFlags.HasAnyFlag(Agent.MovementControlFlag.AttackMask))
+                if (!ammoPickUpPoint.HasUser)
                 {
-                    if (State == WeaponState.Idle)
-                    {
-                        _aiRequestsShoot = false;
-                        Shoot();
-                    }
-                    else if (State == WeaponState.WaitingAfterShooting && AttackClickWillReload)
-                    {
-                        _aiRequestsManualReload = false;
-                        ManualReload();
-                    }
+                    continue;
                 }
 
-                if (_aiRequestsManualReload)
+                Agent userAgent = ammoPickUpPoint.UserAgent;
+                ActionIndexCache currentAction = userAgent.GetCurrentAction(1);
+                if (currentAction == ActionIndexCache.act_pickup_boulder_begin)
                 {
-                    ManualReload();
+                    continue;
                 }
 
-                if (_aiRequestsShoot)
+                if (currentAction == ActionIndexCache.act_pickup_boulder_end)
                 {
-                    Shoot();
-                }
-            }
-
-            _aiRequestsShoot = false;
-            _aiRequestsManualReload = false;
-        }
-
-        HandleUserAiming(dt);
-    }
-
-    protected static bool ApproachToAngle(ref float angle, float angleToApproach, bool isMouse, float speed_limit, float dt, float sensitivity)
-    {
-        speed_limit = MathF.Abs(speed_limit);
-        if (angle != angleToApproach)
-        {
-            float num = sensitivity * dt;
-            float num2 = MathF.Abs(angle - angleToApproach);
-            if (isMouse)
-            {
-                num *= MathF.Max(num2 * 8f, 0.15f);
-            }
-
-            if (speed_limit > 0f)
-            {
-                num = MathF.Min(num, speed_limit * dt);
-            }
-
-            if (num2 <= num)
-            {
-                angle = angleToApproach;
-            }
-            else
-            {
-                angle += num * (float)MathF.Sign(angleToApproach - angle);
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    protected virtual void HandleUserAiming(float dt)
-    {
-        bool flag = false;
-        float horizontalAimSensitivity = HorizontalAimSensitivity;
-        float verticalAimSensitivity = VerticalAimSensitivity;
-        bool flag2 = false;
-        if (_cameraState != CameraState.DontMove)
-        {
-            if (_inputGiven)
-            {
-                flag2 = true;
-                if (CanRotate())
-                {
-                    if (_inputX != 0f)
+                    MissionWeapon weapon = new MissionWeapon(OriginalMissileItem, null, null, 1);
+                    userAgent.EquipWeaponToExtraSlotAndWield(ref weapon);
+                    userAgent.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.None);
+                    ConsumeAmmo();
+                    if (userAgent.IsAIControlled)
                     {
-                        TargetDirection += horizontalAimSensitivity * dt * _inputX;
-                        TargetDirection = MBMath.WrapAngle(TargetDirection);
-                        TargetDirection = MBMath.ClampAngle(TargetDirection, CurrentDirection, 0.7f);
-                        TargetDirection = MBMath.ClampAngle(TargetDirection, 0f, DirectionRestriction);
-                    }
+                        if (!LoadAmmoStandingPoint.HasUser && !LoadAmmoStandingPoint.IsDeactivated)
+                        {
+                            userAgent.AIMoveToGameObjectEnable(LoadAmmoStandingPoint, this, base.Ai.GetScriptedFrameFlags(userAgent));
+                            continue;
+                        }
 
-                    if (_inputY != 0f)
-                    {
-                        TargetReleaseAngle += verticalAimSensitivity * dt * _inputY;
-                        TargetReleaseAngle = MBMath.ClampAngle(TargetReleaseAngle, CurrentReleaseAngle + 0.049999997f, 0.6f);
-                        TargetReleaseAngle = MBMath.ClampAngle(TargetReleaseAngle, ReleaseAngleRestrictionCenter, ReleaseAngleRestrictionAngle);
+                        if (ReloaderAgentOriginalPoint != null && !ReloaderAgentOriginalPoint.HasUser && !ReloaderAgentOriginalPoint.HasAIMovingTo)
+                        {
+                            userAgent.AIMoveToGameObjectEnable(ReloaderAgentOriginalPoint, this, base.Ai.GetScriptedFrameFlags(userAgent));
+                            continue;
+                        }
+
+                        ReloaderAgent?.Formation?.AttachUnit(ReloaderAgent);
+                        ReloaderAgent = null;
                     }
                 }
-
-                _inputGiven = false;
-                _inputX = 0f;
-                _inputY = 0f;
-            }
-            else if (_exactInputGiven)
-            {
-                bool flag3 = false;
-                if (CanRotate())
+                else if (!userAgent.SetActionChannel(1, in ActionIndexCache.act_pickup_boulder_begin, ignorePriority: false, (AnimFlags)0uL) && userAgent.Controller != AgentControllerType.AI)
                 {
-                    if (TargetDirection != _inputTargetX)
-                    {
-                        float num = horizontalAimSensitivity * dt;
-                        if (MathF.Abs(TargetDirection - _inputTargetX) < num)
-                        {
-                            TargetDirection = _inputTargetX;
-                        }
-                        else if (TargetDirection < _inputTargetX)
-                        {
-                            TargetDirection += num;
-                            flag3 = true;
-                        }
-                        else
-                        {
-                            TargetDirection -= num;
-                            flag3 = true;
-                        }
-
-                        TargetDirection = MBMath.WrapAngle(TargetDirection);
-                        TargetDirection = MBMath.ClampAngle(TargetDirection, CurrentDirection, 0.7f);
-                        TargetDirection = MBMath.ClampAngle(TargetDirection, 0f, DirectionRestriction);
-                    }
-
-                    if (TargetReleaseAngle != _inputTargetY)
-                    {
-                        float num2 = verticalAimSensitivity * dt;
-                        if (MathF.Abs(TargetReleaseAngle - _inputTargetY) < num2)
-                        {
-                            TargetReleaseAngle = _inputTargetY;
-                        }
-                        else if (TargetReleaseAngle < _inputTargetY)
-                        {
-                            TargetReleaseAngle += num2;
-                            flag3 = true;
-                        }
-                        else
-                        {
-                            TargetReleaseAngle -= num2;
-                            flag3 = true;
-                        }
-
-                        TargetReleaseAngle = MBMath.ClampAngle(TargetReleaseAngle, CurrentReleaseAngle + 0.049999997f, 0.6f);
-                        TargetReleaseAngle = MBMath.ClampAngle(TargetReleaseAngle, ReleaseAngleRestrictionCenter, ReleaseAngleRestrictionAngle);
-                    }
-                }
-                else
-                {
-                    flag3 = true;
-                }
-
-                if (!flag3)
-                {
-                    _exactInputGiven = false;
+                    userAgent.StopUsingGameObject();
                 }
             }
         }
 
-        switch (_cameraState)
+        switch (base.State)
         {
-            case CameraState.StickToWeapon:
-                flag = ApproachToAngle(ref CurrentDirection, TargetDirection, UsesMouseForAiming, -1f, dt, horizontalAimSensitivity) || flag;
-                flag = ApproachToAngle(ref CurrentReleaseAngle, TargetReleaseAngle, UsesMouseForAiming, -1f, dt, verticalAimSensitivity) || flag;
-                CameraDirection = CurrentDirection;
-                CameraReleaseAngle = CurrentReleaseAngle;
+            case WeaponState.WaitingBeforeIdle:
+                _timeElapsedAfterLoading += dt;
+                if (_timeElapsedAfterLoading > 1f)
+                {
+                    base.State = WeaponState.Idle;
+                }
+
                 break;
-            case CameraState.DontMove:
-                DontMoveTimer -= dt;
-                if (DontMoveTimer < 0f)
+            case WeaponState.LoadingAmmo:
+                if (GameNetwork.IsClientOrReplay)
                 {
-                    if (!AttackClickWillReload && WeaponMovesDownToReload)
+                    break;
+                }
+
+                if (LoadAmmoStandingPoint.HasUser)
+                {
+                    Agent userAgent2 = LoadAmmoStandingPoint.UserAgent;
+                    if (userAgent2.GetCurrentAction(1) == _loadAmmoEndAnimationActionIndex)
                     {
-                        _cameraState = CameraState.MoveDownToReload;
-                        MaxRotateSpeed = 0f;
-                        ReloadTargetReleaseAngle = MBMath.ClampAngle((MathF.Abs(CurrentReleaseAngle) > 0.17453292f) ? 0f : CurrentReleaseAngle, CurrentReleaseAngle - 0.049999997f, 0.6f);
-                        TargetDirection = CameraDirection;
-                        CameraReleaseAngle = TargetReleaseAngle;
+                        EquipmentIndex primaryWieldedItemIndex = userAgent2.GetPrimaryWieldedItemIndex();
+                        if (primaryWieldedItemIndex != EquipmentIndex.None && userAgent2.Equipment[primaryWieldedItemIndex].CurrentUsageItem.WeaponClass == OriginalMissileItem.PrimaryWeapon.WeaponClass)
+                        {
+                            ChangeProjectileEntityServer(userAgent2, userAgent2.Equipment[primaryWieldedItemIndex].Item.StringId);
+                            userAgent2.RemoveEquippedWeapon(primaryWieldedItemIndex);
+                            _timeElapsedAfterLoading = 0f;
+                            base.Projectile.SetVisibleSynched(value: true);
+                            base.State = WeaponState.WaitingBeforeIdle;
+                        }
+                        else
+                        {
+                            userAgent2.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.None);
+                            if (!userAgent2.IsPlayerControlled)
+                            {
+                                SendAgentToAmmoPickup(userAgent2);
+                            }
+                        }
                     }
                     else
                     {
-                        _cameraState = CameraState.StickToWeapon;
-                    }
-                }
-
-                break;
-            case CameraState.MoveDownToReload:
-                MaxRotateSpeed += dt * 1.2f;
-                MaxRotateSpeed = MathF.Min(MaxRotateSpeed, 1f);
-                flag = ApproachToAngle(ref CurrentReleaseAngle, ReloadTargetReleaseAngle, UsesMouseForAiming, 0.4f + MaxRotateSpeed, dt, verticalAimSensitivity) || flag;
-                flag = ApproachToAngle(ref CameraDirection, TargetDirection, UsesMouseForAiming, -1f, dt, horizontalAimSensitivity) || flag;
-                flag = ApproachToAngle(ref CameraReleaseAngle, ReloadTargetReleaseAngle, UsesMouseForAiming, 0.5f + MaxRotateSpeed, dt, verticalAimSensitivity) || flag;
-                if (!flag)
-                {
-                    _cameraState = CameraState.RememberLastShotDirection;
-                }
-
-                break;
-            case CameraState.RememberLastShotDirection:
-                if (State == WeaponState.Idle || flag2)
-                {
-                    _cameraState = CameraState.FreeMove;
-                    this.OnReloadDone?.Invoke();
-                }
-
-                break;
-            case CameraState.FreeMove:
-                flag = ApproachToAngle(ref CameraDirection, TargetDirection, UsesMouseForAiming, -1f, dt, horizontalAimSensitivity) || flag;
-                flag = ApproachToAngle(ref CameraReleaseAngle, TargetReleaseAngle, UsesMouseForAiming, -1f, dt, verticalAimSensitivity) || flag;
-                MaxRotateSpeed = 0f;
-                break;
-            case CameraState.ApproachToCamera:
-                MaxRotateSpeed += 0.9f * dt + MaxRotateSpeed * 2f * dt;
-                flag = ApproachToAngle(ref CameraDirection, TargetDirection, UsesMouseForAiming, -1f, dt, horizontalAimSensitivity) || flag;
-                flag = ApproachToAngle(ref CameraReleaseAngle, TargetReleaseAngle, UsesMouseForAiming, -1f, dt, verticalAimSensitivity) || flag;
-                flag = ApproachToAngle(ref CurrentDirection, TargetDirection, UsesMouseForAiming, MaxRotateSpeed, dt, horizontalAimSensitivity) || flag;
-                flag = ApproachToAngle(ref CurrentReleaseAngle, TargetReleaseAngle, UsesMouseForAiming, MaxRotateSpeed, dt, verticalAimSensitivity) || flag;
-                if (!flag)
-                {
-                    _cameraState = CameraState.StickToWeapon;
-                }
-
-                break;
-        }
-
-        if (CameraHolder != null)
-        {
-            MatrixFrame frame = _cameraHolderInitialFrame;
-            frame.rotation.RotateAboutForward(CameraDirection - CurrentDirection);
-            frame.rotation.RotateAboutSide(CameraReleaseAngle - CurrentReleaseAngle);
-            CameraHolder.SetFrame(ref frame);
-            frame = CameraHolder.GetGlobalFrame();
-            frame.rotation.s.z = 0f;
-            frame.rotation.s.Normalize();
-            frame.rotation.u = Vec3.CrossProduct(frame.rotation.s, frame.rotation.f);
-            frame.rotation.u.Normalize();
-            frame.rotation.f = Vec3.CrossProduct(frame.rotation.u, frame.rotation.s);
-            frame.rotation.f.Normalize();
-            CameraHolder.SetGlobalFrame(in frame);
-        }
-
-        if (flag && !_hasFrameChangedInPreviousFrame)
-        {
-            OnRotationStarted();
-        }
-        else if (!flag && _hasFrameChangedInPreviousFrame)
-        {
-            OnRotationStopped();
-        }
-
-        _hasFrameChangedInPreviousFrame = flag;
-        if ((flag && GameNetwork.IsClient && base.PilotAgent == Agent.Main) || GameNetwork.IsServerOrRecorder)
-        {
-            float num3 = ((GameNetwork.IsClient && base.PilotAgent == Agent.Main) ? 0.0001f : 0.02f);
-            if (_syncTimer > 0.2f && (MathF.Abs(CurrentDirection - _lastSyncedDirection) > num3 || MathF.Abs(CurrentReleaseAngle - _lastSyncedReleaseAngle) > num3))
-            {
-                _lastSyncedDirection = CurrentDirection;
-                _lastSyncedReleaseAngle = CurrentReleaseAngle;
-                MissionLobbyComponent missionBehavior = Mission.Current.GetMissionBehavior<MissionLobbyComponent>();
-                if ((missionBehavior == null || missionBehavior.CurrentMultiplayerState != MissionLobbyComponent.MultiplayerGameState.Ending) && GameNetwork.IsClient && base.PilotAgent == Agent.Main)
-                {
-                    GameNetwork.BeginModuleEventAsClient();
-                    GameNetwork.WriteMessage(new SetMachineRotation(base.Id, CurrentDirection, CurrentReleaseAngle));
-                    GameNetwork.EndModuleEventAsClient();
-                }
-
-                if (GameNetwork.IsServerOrRecorder)
-                {
-                    GameNetwork.BeginBroadcastModuleEvent();
-                    GameNetwork.WriteMessage(new SetMachineTargetRotation(base.Id, CurrentDirection, CurrentReleaseAngle));
-                    GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.ExcludeTargetPlayer | GameNetwork.EventBroadcastFlags.AddToMissionRecord, base.PilotAgent?.MissionPeer?.GetNetworkPeer());
-                }
-            }
-        }
-
-        _syncTimer += dt;
-        if (_syncTimer >= 1f)
-        {
-            _syncTimer -= 1f;
-        }
-
-        if (flag)
-        {
-            ApplyAimChange();
-        }
-    }
-
-    public void GiveInput(float inputX, float inputY)
-    {
-        _exactInputGiven = false;
-        _inputGiven = true;
-        _inputX = inputX;
-        _inputY = inputY;
-        _inputX = MBMath.ClampFloat(_inputX, -1f, 1f);
-        _inputY = MBMath.ClampFloat(_inputY, -1f, 1f);
-    }
-
-    public void GiveExactInput(float targetX, float targetY)
-    {
-        _exactInputGiven = true;
-        _inputGiven = false;
-        _inputTargetX = MBMath.ClampAngle(targetX, 0f, DirectionRestriction);
-        _inputTargetY = MBMath.ClampAngle(targetY, ReleaseAngleRestrictionCenter, ReleaseAngleRestrictionAngle);
-    }
-
-    protected virtual bool CanRotate()
-    {
-        return State == WeaponState.Idle;
-    }
-
-    protected virtual void ApplyAimChange()
-    {
-        if (CanRotate())
-        {
-            ApplyCurrentDirectionToEntity();
-            return;
-        }
-
-        TargetDirection = CurrentDirection;
-        TargetReleaseAngle = CurrentReleaseAngle;
-    }
-
-    protected virtual void ApplyCurrentDirectionToEntity()
-    {
-        MatrixFrame frame = _rotationObjectInitialFrame;
-        frame.rotation.RotateAboutUp(CurrentDirection);
-        RotationObject.GameEntity.SetFrame(ref frame);
-    }
-
-    public virtual float GetTargetReleaseAngle(Vec3 target)
-    {
-        return Mission.GetMissileVerticalAimCorrection(target - MissileStartingGlobalPositionForSimulation, ShootingSpeed, ref OriginalMissileWeaponStatsDataForTargeting, ItemObject.GetAirFrictionConstant(OriginalMissileItem.PrimaryWeapon.WeaponClass, OriginalMissileItem.PrimaryWeapon.WeaponFlags));
-    }
-
-    private void CalculateLocalAnglesFromGlobalDirection(Vec3 globalDirection, out float localTargetDirection, out float localTargetAngle)
-    {
-        globalDirection.Normalize();
-        MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
-        if (!globalFrame.rotation.IsUnit())
-        {
-            globalFrame.rotation.Orthonormalize();
-        }
-
-        globalFrame.rotation.RotateAboutAnArbitraryVector(in globalFrame.rotation.u, (float)Math.PI);
-        Vec3 vec = globalFrame.rotation.TransformToLocal(in globalDirection);
-        localTargetDirection = vec.AsVec2.RotationInRadians;
-        localTargetAngle = MathF.Atan2(vec.z, MathF.Sqrt(vec.x * vec.x + vec.y * vec.y));
-    }
-
-    private void CalculateLocalDirectionAndLocalAngleToShootTarget(Vec3 target, out float localTargetDirection, out float localTargetAngle)
-    {
-        float targetReleaseAngle = GetTargetReleaseAngle(target);
-        if (targetReleaseAngle > (float)Math.PI / 2f)
-        {
-            localTargetDirection = (float)Math.PI;
-            localTargetAngle = (float)Math.PI;
-            return;
-        }
-
-        Vec3 globalDirection = new Vec3((target - MissileStartingGlobalPositionForSimulation).AsVec2).NormalizedCopy();
-        globalDirection += new Vec3(0f, 0f, MathF.Sin(targetReleaseAngle));
-        globalDirection.Normalize();
-        Vec3 globalVelocity = GetGlobalVelocity();
-        globalDirection *= ShootingSpeed;
-        globalDirection -= new Vec3(globalVelocity.AsVec2);
-        globalDirection.Normalize();
-        CalculateLocalAnglesFromGlobalDirection(globalDirection, out localTargetDirection, out localTargetAngle);
-    }
-
-    public virtual bool AimAtThreat(Threat threat)
-    {
-        Vec3 estimatedTargetGlobalPoint = GetEstimatedTargetGlobalPoint(threat);
-        return AimAtTarget(estimatedTargetGlobalPoint);
-    }
-
-    public bool AimAtTarget(Vec3 target)
-    {
-        CalculateLocalDirectionAndLocalAngleToShootTarget(target, out var localTargetDirection, out var localTargetAngle);
-        if (localTargetDirection >= (float)Math.PI)
-        {
-            return false;
-        }
-
-        if (!_exactInputGiven || localTargetDirection != _inputTargetX || localTargetAngle != _inputTargetY)
-        {
-            GiveExactInput(localTargetDirection, localTargetAngle);
-        }
-
-        return CheckIsTargetReached(target);
-    }
-
-    public virtual bool CheckIsTargetReached(Vec3 target)
-    {
-        if (MathF.Abs(CurrentDirection - _inputTargetX) < 0.001f)
-        {
-            return MathF.Abs(CurrentReleaseAngle - _inputTargetY) < 0.001f;
-        }
-
-        return false;
-    }
-
-    public Vec3 GetEstimatedTargetGlobalPoint(Threat threat)
-    {
-        Vec3 targetingPosition = threat.TargetingPosition;
-        return targetingPosition + GetEstimatedTargetMovementVector(targetingPosition, threat.GetGlobalVelocity());
-    }
-
-    public Vec3 GetEstimatedTargetGlobalPointForAgent(Agent agent)
-    {
-        return agent.CollisionCapsuleCenter + GetEstimatedTargetMovementVector(agent.CollisionCapsuleCenter, agent.GetAverageRealGlobalVelocity());
-    }
-
-    public virtual void AimAtRotation(float horizontalRotation, float verticalRotation)
-    {
-        horizontalRotation = MBMath.ClampFloat(horizontalRotation, -(float)Math.PI, (float)Math.PI);
-        verticalRotation = MBMath.ClampFloat(verticalRotation, -(float)Math.PI, (float)Math.PI);
-        horizontalRotation = MBMath.ClampAngle(horizontalRotation, 0f, DirectionRestriction);
-        verticalRotation = MBMath.ClampAngle(verticalRotation, ReleaseAngleRestrictionCenter, ReleaseAngleRestrictionAngle);
-        if (!_exactInputGiven || horizontalRotation != _inputTargetX || verticalRotation != _inputTargetY)
-        {
-            GiveExactInput(horizontalRotation, verticalRotation);
-        }
-    }
-
-    protected void OnLoadingAmmoPointUsingCancelled(Agent agent, bool isCanceledBecauseOfAnimation)
-    {
-        if (agent.IsAIControlled)
-        {
-            if (isCanceledBecauseOfAnimation)
-            {
-                SendAgentToAmmoPickup(agent);
-            }
-            else
-            {
-                SendReloaderAgentToOriginalPoint();
-            }
-        }
-    }
-
-    protected void OnAmmoPickupUsingCancelled(Agent agent, bool isCanceledBecauseOfAnimation)
-    {
-        if (agent.IsAIControlled)
-        {
-            SendAgentToAmmoPickup(agent);
-        }
-    }
-
-    protected void SendAgentToAmmoPickup(Agent agent)
-    {
-        ReloaderAgent = agent;
-        EquipmentIndex primaryWieldedItemIndex = agent.GetPrimaryWieldedItemIndex();
-        if (primaryWieldedItemIndex != EquipmentIndex.None && agent.Equipment[primaryWieldedItemIndex].CurrentUsageItem.WeaponClass == OriginalMissileItem.PrimaryWeapon.WeaponClass)
-        {
-            agent.AIMoveToGameObjectEnable(LoadAmmoStandingPoint, this, base.Ai.GetScriptedFrameFlags(agent));
-            return;
-        }
-
-        StandingPoint standingPoint = base.AmmoPickUpPoints.FirstOrDefault((StandingPoint x) => !x.HasUser);
-        if (standingPoint != null)
-        {
-            agent.AIMoveToGameObjectEnable(standingPoint, this, base.Ai.GetScriptedFrameFlags(agent));
-        }
-        else
-        {
-            SendReloaderAgentToOriginalPoint();
-        }
-    }
-
-    protected void SendReloaderAgentToOriginalPoint()
-    {
-        if (ReloaderAgent == null)
-        {
-            return;
-        }
-
-        if (ReloaderAgentOriginalPoint != null && !ReloaderAgentOriginalPoint.HasAIMovingTo && !ReloaderAgentOriginalPoint.HasUser)
-        {
-            if (ReloaderAgent.InteractingWithAnyGameObject())
-            {
-                ReloaderAgent.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.None);
-            }
-
-            ReloaderAgent.AIMoveToGameObjectEnable(ReloaderAgentOriginalPoint, this, base.Ai.GetScriptedFrameFlags(ReloaderAgent));
-        }
-        else if (ReloaderAgentOriginalPoint == null || (ReloaderAgentOriginalPoint.MovingAgent != ReloaderAgent && ReloaderAgentOriginalPoint.UserAgent != ReloaderAgent))
-        {
-            if (ReloaderAgent.IsUsingGameObject)
-            {
-                ReloaderAgent.StopUsingGameObject();
-            }
-
-            ReloaderAgent = null;
-        }
-    }
-
-    private void UpdateState(float dt)
-    {
-        if (LoadAmmoStandingPoint != null)
-        {
-            if (ReloaderAgent != null)
-            {
-                if (!ReloaderAgent.IsActive() || ReloaderAgent.Detachment != this)
-                {
-                    ReloaderAgent = null;
-                }
-                else if (ReloaderAgentOriginalPoint.UserAgent == ReloaderAgent)
-                {
-                    ReloaderAgent = null;
-                }
-            }
-
-            if (State == WeaponState.LoadingAmmo && ReloaderAgent == null && !LoadAmmoStandingPoint.HasUser)
-            {
-                SortCanPickUpAmmoStandingPoints();
-                StandingPoint standingPoint = null;
-                StandingPoint standingPoint2 = null;
-                foreach (StandingPoint canPickUpAmmoStandingPoint in CanPickUpAmmoStandingPoints)
-                {
-                    if (canPickUpAmmoStandingPoint.HasUser && canPickUpAmmoStandingPoint.UserAgent.IsAIControlled)
-                    {
-                        if (canPickUpAmmoStandingPoint != base.PilotStandingPoint)
+                        if (!(userAgent2.GetCurrentAction(1) != _loadAmmoBeginAnimationActionIndex) || userAgent2.SetActionChannel(1, in _loadAmmoBeginAnimationActionIndex, ignorePriority: false, (AnimFlags)0uL))
                         {
-                            standingPoint = canPickUpAmmoStandingPoint;
                             break;
                         }
 
-                        standingPoint2 = canPickUpAmmoStandingPoint;
+                        for (EquipmentIndex equipmentIndex = EquipmentIndex.WeaponItemBeginSlot; equipmentIndex < EquipmentIndex.NumAllWeaponSlots; equipmentIndex++)
+                        {
+                            if (!userAgent2.Equipment[equipmentIndex].IsEmpty && userAgent2.Equipment[equipmentIndex].CurrentUsageItem.WeaponClass == OriginalMissileItem.PrimaryWeapon.WeaponClass)
+                            {
+                                userAgent2.RemoveEquippedWeapon(equipmentIndex);
+                            }
+                        }
+
+                        userAgent2.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.None);
+                        if (!userAgent2.IsPlayerControlled)
+                        {
+                            SendAgentToAmmoPickup(userAgent2);
+                        }
                     }
                 }
-
-                if (standingPoint == null && standingPoint2 != null)
+                else if (LoadAmmoStandingPoint.HasAIMovingTo)
                 {
-                    standingPoint = standingPoint2;
-                }
-
-                if (standingPoint != null)
-                {
-                    if (HasAmmo)
+                    Agent movingAgent = LoadAmmoStandingPoint.MovingAgent;
+                    EquipmentIndex primaryWieldedItemIndex2 = movingAgent.GetPrimaryWieldedItemIndex();
+                    if (primaryWieldedItemIndex2 == EquipmentIndex.None || movingAgent.Equipment[primaryWieldedItemIndex2].CurrentUsageItem.WeaponClass != OriginalMissileItem.PrimaryWeapon.WeaponClass)
                     {
-                        Agent userAgent = standingPoint.UserAgent;
-                        userAgent.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.DoNotWieldWeaponAfterStoppingUsingGameObject);
-                        ReloaderAgentOriginalPoint = standingPoint;
-                        SendAgentToAmmoPickup(userAgent);
-                    }
-                    else
-                    {
-                        base.IsDisabledForAI = true;
+                        movingAgent.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.None);
+                        SendAgentToAmmoPickup(movingAgent);
                     }
                 }
-            }
-        }
 
-        switch (State)
-        {
+                break;
             case WeaponState.Reloading:
-                {
-                    int num = 0;
-                    if (ReloadStandingPoints.Count == 0)
-                    {
-                        if (base.PilotAgent != null && !base.PilotAgent.IsInBeingStruckAction)
-                        {
-                            num = 1;
-                        }
-                    }
-                    else
-                    {
-                        foreach (StandingPoint reloadStandingPoint in ReloadStandingPoints)
-                        {
-                            if (reloadStandingPoint.HasUser && !reloadStandingPoint.UserAgent.IsInBeingStruckAction)
-                            {
-                                num++;
-                            }
-                        }
-                    }
-
-                    if (num == 0)
-                    {
-                        State = WeaponState.ReloadingPaused;
-                        break;
-                    }
-
-                    if (_currentReloaderCount != num)
-                    {
-                        _currentReloaderCount = num;
-                        float animationSpeed = MathF.Sqrt(_currentReloaderCount);
-                        for (int j = 0; j < SkeletonOwnerObjects.Length; j++)
-                        {
-                            float animationParameterAtChannel2 = SkeletonOwnerObjects[j].GameEntity.Skeleton.GetAnimationParameterAtChannel(0);
-                            SkeletonOwnerObjects[j].SetAnimationAtChannelSynched(SetUpAnimations[j], 0, animationSpeed);
-                            if (animationParameterAtChannel2 > 0f)
-                            {
-                                SkeletonOwnerObjects[j].SetAnimationChannelParameterSynched(0, animationParameterAtChannel2);
-                            }
-                        }
-                    }
-
-                    for (int k = 0; k < Skeletons.Length; k++)
-                    {
-                        int animationIndexAtChannel2 = Skeletons[k].GetAnimationIndexAtChannel(0);
-                        float animationParameterAtChannel3 = Skeletons[k].GetAnimationParameterAtChannel(0);
-                        Skeletons[k].SetAnimationSpeedAtChannel(0, FinalReloadSpeed * ReloadSpeedMultiplier);
-                        if (animationIndexAtChannel2 == SetUpAnimationIndices[k] && animationParameterAtChannel3 >= 0.9999f)
-                        {
-                            State = WeaponState.LoadingAmmo;
-                            _animationTimeElapsed = 0f;
-                        }
-                    }
-
-                    break;
-                }
             case WeaponState.ReloadingPaused:
-                if (ReloadStandingPoints.Count == 0)
-                {
-                    if (base.PilotAgent != null && !base.PilotAgent.IsInBeingStruckAction)
-                    {
-                        State = WeaponState.Reloading;
-                    }
-
-                    break;
-                }
-
-                {
-                    foreach (StandingPoint reloadStandingPoint2 in ReloadStandingPoints)
-                    {
-                        if (reloadStandingPoint2.HasUser && !reloadStandingPoint2.UserAgent.IsInBeingStruckAction)
-                        {
-                            State = WeaponState.Reloading;
-                            break;
-                        }
-                    }
-
-                    break;
-                }
-            case WeaponState.WaitingBeforeReloading:
-                _animationTimeElapsed += dt;
-                if (!HasAmmo)
-                {
-                    SetIsDisabledForAI(isDisabledForAI: true);
-                }
-                else
-                {
-                    if (!(_animationTimeElapsed >= TimeGapBetweenShootingEndAndReloadingStart) || (_cameraState != CameraState.RememberLastShotDirection && _cameraState != CameraState.FreeMove && _cameraState != 0 && !(CameraHolder == null)))
-                    {
-                        break;
-                    }
-
-                    if (ReloadStandingPoints.Count != 0)
-                    {
-                        {
-                            foreach (StandingPoint reloadStandingPoint3 in ReloadStandingPoints)
-                            {
-                                if (reloadStandingPoint3.HasUser && !reloadStandingPoint3.UserAgent.IsInBeingStruckAction)
-                                {
-                                    State = WeaponState.Reloading;
-                                    break;
-                                }
-                            }
-
-                            break;
-                        }
-                    }
-
-                    if (base.PilotAgent != null && !base.PilotAgent.IsInBeingStruckAction)
-                    {
-                        State = WeaponState.Reloading;
-                    }
-                }
-
                 break;
-            case WeaponState.WaitingBeforeProjectileLeaving:
-                _animationTimeElapsed += dt;
-                if (_animationTimeElapsed >= TimeGapBetweenShootActionAndProjectileLeaving)
-                {
-                    State = WeaponState.Shooting;
-                }
+        }
+    }
 
+    protected internal override void OnTickParallel(float dt)
+    {
+        base.OnTickParallel(dt);
+        if (!base.GameEntity.IsVisibleIncludeParents())
+        {
+            return;
+        }
+
+        if (base.State == WeaponState.WaitingBeforeProjectileLeaving)
+        {
+            UpdateProjectilePosition();
+        }
+
+        if (_verticalAdjusterSkeleton != null)
+        {
+            float parameter = MBMath.ClampFloat((CurrentReleaseAngle - BottomReleaseAngleRestriction) / (TopReleaseAngleRestriction - BottomReleaseAngleRestriction), 0f, 1f);
+            _verticalAdjusterSkeleton.SetAnimationParameterAtChannel(0, parameter);
+        }
+
+        MatrixFrame frame = Skeletons[0].GetBoneEntitialFrameWithIndex(0).TransformToParent(in _verticalAdjusterStartingLocalFrame);
+        _verticalAdjuster.SetFrame(ref frame);
+        MatrixFrame boundEntityGlobalFrame = _body.GameEntity.GetGlobalFrame();
+        for (int i = 0; i < base.StandingPoints.Count; i++)
+        {
+            if (!base.StandingPoints[i].HasUser)
+            {
+                continue;
+            }
+
+            if (base.StandingPoints[i].UserAgent.IsInBeingStruckAction || base.AmmoPickUpPoints.IndexOf(base.StandingPoints[i]) >= 0)
+            {
+                base.StandingPoints[i].UserAgent.ClearHandInverseKinematics();
+                continue;
+            }
+
+            ActionIndexCache currentAction = base.StandingPoints[i].UserAgent.GetCurrentAction(1);
+            float currentActionProgress = base.StandingPoints[i].UserAgent.GetCurrentActionProgress(1);
+            if (currentAction != _reload2IdleActionIndex && (currentAction != _reload2AnimationActionIndex || currentActionProgress > 0.1f) && (currentAction != _shootAnimationActionIndex || currentActionProgress < 0.15f))
+            {
+                base.StandingPoints[i].UserAgent.SetHandInverseKinematicsFrameForMissionObjectUsage(in _standingPointLocalIKFrames[i], in boundEntityGlobalFrame);
+            }
+            else
+            {
+                base.StandingPoints[i].UserAgent.ClearHandInverseKinematics();
+            }
+        }
+
+        if (!GameNetwork.IsClientOrReplay)
+        {
+            for (int j = 0; j < _rotateStandingPoints.Count; j++)
+            {
+                StandingPoint standingPoint = _rotateStandingPoints[j];
+                if (standingPoint.HasUser)
+                {
+                    Agent userAgent = standingPoint.UserAgent;
+                    ActionIndexCache actionIndexCache = ((j == 0) ? _rotateLeftAnimationActionIndex : _rotateRightAnimationActionIndex);
+                    if (!userAgent.SetActionChannel(1, in actionIndexCache, ignorePriority: false, (AnimFlags)0uL) && standingPoint.UserAgent.Controller != AgentControllerType.AI)
+                    {
+                        standingPoint.UserAgent.StopUsingGameObjectMT();
+                    }
+                }
+            }
+
+            if (base.PilotAgent != null)
+            {
+                ActionIndexCache currentAction2 = base.PilotAgent.GetCurrentAction(1);
+                if (base.State == WeaponState.WaitingBeforeProjectileLeaving)
+                {
+                    if (base.PilotAgent.IsInBeingStruckAction)
+                    {
+                        if (currentAction2 != ActionIndexCache.act_none && currentAction2 != ActionIndexCache.act_strike_bent_over)
+                        {
+                            base.PilotAgent.SetActionChannel(1, in ActionIndexCache.act_strike_bent_over, ignorePriority: false, (AnimFlags)0uL);
+                        }
+                    }
+                    else if (!base.PilotAgent.SetActionChannel(1, in _shootAnimationActionIndex, ignorePriority: false, (AnimFlags)0uL) && base.PilotAgent.Controller != AgentControllerType.AI)
+                    {
+                        base.PilotAgent.StopUsingGameObjectMT();
+                    }
+                }
+                else if (!base.PilotAgent.SetActionChannel(1, in _idleAnimationActionIndex, ignorePriority: false, (AnimFlags)0uL) && currentAction2 != _reload1AnimationActionIndex && currentAction2 != _shootAnimationActionIndex && base.PilotAgent.Controller != AgentControllerType.AI)
+                {
+                    base.PilotAgent.StopUsingGameObjectMT();
+                }
+            }
+
+            if (_reloadWithoutPilot.HasUser)
+            {
+                Agent userAgent2 = _reloadWithoutPilot.UserAgent;
+                if (!userAgent2.SetActionChannel(1, in _reload2IdleActionIndex, ignorePriority: false, (AnimFlags)0uL) && userAgent2.GetCurrentAction(1) != _reload2AnimationActionIndex && userAgent2.Controller != AgentControllerType.AI)
+                {
+                    userAgent2.StopUsingGameObjectMT();
+                }
+            }
+        }
+
+        if (base.State != WeaponState.Reloading)
+        {
+            return;
+        }
+
+        foreach (StandingPoint reloadStandingPoint in ReloadStandingPoints)
+        {
+            if (!reloadStandingPoint.HasUser)
+            {
+                continue;
+            }
+
+            ActionIndexCache currentAction3 = reloadStandingPoint.UserAgent.GetCurrentAction(1);
+            if (currentAction3 == _reload1AnimationActionIndex || currentAction3 == _reload2AnimationActionIndex)
+            {
+                reloadStandingPoint.UserAgent.SetCurrentActionProgress(1, _bodySkeleton.GetAnimationParameterAtChannel(0));
+            }
+            else if (!GameNetwork.IsClientOrReplay)
+            {
+                ActionIndexCache actionIndexCache2 = ((reloadStandingPoint == base.PilotStandingPoint) ? _reload1AnimationActionIndex : _reload2AnimationActionIndex);
+                if (!reloadStandingPoint.UserAgent.SetActionChannel(1, in actionIndexCache2, ignorePriority: false, (AnimFlags)0uL, 0f, 1f, -0.2f, 0.4f, _bodySkeleton.GetAnimationParameterAtChannel(0)) && reloadStandingPoint.UserAgent.Controller != AgentControllerType.AI)
+                {
+                    reloadStandingPoint.UserAgent.StopUsingGameObjectMT();
+                }
+            }
+        }
+    }
+
+    protected override void SetActivationLoadAmmoPoint(bool activate)
+    {
+        LoadAmmoStandingPoint.SetIsDeactivatedSynched(!activate);
+    }
+
+    protected override void UpdateProjectilePosition()
+    {
+        MatrixFrame frame = Skeletons[0].GetBoneEntitialFrameWithIndex(_missileBoneIndex);
+        base.Projectile.GameEntity.SetFrame(ref frame);
+    }
+
+    protected override void OnRangedSiegeWeaponStateChange()
+    {
+        base.OnRangedSiegeWeaponStateChange();
+        switch (base.State)
+        {
+            case WeaponState.WaitingBeforeIdle:
+                UpdateProjectilePosition();
                 break;
             case WeaponState.Shooting:
+                if (!GameNetwork.IsClientOrReplay)
                 {
-                    for (int i = 0; i < Skeletons.Length; i++)
-                    {
-                        int animationIndexAtChannel = Skeletons[i].GetAnimationIndexAtChannel(0);
-                        float animationParameterAtChannel = Skeletons[i].GetAnimationParameterAtChannel(0);
-                        if (animationIndexAtChannel == FireAnimationIndices[i] && animationParameterAtChannel >= 0.9999f)
-                        {
-                            State = ((!AttackClickWillReload) ? WeaponState.WaitingBeforeReloading : WeaponState.WaitingAfterShooting);
-                            _animationTimeElapsed = 0f;
-                        }
-                    }
-
-                    break;
+                    base.Projectile.SetVisibleSynched(value: false);
                 }
-            default:
-                Debug.FailedAssert("Invalid WeaponState.", "C:\\Develop\\MB3\\Source\\Bannerlord\\TaleWorlds.MountAndBlade\\Objects\\Siege\\RangedSiegeWeapon.cs", "UpdateState", 2001);
+                else
+                {
+                    base.Projectile.GameEntity.SetVisibilityExcludeParents(visible: false);
+                }
+
                 break;
             case WeaponState.Idle:
-            case WeaponState.WaitingAfterShooting:
-            case WeaponState.LoadingAmmo:
-            case WeaponState.WaitingBeforeIdle:
+                if (!GameNetwork.IsClientOrReplay)
+                {
+                    base.Projectile.SetVisibleSynched(value: true);
+                }
+                else
+                {
+                    base.Projectile.GameEntity.SetVisibilityExcludeParents(visible: true);
+                }
+
                 break;
         }
     }
 
-    public bool Shoot()
+    protected override void GetSoundEventIndices()
     {
-        LastShooterAgent = base.PilotAgent;
-        if (State == WeaponState.Idle)
-        {
-            State = WeaponState.WaitingBeforeProjectileLeaving;
-            if (!GameNetwork.IsClientOrReplay)
-            {
-                _animationTimeElapsed = 0f;
-            }
-
-            return true;
-        }
-
-        return false;
+        MoveSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/move");
+        ReloadSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/reload");
+        FireSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/fire");
     }
 
-    public void ManualReload()
+    protected override void ApplyAimChange()
     {
-        if (AttackClickWillReload)
-        {
-            State = WeaponState.WaitingBeforeReloading;
-        }
+        base.ApplyAimChange();
+        ShootingDirection.Normalize();
     }
 
-    public void AiRequestsShoot()
+    public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
     {
-        _aiRequestsShoot = true;
+        if (!gameEntity.HasTag(AmmoPickUpTag))
+        {
+            return new TextObject("{=NbpcDXtJ}Mangonel");
+        }
+
+        return new TextObject("{=pzfbPbWW}Boulder");
     }
 
-    public void AiRequestsManualReload()
+    public override TextObject GetActionTextForStandingPoint(UsableMissionObject usableGameObject)
     {
-        _aiRequestsManualReload = true;
+        TextObject textObject = (usableGameObject.GameEntity.HasTag("reload") ? new TextObject((base.PilotStandingPoint == usableGameObject) ? "{=fEQAPJ2e}{KEY} Use" : "{=Na81xuXn}{KEY} Rearm") : (usableGameObject.GameEntity.HasTag("rotate") ? new TextObject("{=5wx4BF5h}{KEY} Rotate") : (usableGameObject.GameEntity.HasTag(AmmoPickUpTag) ? new TextObject("{=bNYm3K6b}{KEY} Pick Up") : ((!usableGameObject.GameEntity.HasTag("ammoload")) ? new TextObject("{=fEQAPJ2e}{KEY} Use") : new TextObject("{=ibC4xPoo}{KEY} Load Ammo")))));
+        textObject.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
+        return textObject;
     }
 
-    private Vec3 GetBallisticErrorAppliedDirection(float BallisticErrorAmount)
+    public override TargetFlags GetTargetFlags()
     {
-        Mat3 mat = default(Mat3);
-        mat.f = ShootingDirection;
-        mat.u = Vec3.Up;
-        Mat3 mat2 = mat;
-        mat2.Orthonormalize();
-        float a = MBRandom.RandomFloat * ((float)Math.PI * 2f);
-        mat2.RotateAboutForward(a);
-        float f = BallisticErrorAmount * MBRandom.RandomFloat;
-        mat2.RotateAboutSide(f.ToRadians());
-        return mat2.f;
-    }
-
-    protected void ShootProjectile()
-    {
-        if (LoadedMissileItem.StringId == MultipleProjectileId)
-        {
-            ItemObject @object = Game.Current.ObjectManager.GetObject<ItemObject>(MultipleProjectileFlyingId);
-            for (int i = 0; i < MultipleProjectileCount; i++)
-            {
-                ShootProjectileAux(@object, randomizeMissileSpeed: true);
-            }
-        }
-        else if (LoadedMissileItem.StringId == MultipleFireProjectileId)
-        {
-            ItemObject object2 = Game.Current.ObjectManager.GetObject<ItemObject>(MultipleFireProjectileFlyingId);
-            for (int j = 0; j < MultipleProjectileCount; j++)
-            {
-                ShootProjectileAux(object2, randomizeMissileSpeed: true);
-            }
-        }
-        else if (LoadedMissileItem.StringId == SingleProjectileId)
-        {
-            ShootProjectileAux(Game.Current.ObjectManager.GetObject<ItemObject>(SingleProjectileFlyingId), randomizeMissileSpeed: false);
-        }
-        else if (LoadedMissileItem.StringId == SingleFireProjectileId)
-        {
-            ShootProjectileAux(Game.Current.ObjectManager.GetObject<ItemObject>(SingleFireProjectileFlyingId), randomizeMissileSpeed: false);
-        }
-        else
-        {
-            ShootProjectileAux(LoadedMissileItem, randomizeMissileSpeed: false);
-        }
-
-        LastShooterAgent = null;
-    }
-
-    protected virtual Mission.Missile ShootProjectileAux(ItemObject missileItem, bool randomizeMissileSpeed)
-    {
-        SetupProjectileToShoot(randomizeMissileSpeed, out var direction, out var orientation, out var missileBaseSpeed, out var missileShootingSpeed);
-        MissionObject missionObjectToIgnore = base.GameEntity.Root.GetFirstScriptOfType<MissionObject>() ?? this;
-        return Mission.Current.AddCustomMissile(LastShooterAgent, new MissionWeapon(missileItem, null, LastShooterAgent.Origin?.Banner, 1), ProjectileEntityCurrentGlobalPosition, direction, orientation, missileShootingSpeed, missileBaseSpeed, addRigidBody: false, missionObjectToIgnore);
-    }
-
-    protected void SetupProjectileToShoot(bool randomizeMissileSpeed, out Vec3 direction, out Mat3 orientation, out float missileBaseSpeed, out float missileShootingSpeed)
-    {
-        orientation = Mat3.Identity;
-        Vec3 globalVelocity = GetGlobalVelocity();
-        if (randomizeMissileSpeed)
-        {
-            float num = ShootingSpeed * MBRandom.RandomFloatRanged(0.9f, 1.1f);
-            orientation.f = GetBallisticErrorAppliedDirection(2.5f);
-            orientation.Orthonormalize();
-            direction = num * orientation.f + globalVelocity;
-            missileShootingSpeed = direction.Normalize();
-            missileBaseSpeed = num;
-        }
-        else
-        {
-            orientation.f = GetBallisticErrorAppliedDirection(MaximumBallisticError);
-            orientation.Orthonormalize();
-            direction = ShootingSpeed * orientation.f + globalVelocity;
-            missileShootingSpeed = direction.Normalize();
-            missileBaseSpeed = ShootingSpeed;
-        }
-    }
-
-    protected void OnRotationStarted()
-    {
-        if (MoveSound == null || !MoveSound.IsValid)
-        {
-            MoveSound = SoundEvent.CreateEvent(MoveSoundIndex, base.Scene);
-            MoveSound.PlayInPosition(RotationObject.GameEntity.GlobalPosition);
-        }
-    }
-
-    protected void OnRotationStopped()
-    {
-        MoveSound.Stop();
-        MoveSound = null;
-    }
-
-    public abstract override SiegeEngineType GetSiegeEngineType();
-
-    public bool CanShootAtBox(Vec3 boxMin, Vec3 boxMax, uint attempts = 5u)
-    {
-        Vec3 v;
-        Vec3 vec = (v = (boxMin + boxMax) / 2f);
-        v.z = boxMin.z;
-        Vec3 v2 = vec;
-        v2.z = boxMax.z;
-        uint num = attempts;
-        do
-        {
-            Vec3 target = Vec3.Lerp(v, v2, (float)num / (float)attempts);
-            if (CanShootAtPoint(target))
-            {
-                return true;
-            }
-
-            num--;
-        }
-        while (num != 0);
-        return false;
-    }
-
-    public bool CanShootAtThreat(Threat threat)
-    {
-        Vec3 targetingPosition = threat.TargetingPosition;
-        Vec3 estimatedTargetMovementVector = GetEstimatedTargetMovementVector(targetingPosition, threat.GetGlobalVelocity());
-        targetingPosition += estimatedTargetMovementVector;
-        return CanShootAtPoint(targetingPosition);
-    }
-
-    public virtual Vec3 GetEstimatedTargetMovementVector(Vec3 targetCurrentPosition, Vec3 targetVelocity)
-    {
-        if (targetVelocity != Vec3.Zero)
-        {
-            return targetVelocity * ((base.GameEntity.GlobalPosition - targetCurrentPosition).Length / ShootingSpeed + TimeGapBetweenShootActionAndProjectileLeaving);
-        }
-
-        return Vec3.Zero;
-    }
-
-    public bool CanShootAtAgent(Agent agent)
-    {
-        Vec3 estimatedTargetGlobalPointForAgent = GetEstimatedTargetGlobalPointForAgent(agent);
-        return CanShootAtPoint(estimatedTargetGlobalPointForAgent);
-    }
-
-    public bool CanShootAtPoint(Vec3 target)
-    {
-        CalculateLocalDirectionAndLocalAngleToShootTarget(target, out var localTargetDirection, out var localTargetAngle);
-        if (localTargetAngle < BottomReleaseAngleRestriction || localTargetAngle > TopReleaseAngleRestriction)
-        {
-            return false;
-        }
-
-        if (DirectionRestriction / 2f - MathF.Abs(localTargetDirection) < 0f)
-        {
-            return false;
-        }
-
-        if (CheckFriendlyFireForObjects(target))
-        {
-            return false;
-        }
-
-        Vec3 missileStartingGlobalPositionForSimulation = MissileStartingGlobalPositionForSimulation;
-        MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
-        Vec3 v = globalFrame.rotation.u;
-        Vec3 v2 = globalFrame.rotation.s;
-        if (!v.IsUnit)
-        {
-            v.Normalize();
-        }
-
-        if (!v2.IsUnit)
-        {
-            v2.Normalize();
-        }
-
-        globalFrame.rotation.RotateAboutAnArbitraryVector(in v, (float)Math.PI + localTargetDirection);
-        globalFrame.rotation.RotateAboutAnArbitraryVector(in v2, localTargetAngle);
-        float x = globalFrame.rotation.GetEulerAngles().x;
-        Vec3 vec = ((MissileStartingPositionEntityForSimulation == null) ? CanShootAtPointCheckingOffset : Vec3.Zero);
-        return CanSeePointBallistic(missileStartingGlobalPositionForSimulation + vec, x, ShootingSpeed, target);
-    }
-
-    private bool CanSeePointBallistic(Vec3 startGlobalPos, float verticalAngle, float shootingSpeed, Vec3 targetGlobalPos)
-    {
-        float num = shootingSpeed * MathF.Sin(verticalAngle);
-        float num2 = num / 9.806f;
-        float num3 = num * num2;
-        float num4 = 4.903f * num2 * num2;
-        Vec3 vec = (startGlobalPos + targetGlobalPos) / 2f + new Vec3(0f, 0f, (num4 + num3) / 2f);
-        float projectileRadiusCached = _projectileRadiusCached;
-        float collisionDistance = 0f;
-        Vec3 closestPoint = Vec3.Invalid;
-        UIntPtr entityIndex = UIntPtr.Zero;
-        float collisionDistance2;
-        if (verticalAngle <= 0f)
-        {
-            Agent agent = Mission.Current.RayCastForClosestAgent(startGlobalPos, targetGlobalPos, -1, projectileRadiusCached, out collisionDistance2);
-            if (agent != null && !agent.IsEnemyOf(base.PilotAgent))
-            {
-                return false;
-            }
-        }
-        else
-        {
-            Vec3 targetPoint = ((verticalAngle <= 0f) ? targetGlobalPos : vec);
-            if (EngineApplicationInterface.IScene.RayCastForClosestEntityOrTerrainIgnoreEntity(base.Scene.Pointer, in startGlobalPos, in targetPoint, projectileRadiusCached, ref collisionDistance, ref closestPoint, ref entityIndex, BodyFlags.CommonCollisionExcludeFlagsForMissile, base.GameEntity.Root.Pointer) && entityIndex != UIntPtr.Zero && new GameEntity(entityIndex) != null)
-            {
-                return false;
-            }
-
-            Agent agent2 = Mission.Current.RayCastForClosestAgent(startGlobalPos, vec, -1, projectileRadiusCached, out collisionDistance2);
-            if (agent2 != null && !agent2.IsEnemyOf(base.PilotAgent))
-            {
-                return false;
-            }
-
-            agent2 = Mission.Current.RayCastForClosestAgent(vec, targetGlobalPos, -1, projectileRadiusCached * 2f, out collisionDistance2);
-            if (agent2 != null && !agent2.IsEnemyOf(base.PilotAgent))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    protected virtual bool CheckFriendlyFireForObjects(Vec3 target)
-    {
+        TargetFlags targetFlags = TargetFlags.None;
+        targetFlags |= TargetFlags.IsFlammable;
+        targetFlags |= TargetFlags.IsSiegeEngine;
         if (Side == BattleSideEnum.Attacker)
         {
-            foreach (SiegeWeapon item in Mission.Current.GetAttackerWeaponsForFriendlyFirePreventing())
-            {
-                if (item.GameEntity != null && item.GameEntity.IsVisibleIncludeParents())
-                {
-                    Vec3 point = item.GameEntity.ComputeGlobalPhysicsBoundingBoxCenter();
-                    Vec3 lineSegmentBegin = MissileStartingGlobalPositionForSimulation;
-                    if ((MBMath.GetClosestPointOnLineSegmentToPoint(in lineSegmentBegin, in target, in point) - point).LengthSquared < 100f)
-                    {
-                        return true;
-                    }
-                }
-            }
+            targetFlags |= TargetFlags.IsAttacker;
         }
 
-        return false;
-    }
-
-    protected internal virtual bool IsTargetValid(ITargetable target)
-    {
-        return true;
-    }
-
-    public override OrderType GetOrder(BattleSideEnum side)
-    {
-        if (!base.IsDestroyed)
+        if (base.IsDestroyed || IsDeactivated)
         {
-            if (Side != side)
-            {
-                return OrderType.AttackEntity;
-            }
-
-            return OrderType.Use;
+            targetFlags |= TargetFlags.NotAThreat;
         }
 
-        return OrderType.None;
-    }
-
-    protected override WeakGameEntity GetEntityToAttachNavMeshFaces()
-    {
-        return RotationObject.GameEntity;
-    }
-
-    public abstract float ProcessTargetValue(float baseValue, TargetFlags flags);
-
-    public override void OnAfterReadFromNetwork((BaseSynchedMissionObjectReadableRecord, ISynchedMissionObjectReadableRecord) synchedMissionObjectReadableRecord, bool allowVisibilityUpdate = true)
-    {
-        base.OnAfterReadFromNetwork(synchedMissionObjectReadableRecord, allowVisibilityUpdate);
-        RangedSiegeWeaponRecord rangedSiegeWeaponRecord = (RangedSiegeWeaponRecord)(object)synchedMissionObjectReadableRecord.Item2;
-        _state = (WeaponState)rangedSiegeWeaponRecord.State;
-        TargetDirection = rangedSiegeWeaponRecord.TargetDirection;
-        TargetReleaseAngle = MBMath.ClampFloat(rangedSiegeWeaponRecord.TargetReleaseAngle, BottomReleaseAngleRestriction, TopReleaseAngleRestriction);
-        AmmoCount = rangedSiegeWeaponRecord.AmmoCount;
-        CurrentDirection = TargetDirection;
-        CurrentReleaseAngle = TargetReleaseAngle;
-        CurrentDirection = TargetDirection;
-        CurrentReleaseAngle = TargetReleaseAngle;
-        ApplyCurrentDirectionToEntity();
-        CheckAmmo();
-        UpdateAmmoMesh();
-        ChangeProjectileEntityClient(rangedSiegeWeaponRecord.ProjectileIndex);
-    }
-
-    protected virtual void UpdateAmmoMesh()
-    {
-        WeakGameEntity weakGameEntity = base.AmmoPickUpPoints[0].GameEntity;
-        int num = 20 - AmmoCount;
-        while (weakGameEntity.Parent.IsValid)
+        if (Side == BattleSideEnum.Attacker && DebugSiegeBehavior.DebugDefendState == DebugSiegeBehavior.DebugStateDefender.DebugDefendersToMangonels)
         {
-            for (int i = 0; i < weakGameEntity.MultiMeshComponentCount; i++)
-            {
-                MetaMesh metaMesh = weakGameEntity.GetMetaMesh(i);
-                for (int j = 0; j < metaMesh.MeshCount; j++)
-                {
-                    metaMesh.GetMeshAtIndex(j).SetVectorArgument(0f, num, 0f, 0f);
-                }
-            }
-
-            weakGameEntity = weakGameEntity.Parent;
+            targetFlags |= TargetFlags.DebugThreat;
         }
-    }
 
-    protected override bool IsAnyUserBelongsToFormation(Formation formation)
-    {
-        return base.IsAnyUserBelongsToFormation(formation) | (ReloaderAgent?.Formation == formation);
-    }
-
-    public virtual Vec3 GetGlobalVelocity()
-    {
-        return Vec3.Zero;
-    }
-
-    private float ComputeProjectileCapsuleRadius()
-    {
-        float result = 0.01f;
-        if (LoadedMissileItem.BodyName != null)
+        if (Side == BattleSideEnum.Defender && DebugSiegeBehavior.DebugAttackState == DebugSiegeBehavior.DebugStateAttacker.DebugAttackersToMangonels)
         {
-            PhysicsShape fromResource = PhysicsShape.GetFromResource(LoadedMissileItem.BodyName);
-            BoundingBox boundingBox = new BoundingBox(in Vec3.Zero);
-            fromResource.GetBoundingBox(out boundingBox);
-            result = (boundingBox.max.AsVec2 - boundingBox.min.AsVec2).Length / 2f;
+            targetFlags |= TargetFlags.DebugThreat;
         }
 
-        return result;
+        return targetFlags;
     }
 
-    private void OnLoadedMissileItemChanged()
+    public override float GetTargetValue(List<Vec3> weaponPos)
     {
-        if (!LoadedMissileItem.StringId.Equals(_lastLoadedMissileItemId))
+        return 40f * GetUserMultiplierOfWeapon() * GetDistanceMultiplierOfWeapon(weaponPos[0]) * GetHitPointMultiplierOfWeapon();
+    }
+
+    public override float ProcessTargetValue(float baseValue, TargetFlags flags)
+    {
+        if (flags.HasAnyFlag(TargetFlags.NotAThreat))
         {
-            _projectileRadiusCached = ComputeProjectileCapsuleRadius();
-            _lastLoadedMissileItemId = LoadedMissileItem.StringId;
+            return -1000f;
         }
+
+        if (flags.HasAnyFlag(TargetFlags.IsSiegeEngine))
+        {
+            baseValue *= 10000f;
+        }
+
+        if (flags.HasAnyFlag(TargetFlags.IsStructure))
+        {
+            baseValue *= 2.5f;
+        }
+
+        if (flags.HasAnyFlag(TargetFlags.IsSmall))
+        {
+            baseValue *= 8f;
+        }
+
+        if (flags.HasAnyFlag(TargetFlags.IsMoving))
+        {
+            baseValue *= 8f;
+        }
+
+        if (flags.HasAnyFlag(TargetFlags.DebugThreat))
+        {
+            baseValue *= 10000f;
+        }
+
+        if (flags.HasAnyFlag(TargetFlags.IsSiegeTower))
+        {
+            baseValue *= 8f;
+        }
+
+        return baseValue;
     }
 
-    public void SetPlayerForceUse(bool value)
+    protected override float GetDetachmentWeightAux(BattleSideEnum side)
     {
-        PlayerForceUse = value;
+        return GetDetachmentWeightAuxForExternalAmmoWeapons(side);
     }
 
-    protected override bool ShouldDisableTickIfMachineDisabled()
+    public void SetSpawnedFromSpawner()
     {
-        return base.AmmoPickUpPoints.Count == 0;
-    }
-
-    public override void OnShipCaptured(BattleSideEnum newDefaultSide)
-    {
-        base.OnShipCaptured(newDefaultSide);
-        DefaultSide = newDefaultSide;
+        _spawnedFromSpawner = true;
     }
 }
+#if false // Decompilation log
+'41' items in cache
+------------------
+Resolve: 'netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'
+Found single assembly: 'netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\Facades\netstandard.dll'
+------------------
+Resolve: 'TaleWorlds.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.Core.dll'
+------------------
+Resolve: 'TaleWorlds.DotNet, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.DotNet, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.DotNet.dll'
+------------------
+Resolve: 'TaleWorlds.MountAndBlade.Diamond, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.MountAndBlade.Diamond, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.MountAndBlade.Diamond.dll'
+------------------
+Resolve: 'TaleWorlds.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.Library.dll'
+------------------
+Resolve: 'TaleWorlds.PlayerServices, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.PlayerServices, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.PlayerServices.dll'
+------------------
+Resolve: 'TaleWorlds.Engine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.Engine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.Engine.dll'
+------------------
+Resolve: 'TaleWorlds.Localization, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.Localization, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.Localization.dll'
+------------------
+Resolve: 'TaleWorlds.InputSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.InputSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.InputSystem.dll'
+------------------
+Resolve: 'TaleWorlds.PlatformService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Could not find by name: 'TaleWorlds.PlatformService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+------------------
+Resolve: 'TaleWorlds.ObjectSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.ObjectSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.ObjectSystem.dll'
+------------------
+Resolve: 'TaleWorlds.ModuleManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.ModuleManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.ModuleManager.dll'
+------------------
+Resolve: 'TaleWorlds.SaveSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Could not find by name: 'TaleWorlds.SaveSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+------------------
+Resolve: 'TaleWorlds.ScreenSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Could not find by name: 'TaleWorlds.ScreenSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+------------------
+Resolve: 'TaleWorlds.MountAndBlade.Helpers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Could not find by name: 'TaleWorlds.MountAndBlade.Helpers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+------------------
+Resolve: 'TaleWorlds.LinQuick, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Could not find by name: 'TaleWorlds.LinQuick, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+------------------
+Resolve: 'TaleWorlds.PSAI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Could not find by name: 'TaleWorlds.PSAI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+------------------
+Resolve: 'TaleWorlds.Diamond, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'TaleWorlds.Diamond, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Load from: 'C:\Users\Snah\source\repos\SubmoduleFix\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences\TaleWorlds.Diamond.dll'
+------------------
+Resolve: 'TaleWorlds.AchievementSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Could not find by name: 'TaleWorlds.AchievementSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+------------------
+Resolve: 'TaleWorlds.ActivitySystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Could not find by name: 'TaleWorlds.ActivitySystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+------------------
+Resolve: 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Found single assembly: 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\mscorlib.dll'
+------------------
+Resolve: 'System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Found single assembly: 'System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Core.dll'
+------------------
+Resolve: 'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Found single assembly: 'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.dll'
+------------------
+Resolve: 'System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Found single assembly: 'System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Data.dll'
+------------------
+Resolve: 'System.Diagnostics.Tracing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+Could not find by name: 'System.Diagnostics.Tracing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+------------------
+Resolve: 'System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+Found single assembly: 'System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Drawing.dll'
+------------------
+Resolve: 'System.IO.Compression, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Could not find by name: 'System.IO.Compression, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+------------------
+Resolve: 'System.IO.Compression.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Found single assembly: 'System.IO.Compression.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.IO.Compression.FileSystem.dll'
+------------------
+Resolve: 'System.ComponentModel.Composition, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Could not find by name: 'System.ComponentModel.Composition, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+------------------
+Resolve: 'System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+Found single assembly: 'System.Net.Http, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+WARN: Version mismatch. Expected: '4.0.0.0', Got: '4.2.0.0'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Net.Http.dll'
+------------------
+Resolve: 'System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Found single assembly: 'System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Numerics.dll'
+------------------
+Resolve: 'System.Runtime.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Found single assembly: 'System.Runtime.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Runtime.Serialization.dll'
+------------------
+Resolve: 'System.Transactions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Could not find by name: 'System.Transactions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+------------------
+Resolve: 'System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+Found single assembly: 'System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Web.dll'
+------------------
+Resolve: 'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Found single assembly: 'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Xml.dll'
+------------------
+Resolve: 'System.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Found single assembly: 'System.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Xml.Linq.dll'
+------------------
+Resolve: 'System.Web.ApplicationServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
+Could not find by name: 'System.Web.ApplicationServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
+------------------
+Resolve: 'System.Runtime.InteropServices, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null'
+Could not find by name: 'System.Runtime.InteropServices, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null'
+------------------
+Resolve: 'System.Runtime.CompilerServices.Unsafe, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null'
+Found single assembly: 'System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+WARN: Version mismatch. Expected: '2.0.0.0', Got: '4.0.4.1'
+Load from: 'C:\Users\Snah\.nuget\packages\system.runtime.compilerservices.unsafe\4.5.3\ref\net461\System.Runtime.CompilerServices.Unsafe.dll'
+#endif

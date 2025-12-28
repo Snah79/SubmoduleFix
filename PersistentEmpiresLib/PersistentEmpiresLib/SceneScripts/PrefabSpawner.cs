@@ -199,19 +199,25 @@ namespace PersistentEmpiresLib.SceneScripts
                 childs.Add(entity);
 
                 var tmp = childs.Where(x => x.HasScriptOfType<PE_MoveableGroundedMachine>()).FirstOrDefault();
-                var pre_MoveableGroundedMachine = tmp.GetFirstScriptOfType<PE_MoveableGroundedMachine>();
-
-                if (pre_MoveableGroundedMachine != null)
+                if(tmp != null)
                 {
-                    pre_MoveableGroundedMachine.PreInit();
+                    var pre_MoveableGroundedMachine = tmp.GetFirstScriptOfType<PE_MoveableGroundedMachine>();
+
+                    if (pre_MoveableGroundedMachine != null)
+                    {
+                        pre_MoveableGroundedMachine.PreInit();
+                    }
                 }
 
                 var tmp2 = childs.Where(x => x.HasScriptOfType<PE_Mangonel>()).FirstOrDefault();
-                var peMangonel = tmp2.GetFirstScriptOfType<PE_Mangonel>();
-
-                if (peMangonel != null)
+                if(tmp2 != null)
                 {
-                    peMangonel.PreInit();
+                    var peMangonel = tmp2.GetFirstScriptOfType<PE_Mangonel>();
+
+                    if (peMangonel != null)
+                    {
+                        peMangonel.PreInit();
+                    }
                 }
             }
         }

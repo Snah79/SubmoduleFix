@@ -31,10 +31,10 @@
       "workingDirectory": "C:\\Users\\Snah\\Desktop\\FTP\\Mount & Blade II Dedicated Server\\bin\\Win64_Shipping_Server\\"
     },
 
-    "Server PE Roleplay": {
+    "Server Hunting": {
       "commandName": "Executable",
       "executablePath": "C:\\Users\\Snah\\Desktop\\FTP\\Mount & Blade II Dedicated Server\\bin\\Win64_Shipping_Server\\DedicatedCustomServer.Starter.exe",
-      "commandLineArgs": "_MODULES_*Native*Multiplayer*PERoleplay*_MODULES_ /dedicatedcustomserverconfigfile pe_birke_test2.txt /port 7233 /no_watchdog /tickrate 120",
+      "commandLineArgs": "_MODULES_*Native*Multiplayer*PERoleplay*_MODULES_ /dedicatedcustomserverconfigfile pe_birke_hunting.txt /port 7233 /no_watchdog /tickrate 120",
       "workingDirectory": "C:\\Users\\Snah\\Desktop\\FTP\\Mount & Blade II Dedicated Server\\bin\\Win64_Shipping_Server\\"
     }
   }

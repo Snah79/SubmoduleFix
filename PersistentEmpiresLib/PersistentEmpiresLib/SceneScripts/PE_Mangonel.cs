@@ -1,1273 +1,2158 @@
-﻿using PersistentEmpiresLib.Helpers;
-using PersistentEmpiresLib.SceneScripts.Extensions;
-using PersistentEmpiresLib.SceneScripts.Interfaces;
+﻿#region Assembly TaleWorlds.MountAndBlade, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
+// location unknown
+// Decompiled with ICSharpCode.Decompiler 8.1.1.7464
+#endregion
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using NetworkMessages.FromClient;
+using NetworkMessages.FromServer;
 using TaleWorlds.Core;
 using TaleWorlds.DotNet;
 using TaleWorlds.Engine;
-using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
-using TaleWorlds.Localization;
-using TaleWorlds.MountAndBlade;
+using TaleWorlds.MountAndBlade.Network.Messages;
 
-namespace PersistentEmpiresLib.SceneScripts
+namespace TaleWorlds.MountAndBlade;
+
+public abstract class RangedSiegeWeapon : SiegeWeapon
 {
-    public sealed class PE_MangonelAI : RangedSiegeWeaponAi
+    [DefineSynchedMissionObjectType(typeof(RangedSiegeWeapon))]
+    public struct RangedSiegeWeaponRecord : ISynchedMissionObjectReadableRecord
     {
-        // Token: 0x06001084 RID: 4228 RVA: 0x00035E83 File Offset: 0x00034083
-        public PE_MangonelAI(PE_Mangonel mangonel) : base(mangonel)
+        public int State { get; private set; }
+
+        public float TargetDirection { get; private set; }
+
+        public float TargetReleaseAngle { get; private set; }
+
+        public int AmmoCount { get; private set; }
+
+        public int ProjectileIndex { get; private set; }
+
+        public bool ReadFromNetwork(ref bool bufferReadValid)
         {
+            State = GameNetworkMessage.ReadIntFromPacket(CompressionMission.RangedSiegeWeaponStateCompressionInfo, ref bufferReadValid);
+            TargetDirection = GameNetworkMessage.ReadFloatFromPacket(CompressionBasic.RadianCompressionInfo, ref bufferReadValid);
+            TargetReleaseAngle = GameNetworkMessage.ReadFloatFromPacket(CompressionBasic.RadianCompressionInfo, ref bufferReadValid);
+            AmmoCount = GameNetworkMessage.ReadIntFromPacket(CompressionMission.RangedSiegeWeaponAmmoCompressionInfo, ref bufferReadValid);
+            ProjectileIndex = GameNetworkMessage.ReadIntFromPacket(CompressionMission.RangedSiegeWeaponAmmoIndexCompressionInfo, ref bufferReadValid);
+            return bufferReadValid;
         }
     }
-    public class PE_Mangonel : RangedSiegeWeapon, ISpawnable, IMoveable
+
+    public enum WeaponState
     {
-        // Token: 0x170007FE RID: 2046
-        // (get) Token: 0x06002CBD RID: 11453 RVA: 0x000AFC6E File Offset: 0x000ADE6E
-        protected override float MaximumBallisticError
+        Invalid = -1,
+        Idle,
+        WaitingBeforeProjectileLeaving,
+        Shooting,
+        WaitingAfterShooting,
+        WaitingBeforeReloading,
+        LoadingAmmo,
+        WaitingBeforeIdle,
+        Reloading,
+        ReloadingPaused,
+        NumberOfStates
+    }
+
+    public enum FiringFocus
+    {
+        Troops,
+        Walls,
+        RangedSiegeWeapons,
+        PrimarySiegeWeapons
+    }
+
+    public enum CameraState
+    {
+        StickToWeapon,
+        DontMove,
+        MoveDownToReload,
+        RememberLastShotDirection,
+        FreeMove,
+        ApproachToCamera
+    }
+
+    public enum ForceUseState
+    {
+        NotForced,
+        ForcefullyWatched,
+        ForcefullyUsed
+    }
+
+    public delegate void OnSiegeWeaponReloadDone();
+
+    private const float DefaultMissileRadius = 0.01f;
+
+    public const float DefaultDirectionRestriction = (float)Math.PI * 2f / 3f;
+
+    public const string CanGoAmmoPickupTag = "can_pick_up_ammo";
+
+    public const string DontApplySidePenaltyTag = "no_ammo_pick_up_penalty";
+
+    public const string ReloadTag = "reload";
+
+    public const string AmmoLoadTag = "ammoload";
+
+    public const string CameraHolderTag = "cameraHolder";
+
+    public const string ProjectileTag = "projectile";
+
+    public string MissileItemID;
+
+    protected bool UsesMouseForAiming;
+
+    [EditableScriptComponentVariable(true, "")]
+    protected int MultipleProjectileCount = 5;
+
+    private WeaponState _state;
+
+    public FiringFocus Focus;
+
+    private int _projectileIndex;
+
+    protected GameEntity MissileStartingPositionEntityForSimulation;
+
+    protected Skeleton[] Skeletons;
+
+    protected SynchedMissionObject[] SkeletonOwnerObjects;
+
+    protected string[] SkeletonNames;
+
+    protected string[] FireAnimations;
+
+    protected string[] SetUpAnimations;
+
+    protected int[] FireAnimationIndices;
+
+    protected int[] SetUpAnimationIndices;
+
+    protected SynchedMissionObject RotationObject;
+
+    private MatrixFrame _rotationObjectInitialFrame;
+
+    protected SoundEvent MoveSound;
+
+    protected SoundEvent ReloadSound;
+
+    protected int MoveSoundIndex = -1;
+
+    protected int ReloadSoundIndex = -1;
+
+    protected int FireSoundIndex = -1;
+
+    protected ItemObject OriginalMissileItem;
+
+    protected WeaponStatsData OriginalMissileWeaponStatsDataForTargeting;
+
+    private ItemObject _loadedMissileItem;
+
+    protected List<StandingPoint> CanPickUpAmmoStandingPoints;
+
+    protected List<StandingPoint> ReloadStandingPoints;
+
+    protected StandingPointWithWeaponRequirement LoadAmmoStandingPoint;
+
+    protected Dictionary<StandingPoint, float> PilotReservePriorityValues = new Dictionary<StandingPoint, float>();
+
+    protected Agent ReloaderAgent;
+
+    protected StandingPoint ReloaderAgentOriginalPoint;
+
+    protected bool AttackClickWillReload;
+
+    protected bool WeaponNeedsClickToReload;
+
+    protected float FinalReloadSpeed = 1f;
+
+    protected float BaseReloadSpeed = 1f;
+
+    public int StartingAmmoCount = 20;
+
+    protected int CurrentAmmo = 1;
+
+    protected float TargetDirection;
+
+    protected float TargetReleaseAngle;
+
+    protected float CameraDirection;
+
+    protected float CameraReleaseAngle;
+
+    protected float ReloadTargetReleaseAngle;
+
+    private MatrixFrame _cameraHolderInitialFrame;
+
+    protected float MaxRotateSpeed;
+
+    private CameraState _cameraState;
+
+    private bool _inputGiven;
+
+    protected float DontMoveTimer;
+
+    private float _inputX;
+
+    private float _inputY;
+
+    private bool _exactInputGiven;
+
+    private float _inputTargetX;
+
+    private float _inputTargetY;
+
+    private Vec3 _ammoPickupCenter;
+
+    private float _lastSyncedDirection;
+
+    private float _lastSyncedReleaseAngle;
+
+    private float _syncTimer;
+
+    public float TopReleaseAngleRestriction = (float)Math.PI / 2f;
+
+    public float BottomReleaseAngleRestriction = -(float)Math.PI / 2f;
+
+    protected float CurrentDirection;
+
+    protected float CurrentReleaseAngle;
+
+    protected float ReleaseAngleRestrictionCenter;
+
+    protected float ReleaseAngleRestrictionAngle;
+
+    private float _animationTimeElapsed;
+
+    protected float TimeGapBetweenShootingEndAndReloadingStart = 0.6f;
+
+    protected float TimeGapBetweenShootActionAndProjectileLeaving;
+
+    private int _currentReloaderCount;
+
+    protected Agent LastShooterAgent;
+
+    private float _lastCanPickUpAmmoStandingPointsSortedAngle = -(float)Math.PI;
+
+    protected BattleSideEnum DefaultSide;
+
+    private bool _aiRequestsShoot;
+
+    private bool _aiRequestsManualReload;
+
+    private bool _hasFrameChangedInPreviousFrame;
+
+    private string _lastLoadedMissileItemId;
+
+    private float _projectileRadiusCached;
+
+    public virtual string MultipleFireProjectileId => "grapeshot_fire_stack";
+
+    public virtual string MultipleFireProjectileFlyingId => "grapeshot_fire_projectile";
+
+    public virtual string MultipleProjectileId => "grapeshot_stack";
+
+    public virtual string MultipleProjectileFlyingId => "grapeshot_projectile";
+
+    public virtual string SingleFireProjectileId => "pot";
+
+    public virtual string SingleFireProjectileFlyingId => "pot_projectile";
+
+    public virtual string SingleProjectileId => "boulder";
+
+    public virtual string SingleProjectileFlyingId => "boulder_projectile";
+
+    public WeaponState State
+    {
+        get
         {
-            get
-            {
-                return 1.5f;
-            }
+            return _state;
         }
-
-        // Token: 0x170007FF RID: 2047
-        // (get) Token: 0x06002CBE RID: 11454 RVA: 0x000AFC75 File Offset: 0x000ADE75
-        protected override float ShootingSpeed
+        set
         {
-            get
+            if (_state != value)
             {
-                return this.ProjectileSpeed;
-            }
-        }
-
-        // Token: 0x06002CBF RID: 11455 RVA: 0x000AFC80 File Offset: 0x000ADE80
-        protected override void RegisterAnimationParameters()
-        {
-            this.SkeletonOwnerObjects = new SynchedMissionObject[2];
-            this.Skeletons = new Skeleton[2];
-            this.SkeletonNames = new string[1];
-            this.FireAnimations = new string[2];
-            this.FireAnimationIndices = new int[2];
-            this.SetUpAnimations = new string[2];
-            this.SetUpAnimationIndices = new int[2];
-            this.SkeletonOwnerObjects[0] = this._body;
-            this.Skeletons[0] = this._body.GameEntity.Skeleton;
-            this.SkeletonNames[0] = this.MangonelBodySkeleton;
-            this.FireAnimations[0] = this.MangonelBodyFire;
-            this.FireAnimationIndices[0] = MBAnimation.GetAnimationIndexWithName(this.MangonelBodyFire);
-            this.SetUpAnimations[0] = this.MangonelBodyReload;
-            this.SetUpAnimationIndices[0] = MBAnimation.GetAnimationIndexWithName(this.MangonelBodyReload);
-            this.SkeletonOwnerObjects[1] = this._rope;
-            this.Skeletons[1] = this._rope.GameEntity.Skeleton;
-            this.FireAnimations[1] = this.MangonelRopeFire;
-            this.FireAnimationIndices[1] = MBAnimation.GetAnimationIndexWithName(this.MangonelRopeFire);
-            this.SetUpAnimations[1] = this.MangonelRopeReload;
-            this.SetUpAnimationIndices[1] = MBAnimation.GetAnimationIndexWithName(this.MangonelRopeReload);
-            this._missileBoneName = this.ProjectileBoneName;
-            this._idleAnimationActionIndex = ActionIndexCache.Create(this.IdleActionName);
-            this._shootAnimationActionIndex = ActionIndexCache.Create(this.ShootActionName);
-            this._reload1AnimationActionIndex = ActionIndexCache.Create(this.Reload1ActionName);
-            this._reload2AnimationActionIndex = ActionIndexCache.Create(this.Reload2ActionName);
-            this._rotateLeftAnimationActionIndex = ActionIndexCache.Create(this.RotateLeftActionName);
-            this._rotateRightAnimationActionIndex = ActionIndexCache.Create(this.RotateRightActionName);
-            this._loadAmmoBeginAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoBeginActionName);
-            this._loadAmmoEndAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoEndActionName);
-            this._reload2IdleActionIndex = ActionIndexCache.Create(this.Reload2IdleActionName);
-            //this.SkeletonOwnerObjects = new SynchedMissionObject[2];
-            //this.Skeletons = new Skeleton[2];
-            //this.SkeletonNames = new string[1];
-            //this.FireAnimations = new string[2];
-            //this.FireAnimationIndices = new int[2];
-            //this.SetUpAnimations = new string[2];
-            //this.SetUpAnimationIndices = new int[2];
-            //this.SkeletonOwnerObjects[0] = this._body;
-            //this.Skeletons[0] = this._body.GameEntity.Skeleton;
-            //this.SkeletonNames[0] = this.MangonelBodySkeleton;
-            //this.FireAnimations[0] = this.MangonelBodyFire;
-            //this.FireAnimationIndices[0] = MBAnimation.GetAnimationIndexWithName(this.MangonelBodyFire);
-            //this.SetUpAnimations[0] = this.MangonelBodyReload;
-            //this.SetUpAnimationIndices[0] = MBAnimation.GetAnimationIndexWithName(this.MangonelBodyReload);
-            //this.SkeletonOwnerObjects[1] = this._rope;
-            //this.Skeletons[1] = this._rope.GameEntity.Skeleton;
-            //this.FireAnimations[1] = this.MangonelRopeFire;
-            //this.FireAnimationIndices[1] = MBAnimation.GetAnimationIndexWithName(this.MangonelRopeFire);
-            //this.SetUpAnimations[1] = this.MangonelRopeReload;
-            //this.SetUpAnimationIndices[1] = MBAnimation.GetAnimationIndexWithName(this.MangonelRopeReload);
-            //this._missileBoneName = this.ProjectileBoneName;
-            //this._idleAnimationActionIndex = ActionIndexCache.Create(this.IdleActionName);
-            //this._shootAnimationActionIndex = ActionIndexCache.Create(this.ShootActionName);
-            //this._reload1AnimationActionIndex = ActionIndexCache.Create(this.Reload1ActionName);
-            //this._reload2AnimationActionIndex = ActionIndexCache.Create(this.Reload2ActionName);
-            //this._rotateLeftAnimationActionIndex = ActionIndexCache.Create(this.RotateLeftActionName);
-            //this._rotateRightAnimationActionIndex = ActionIndexCache.Create(this.RotateRightActionName);
-            //this._loadAmmoBeginAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoBeginActionName);
-            //this._loadAmmoEndAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoEndActionName);
-            //this._reload2IdleActionIndex = ActionIndexCache.Create(this.Reload2IdleActionName);
-        }
-
-        // Token: 0x06002CC0 RID: 11456 RVA: 0x000AFE28 File Offset: 0x000AE028
-        public override UsableMachineAIBase CreateAIBehaviorObject()
-        {
-            return new PE_MangonelAI(this);
-        }
-
-        // Token: 0x06002CC2 RID: 11458 RVA: 0x000AFE90 File Offset: 0x000AE090
-        public override SiegeEngineType GetSiegeEngineType()
-        {
-            if (DefaultSide != BattleSideEnum.Attacker)
-            {
-                return DefaultSiegeEngineTypes.Catapult;
-            }
-            return DefaultSiegeEngineTypes.Onager;
-        }
-
-        // Token: 0x06002CC3 RID: 11459 RVA: 0x000AFEA8 File Offset: 0x000AE0A8
-        private bool initCompleted = false;
-        protected override void OnInit()
-        {
-            initCompleted = false;            
-            var synchedMissionObjectList = GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("rope");
-            //AmmoPickUpTag = null;
-
-            if (synchedMissionObjectList.Count > 0)
-            {
-                _rope = synchedMissionObjectList[0];
-            }
-            synchedMissionObjectList = GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("body");
-            _body = synchedMissionObjectList.Count > 0 ? synchedMissionObjectList[0] : this;
-            RotationObject = _body;
-            
-            var list2 = GameEntity.CollectChildrenEntitiesWithTag("vertical_adjuster");
-            _verticalAdjuster = list2[0];
-            
-            if (_verticalAdjuster.Skeleton != null)
-            {
-                _verticalAdjusterSkeleton = _verticalAdjuster.Skeleton;
-
-                if ((NativeObject)this._verticalAdjusterSkeleton != (NativeObject)null)
-                    this._verticalAdjusterSkeleton.SetAnimationAtChannel(this.MangonelAimAnimation, 0, 1f, -1f, 0.0f);
-            }
-            _verticalAdjusterStartingLocalFrame = _verticalAdjuster.GetFrame();
-            _verticalAdjusterStartingLocalFrame = _body.GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToLocal(_verticalAdjusterStartingLocalFrame);
-            //RegisterAnimationParameters();
-            this.InitiateMoveSynch();
-            base.OnInit();
-            TimeGapBetweenShootActionAndProjectileLeaving = 0.23f;
-            TimeGapBetweenShootingEndAndReloadingStart = 0f;
-            this._rotateStandingPoints = new List<StandingPoint>();
-            if (this.StandingPoints != null)
-            {
-                foreach (StandingPoint standingPoint in (List<StandingPoint>)this.StandingPoints)
+                if (GameNetwork.IsServerOrRecorder)
                 {
-                    if (standingPoint.GameEntity.HasTag("rotate"))
+                    GameNetwork.BeginBroadcastModuleEvent();
+                    GameNetwork.WriteMessage(new SetRangedSiegeWeaponState(base.Id, value));
+                    GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord);
+                }
+
+                _state = value;
+                OnRangedSiegeWeaponStateChange();
+            }
+        }
+    }
+
+    protected virtual float MaximumBallisticError => 1f;
+
+    protected abstract float ShootingSpeed { get; }
+
+    public virtual Vec3 CanShootAtPointCheckingOffset => Vec3.Zero;
+
+    public GameEntity CameraHolder { get; private set; }
+
+    protected SynchedMissionObject Projectile { get; private set; }
+
+    protected Vec3 MissileStartingGlobalPositionForSimulation
+    {
+        get
+        {
+            if (MissileStartingPositionEntityForSimulation != null)
+            {
+                return MissileStartingPositionEntityForSimulation.GlobalPosition;
+            }
+
+            return Projectile?.GameEntity.GlobalPosition ?? Vec3.Zero;
+        }
+    }
+
+    protected string SkeletonName
+    {
+        set
+        {
+            SkeletonNames = new string[1] { value };
+        }
+    }
+
+    protected string FireAnimation
+    {
+        set
+        {
+            FireAnimations = new string[1] { value };
+        }
+    }
+
+    protected string SetUpAnimation
+    {
+        set
+        {
+            SetUpAnimations = new string[1] { value };
+        }
+    }
+
+    protected int FireAnimationIndex
+    {
+        set
+        {
+            FireAnimationIndices = new int[1] { value };
+        }
+    }
+
+    protected int SetUpAnimationIndex
+    {
+        set
+        {
+            SetUpAnimationIndices = new int[1] { value };
+        }
+    }
+
+    protected ItemObject LoadedMissileItem
+    {
+        get
+        {
+            return _loadedMissileItem;
+        }
+        set
+        {
+            _loadedMissileItem = value;
+            OnLoadedMissileItemChanged();
+        }
+    }
+
+    protected virtual bool WeaponMovesDownToReload => false;
+
+    public int AmmoCount
+    {
+        get
+        {
+            return CurrentAmmo;
+        }
+        protected set
+        {
+            CurrentAmmo = value;
+        }
+    }
+
+    protected virtual bool HasAmmo { get; set; } = true;
+
+
+    public virtual float DirectionRestriction => (float)Math.PI * 2f / 3f;
+
+    protected virtual float HorizontalAimSensitivity => 0.2f;
+
+    protected virtual float VerticalAimSensitivity => 0.2f;
+
+    protected virtual float ReloadSpeedMultiplier => 1f;
+
+    public bool PlayerForceUse { get; private set; }
+
+    protected virtual Vec3 ShootingDirection => Projectile.GameEntity.GetGlobalFrame().rotation.u.NormalizedCopy();
+
+    public virtual Vec3 ProjectileEntityCurrentGlobalPosition => Projectile.GameEntity.GetGlobalFrame().origin;
+
+    public override BattleSideEnum Side
+    {
+        get
+        {
+            if (base.PilotAgent != null)
+            {
+                return base.PilotAgent.Team.Side;
+            }
+
+            return DefaultSide;
+        }
+    }
+
+    public event Action<RangedSiegeWeapon, Agent> OnAgentLoadsMachine;
+
+    public event OnSiegeWeaponReloadDone OnReloadDone;
+
+    protected abstract void RegisterAnimationParameters();
+
+    protected abstract void GetSoundEventIndices();
+
+    protected virtual void ConsumeAmmo()
+    {
+        AmmoCount--;
+        if (GameNetwork.IsServerOrRecorder)
+        {
+            GameNetwork.BeginBroadcastModuleEvent();
+            GameNetwork.WriteMessage(new SetRangedSiegeWeaponAmmo(base.Id, AmmoCount));
+            GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord);
+        }
+
+        UpdateAmmoMesh();
+        CheckAmmo();
+    }
+
+    public virtual void SetAmmo(int ammoLeft)
+    {
+        if (AmmoCount != ammoLeft)
+        {
+            AmmoCount = ammoLeft;
+            UpdateAmmoMesh();
+            CheckAmmo();
+        }
+    }
+
+    public virtual void SetStartAmmo(int ammoLeft)
+    {
+        if (AmmoCount != ammoLeft)
+        {
+            AmmoCount = ammoLeft;
+            UpdateAmmoMesh();
+            CheckAmmo();
+        }
+    }
+
+    protected virtual void CheckAmmo()
+    {
+        if (AmmoCount > 0 || StartingAmmoCount <= 0)
+        {
+            return;
+        }
+
+        HasAmmo = false;
+        SetForcedUse(value: false);
+        foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
+        {
+            ammoPickUpPoint.IsDeactivated = true;
+        }
+    }
+
+    protected void ChangeProjectileEntityServer(Agent loadingAgent, string missileItemID)
+    {
+        List<SynchedMissionObject> list = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("projectile");
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (list[i].GameEntity.HasTag(missileItemID))
+            {
+                Projectile = list[i];
+                _projectileIndex = i;
+                break;
+            }
+        }
+
+        LoadedMissileItem = Game.Current.ObjectManager.GetObject<ItemObject>(missileItemID);
+        if (GameNetwork.IsServerOrRecorder)
+        {
+            GameNetwork.BeginBroadcastModuleEvent();
+            GameNetwork.WriteMessage(new RangedSiegeWeaponChangeProjectile(base.Id, _projectileIndex));
+            GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord);
+        }
+
+        this.OnAgentLoadsMachine?.Invoke(this, loadingAgent);
+    }
+
+    public void ChangeProjectileEntityClient(int index)
+    {
+        List<SynchedMissionObject> list = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("projectile");
+        Projectile = list[index];
+        _projectileIndex = index;
+    }
+
+    protected internal override void OnInit()
+    {
+        base.OnInit();
+        DetermineDefaultBattleSide();
+        ReleaseAngleRestrictionCenter = (TopReleaseAngleRestriction + BottomReleaseAngleRestriction) * 0.5f;
+        ReleaseAngleRestrictionAngle = TopReleaseAngleRestriction - BottomReleaseAngleRestriction;
+        CurrentReleaseAngle = (_lastSyncedReleaseAngle = ReleaseAngleRestrictionCenter);
+        OriginalMissileItem = Game.Current.ObjectManager.GetObject<ItemObject>(MissileItemID);
+        _projectileRadiusCached = -1f;
+        LoadedMissileItem = OriginalMissileItem;
+        OriginalMissileWeaponStatsDataForTargeting = new MissionWeapon(OriginalMissileItem, null, null).GetWeaponStatsDataForUsage(0);
+        if (RotationObject == null)
+        {
+            RotationObject = this;
+        }
+
+        _rotationObjectInitialFrame = RotationObject.GameEntity.GetFrame();
+        CurrentDirection = (_lastSyncedDirection = 0f);
+        _syncTimer = 0f;
+        List<WeakGameEntity> list = base.GameEntity.CollectChildrenEntitiesWithTag("cameraHolder");
+        if (list.Count > 0)
+        {
+            CameraHolder = TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(list[0]);
+            _cameraHolderInitialFrame = CameraHolder.GetFrame();
+            if (GameNetwork.IsClientOrReplay)
+            {
+                MakeVisibilityCheck = false;
+            }
+        }
+
+        List<SynchedMissionObject> list2 = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("projectile");
+        foreach (SynchedMissionObject item in list2)
+        {
+            item.GameEntity.SetVisibilityExcludeParents(visible: false);
+        }
+
+        Projectile = list2.FirstOrDefault((SynchedMissionObject x) => x.GameEntity.HasTag(MissileItemID));
+        _projectileIndex = list2.IndexOf(Projectile);
+        Projectile.GameEntity.SetVisibilityExcludeParents(visible: true);
+        WeakGameEntity weakEntity = base.GameEntity.GetChildren().FirstOrDefault((WeakGameEntity x) => x.Name == "clean");
+        if (weakEntity.IsValid)
+        {
+            weakEntity = weakEntity.GetChildren().FirstOrDefault((WeakGameEntity x) => x.Name == "projectile_leaving_position");
+        }
+
+        MissileStartingPositionEntityForSimulation = TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(weakEntity);
+        TargetDirection = CurrentDirection;
+        TargetReleaseAngle = CurrentReleaseAngle;
+        CanPickUpAmmoStandingPoints = new List<StandingPoint>();
+        ReloadStandingPoints = new List<StandingPoint>();
+        if (base.StandingPoints != null)
+        {
+            foreach (StandingPoint standingPoint in base.StandingPoints)
+            {
+                standingPoint.AddComponent(new ResetAnimationOnStopUsageComponent(ActionIndexCache.act_none, alwaysResetWithAction: false));
+                if (standingPoint.GameEntity.HasTag("reload"))
+                {
+                    ReloadStandingPoints.Add(standingPoint);
+                }
+
+                if (standingPoint.GameEntity.HasTag("can_pick_up_ammo"))
+                {
+                    CanPickUpAmmoStandingPoints.Add(standingPoint);
+                }
+            }
+        }
+
+        List<StandingPointWithWeaponRequirement> list3 = base.StandingPoints.OfType<StandingPointWithWeaponRequirement>().ToList();
+        List<StandingPointWithWeaponRequirement> list4 = new List<StandingPointWithWeaponRequirement>();
+        foreach (StandingPointWithWeaponRequirement item2 in list3)
+        {
+            if (item2.GameEntity.HasTag(AmmoPickUpTag))
+            {
+                item2.InitGivenWeapon(OriginalMissileItem);
+                item2.SetupOnUsingStoppedBehavior(autoAttach: false, OnAmmoPickupUsingCancelled);
+                continue;
+            }
+
+            list4.Add(item2);
+            item2.SetupOnUsingStoppedBehavior(autoAttach: false, OnLoadingAmmoPointUsingCancelled);
+            item2.InitRequiredWeaponClasses(new WeaponClass[1] { OriginalMissileItem.PrimaryWeapon.WeaponClass });
+        }
+
+        if (base.AmmoPickUpPoints.Count > 1)
+        {
+            _ammoPickupCenter = default(Vec3);
+            foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
+            {
+                ((StandingPointWithWeaponRequirement)ammoPickUpPoint).SetHasAlternative(hasAlternative: true);
+                _ammoPickupCenter += ammoPickUpPoint.GameEntity.GlobalPosition;
+            }
+
+            _ammoPickupCenter /= (float)base.AmmoPickUpPoints.Count;
+        }
+        else
+        {
+            _ammoPickupCenter = base.GameEntity.GlobalPosition;
+        }
+
+        list4.Sort(delegate (StandingPointWithWeaponRequirement element1, StandingPointWithWeaponRequirement element2)
+        {
+            if (element1.GameEntity.GlobalPosition.DistanceSquared(_ammoPickupCenter) > element2.GameEntity.GlobalPosition.DistanceSquared(_ammoPickupCenter))
+            {
+                return 1;
+            }
+
+            return (element1.GameEntity.GlobalPosition.DistanceSquared(_ammoPickupCenter) < element2.GameEntity.GlobalPosition.DistanceSquared(_ammoPickupCenter)) ? (-1) : 0;
+        });
+        LoadAmmoStandingPoint = list4.FirstOrDefault();
+        SortCanPickUpAmmoStandingPoints();
+        Vec3 vec = base.PilotStandingPoint.GameEntity.GlobalPosition - base.GameEntity.GlobalPosition;
+        foreach (StandingPoint canPickUpAmmoStandingPoint in CanPickUpAmmoStandingPoints)
+        {
+            if (canPickUpAmmoStandingPoint != base.PilotStandingPoint)
+            {
+                float length = (canPickUpAmmoStandingPoint.GameEntity.GlobalPosition - base.GameEntity.GlobalPosition + vec).Length;
+                PilotReservePriorityValues.Add(canPickUpAmmoStandingPoint, length);
+            }
+        }
+
+        AmmoCount = StartingAmmoCount - 1;
+        UpdateAmmoMesh();
+        RegisterAnimationParameters();
+        GetSoundEventIndices();
+        InitAnimations();
+        SetScriptComponentToTick(GetTickRequirement());
+    }
+
+    protected virtual void DetermineDefaultBattleSide()
+    {
+        DestructableComponent destructableComponent = base.GameEntity.GetScriptComponents<DestructableComponent>().FirstOrDefault();
+        DefaultSide = destructableComponent.BattleSide;
+    }
+
+    private void SortCanPickUpAmmoStandingPoints()
+    {
+        if (!(MBMath.GetSmallestDifferenceBetweenTwoAngles(_lastCanPickUpAmmoStandingPointsSortedAngle, CurrentDirection) > (float)Math.PI * 3f / 50f))
+        {
+            return;
+        }
+
+        _lastCanPickUpAmmoStandingPointsSortedAngle = CurrentDirection;
+        int signOfAmmoPile = Math.Sign(Vec3.DotProduct(base.GameEntity.GetGlobalFrame().rotation.s, _ammoPickupCenter - base.GameEntity.GlobalPosition));
+        CanPickUpAmmoStandingPoints.Sort(delegate (StandingPoint element1, StandingPoint element2)
+        {
+            Vec3 vec = _ammoPickupCenter - element1.GameEntity.GlobalPosition;
+            Vec3 vec2 = _ammoPickupCenter - element2.GameEntity.GlobalPosition;
+            float num = vec.LengthSquared;
+            float num2 = vec2.LengthSquared;
+            float num3 = Vec3.DotProduct(base.GameEntity.GetGlobalFrame().rotation.s, element1.GameEntity.GlobalPosition - base.GameEntity.GlobalPosition);
+            float num4 = Vec3.DotProduct(base.GameEntity.GetGlobalFrame().rotation.s, element2.GameEntity.GlobalPosition - base.GameEntity.GlobalPosition);
+            if (!element1.GameEntity.HasTag("no_ammo_pick_up_penalty") && signOfAmmoPile != Math.Sign(num3))
+            {
+                num += num3 * num3 * 64f;
+            }
+
+            if (!element2.GameEntity.HasTag("no_ammo_pick_up_penalty") && signOfAmmoPile != Math.Sign(num4))
+            {
+                num2 += num4 * num4 * 64f;
+            }
+
+            if (element1.GameEntity.HasTag(PilotStandingPointTag))
+            {
+                num += 25f;
+            }
+            else if (element2.GameEntity.HasTag(PilotStandingPointTag))
+            {
+                num2 += 25f;
+            }
+
+            if (num > num2)
+            {
+                return 1;
+            }
+
+            return (num < num2) ? (-1) : 0;
+        });
+    }
+
+    protected internal override void OnEditorInit()
+    {
+        List<SynchedMissionObject> list = base.GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("projectile");
+        if (list.Count > 0)
+        {
+            Projectile = list[0];
+        }
+    }
+
+    private void InitAnimations()
+    {
+        for (int i = 0; i < Skeletons.Length; i++)
+        {
+            Skeletons[i].SetAnimationAtChannel(SetUpAnimations[i], 0, 1f, 0f);
+            Skeletons[i].SetAnimationParameterAtChannel(0, 1f);
+            Skeletons[i].TickAnimations(0.0001f, MatrixFrame.Identity, tickAnimsForChildren: true);
+        }
+    }
+
+    protected internal override void OnMissionReset()
+    {
+        base.OnMissionReset();
+        Projectile.GameEntity.SetVisibilityExcludeParents(visible: true);
+        foreach (StandingPoint standingPoint in base.StandingPoints)
+        {
+            standingPoint.UserAgent?.StopUsingGameObject();
+            standingPoint.IsDeactivated = false;
+        }
+
+        _state = WeaponState.Idle;
+        CurrentDirection = (_lastSyncedDirection = 0f);
+        _syncTimer = 0f;
+        CurrentReleaseAngle = (_lastSyncedReleaseAngle = ReleaseAngleRestrictionCenter);
+        TargetDirection = CurrentDirection;
+        TargetReleaseAngle = CurrentReleaseAngle;
+        ApplyCurrentDirectionToEntity();
+        AmmoCount = StartingAmmoCount - 1;
+        UpdateAmmoMesh();
+        if (MoveSound != null)
+        {
+            MoveSound.Stop();
+            MoveSound = null;
+        }
+
+        _hasFrameChangedInPreviousFrame = false;
+        Skeleton[] skeletons = Skeletons;
+        for (int i = 0; i < skeletons.Length; i++)
+        {
+            skeletons[i].Freeze(p: false);
+        }
+
+        foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)
+        {
+            ammoPickUpPoint.IsDeactivated = false;
+        }
+
+        InitAnimations();
+        UpdateProjectilePosition();
+        if (!GameNetwork.IsClientOrReplay)
+        {
+            SetActivationLoadAmmoPoint(activate: false);
+        }
+    }
+
+    public override void WriteToNetwork()
+    {
+        base.WriteToNetwork();
+        GameNetworkMessage.WriteIntToPacket((int)State, CompressionMission.RangedSiegeWeaponStateCompressionInfo);
+        GameNetworkMessage.WriteFloatToPacket(TargetDirection, CompressionBasic.RadianCompressionInfo);
+        GameNetworkMessage.WriteFloatToPacket(TargetReleaseAngle, CompressionBasic.RadianCompressionInfo);
+        GameNetworkMessage.WriteIntToPacket(AmmoCount, CompressionMission.RangedSiegeWeaponAmmoCompressionInfo);
+        GameNetworkMessage.WriteIntToPacket(_projectileIndex, CompressionMission.RangedSiegeWeaponAmmoIndexCompressionInfo);
+    }
+
+    protected virtual void UpdateProjectilePosition()
+    {
+    }
+
+    public override bool IsInRangeToCheckAlternativePoints(Agent agent)
+    {
+        float num = ((base.AmmoPickUpPoints.Count > 0) ? (agent.GetInteractionDistanceToUsable(base.AmmoPickUpPoints[0]) + 2f) : 2f);
+        return _ammoPickupCenter.DistanceSquared(agent.Position) < num * num;
+    }
+
+    public override StandingPoint GetBestPointAlternativeTo(StandingPoint standingPoint, Agent agent)
+    {
+        if (base.AmmoPickUpPoints.Contains(standingPoint))
+        {
+            IEnumerable<StandingPoint> enumerable = base.AmmoPickUpPoints.Where((StandingPoint sp) => !sp.IsDeactivated && (sp.IsInstantUse || (!sp.HasUser && !sp.HasAIMovingTo)) && !sp.IsDisabledForAgent(agent));
+            float num = standingPoint.GameEntity.GlobalPosition.DistanceSquared(agent.Position);
+            StandingPoint result = standingPoint;
+            {
+                foreach (StandingPoint item in enumerable)
+                {
+                    float num2 = item.GameEntity.GlobalPosition.DistanceSquared(agent.Position);
+                    if (num2 < num)
                     {
-                        if (standingPoint.GameEntity.HasTag("left") && this._rotateStandingPoints.Count > 0)
-                            this._rotateStandingPoints.Insert(0, standingPoint);
-                        else
-                            this._rotateStandingPoints.Add(standingPoint);
+                        num = num2;
+                        result = item;
                     }
                 }
-                WeakGameEntity gameEntity = this._body.GameEntity;
-                MatrixFrame frame = gameEntity.GetGlobalFrame();
-                this._standingPointLocalIKFrames = new MatrixFrame[this.StandingPoints.Count];
-                for (int index1 = 0; index1 < this.StandingPoints.Count; ++index1)
+
+                return result;
+            }
+        }
+
+        return standingPoint;
+    }
+
+    protected virtual void OnRangedSiegeWeaponStateChange()
+    {
+        switch (State)
+        {
+            case WeaponState.Reloading:
+                if (ReloadSound != null && ReloadSound.IsValid)
                 {
-                    MatrixFrame[] pointLocalIkFrames = this._standingPointLocalIKFrames;
-                    int index2 = index1;
-                    gameEntity = this.StandingPoints[index1].GameEntity;
-                    MatrixFrame localNonOrthogonal = gameEntity.GetGlobalFrame().TransformToLocalNonOrthogonal(in frame);
-                    pointLocalIkFrames[index2] = localNonOrthogonal;
-                    this.StandingPoints[index1].AddComponent((UsableMissionObjectComponent)new ClearHandInverseKinematicsOnStopUsageComponent());
-                }
-            }
-            _missileBoneIndex = Skeleton.GetBoneIndexFromName(SkeletonOwnerObjects[0].GameEntity.Skeleton.GetName(), _missileBoneName);
-            ApplyAimChange();
-
-            foreach (StandingPoint reloadStandingPoint in this.ReloadStandingPoints)
-            {
-                if (reloadStandingPoint != this.PilotStandingPoint)
-                    this._reloadWithoutPilot = reloadStandingPoint;
-            }
-            if (!GameNetwork.IsClientOrReplay)
-                this.SetActivationLoadAmmoPoint(false);
-            this.EnemyRangeToStopUsing = 7f;
-            this.SetScriptComponentToTick(this.GetTickRequirement());
-            if (this.AmmoPickUpPoints != null)
-            {
-                foreach (UsableMissionObject ammoPickUpPoint in this.AmmoPickUpPoints)
-                    ammoPickUpPoint.LockUserFrames = true;
-            }
-            this.UpdateProjectilePosition();            
-            //HitPoint = MaxHitPoint;
-            /*
-            var list = GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("rope");
-            
-            AmmoPickUpTag = null;
-            
-            if (list.Count > 0)
-            {
-                _rope = list[0];
-            }
-            
-            list = GameEntity.CollectScriptComponentsWithTagIncludingChildrenRecursive<SynchedMissionObject>("body");
-            _body = list.Count > 0 ? list[0] : this;
-            RotationObject = _body;
-            
-            var list2 = GameEntity.CollectChildrenEntitiesWithTag("vertical_adjuster");
-
-            _verticalAdjuster = list2[0];
-            
-            if (_verticalAdjuster.Skeleton != null)
-            {
-                _verticalAdjuster.Skeleton.SetAnimationAtChannel(MangonelAimAnimation, 0, 1f, -1f, 0f);
-            }
-            _verticalAdjusterStartingLocalFrame = _verticalAdjuster.GetFrame();
-            _verticalAdjusterStartingLocalFrame = _body.GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToLocal(_verticalAdjusterStartingLocalFrame);
-            base.OnInit();
-            this.InitiateMoveSynch();
-            HitPoint = MaxHitPoint;
-            LoadAmmoStandingPoint.InitRequiredWeaponClasses(new WeaponClass[] { OriginalMissileItem.PrimaryWeapon.WeaponClass });
-            LoadAmmoStandingPoint.InitRequiredWeapon(null);
-            LoadAmmoStandingPoint.InitGivenWeapon(null);
-            TimeGapBetweenShootActionAndProjectileLeaving = 0.23f;
-            TimeGapBetweenShootingEndAndReloadingStart = 0f;
-            _rotateStandingPoints = new List<StandingPoint>();
-            
-            if (StandingPoints != null)
-            {
-                foreach (StandingPoint standingPoint in base.StandingPoints)
-                {
-                    if (standingPoint.GameEntity.HasTag("rotate"))
+                    if (ReloadSound.IsPaused())
                     {
-                        if (standingPoint.GameEntity.HasTag("left") && _rotateStandingPoints.Count > 0)
-                        {
-                            _rotateStandingPoints.Insert(0, standingPoint);
-                        }
-                        else
-                        {
-                            _rotateStandingPoints.Add(standingPoint);
-                        }
-                    }
-                }
-                var globalFrame = _body.GameEntity.GetGlobalFrame();
-
-                _standingPointLocalIKFrames = new MatrixFrame[StandingPoints.Count];
-                
-                for (int i = 0; i < StandingPoints.Count; i++)
-                {
-                    _standingPointLocalIKFrames[i] = StandingPoints[i].GameEntity.GetGlobalFrame().TransformToLocal(globalFrame);
-                    StandingPoints[i].AddComponent(new ClearHandInverseKinematicsOnStopUsageComponent());
-                }
-            }
-
-            _missileBoneIndex = Skeleton.GetBoneIndexFromName(SkeletonOwnerObjects[0].GameEntity.Skeleton.GetName(), _missileBoneName);
-            ApplyAimChange();
-
-            foreach (var standingPoint2 in ReloadStandingPoints)
-            {
-                if (standingPoint2 != PilotStandingPoint)
-                {
-                    _reloadWithoutPilot = standingPoint2;
-                }
-            }
-            if (!GameNetwork.IsClientOrReplay)
-            {
-                // this.SetActivationLoadAmmoPoint(false);
-            }
-
-            EnemyRangeToStopUsing = 7f;
-            moverStandingPoint = GameEntity.GetFirstChildEntityWithTag(MoverStandingPointTag).GetFirstScriptOfType<StandingPoint>();
-            SetScriptComponentToTick(GetTickRequirement());
-            */
-            initCompleted = true;
-        }
-        // Token: 0x06002CC1 RID: 11457 RVA: 0x000AFE30 File Offset: 0x000AE030
-        //     public override void AfterMissionStart()
-        //     {
-        //         /*if (this.AmmoPickUpStandingPoints != null)
-        //{
-        //	foreach (StandingPointWithWeaponRequirement standingPointWithWeaponRequirement in this.AmmoPickUpStandingPoints)
-        //	{
-        //		standingPointWithWeaponRequirement.LockUserFrames = true;
-        //	}
-        //}*/
-        //         this.UpdateProjectilePosition();
-        //     }
-
-
-
-        protected override void UpdateAmmoMesh()
-        {
-            /*GameEntity gameEntity = this.AmmoPickUpStandingPoints[0].GameEntity;
-			int num = 20 - this.AmmoCount;
-			while (gameEntity.Parent != null)
-			{
-				for (int i = 0; i < gameEntity.MultiMeshComponentCount; i++)
-				{
-					MetaMesh metaMesh = gameEntity.GetMetaMesh(i);
-					for (int j = 0; j < metaMesh.MeshCount; j++)
-					{
-						metaMesh.GetMeshAtIndex(j).SetVectorArgument(0f, (float)num, 0f, 0f);
-					}
-				}
-				gameEntity = gameEntity.Parent;
-			}*/
-        }
-
-        public void PreInit()
-        {
-            
-        }
-        
-
-        // Token: 0x06002CC4 RID: 11460 RVA: 0x000B0180 File Offset: 0x000AE380
-        protected override void OnEditorInit()
-        {
-        }
-
-        public Agent GetPilotAgent()
-        {
-            StandingPoint pilotStandingPoint = this.moverStandingPoint;
-            if (pilotStandingPoint == null)
-            {
-                return null;
-            }
-            return pilotStandingPoint.UserAgent;
-        }
-
-        // Token: 0x06002CC5 RID: 11461 RVA: 0x000B0182 File Offset: 0x000AE382
-        protected override bool CanRotate()
-        {
-            return base.State == RangedSiegeWeapon.WeaponState.Idle || base.State == RangedSiegeWeapon.WeaponState.LoadingAmmo || base.State == RangedSiegeWeapon.WeaponState.WaitingBeforeIdle;
-        }
-
-        // Token: 0x06002CC6 RID: 11462 RVA: 0x000B01A0 File Offset: 0x000AE3A0
-        public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
-        {
-            if (base.GameEntity.IsVisibleIncludeParents())
-            {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel;
-            }
-            return base.GetTickRequirement();
-        }
-
-        protected void MoveControl()
-        {
-            if (GameNetwork.IsServer)
-            {
-                if (this.GetPilotAgent() != null)
-                {
-                    if (this.GetPilotAgent().Position.Distance(base.GameEntity.GlobalPosition) > 5f)
-                    {
-                        this.GetPilotAgent().StopUsingGameObjectMT(false);
-                    }
-                }
-            }
-
-            if (GameNetwork.IsClient)
-            {
-                if (Agent.Main != null && this.GetPilotAgent() == Agent.Main)
-                {
-                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.W))
-                    {
-                        this.RequestMovingForward();
-                    }
-                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.W))
-                    {
-                        this.RequestStopMovingForward();
-                    }
-                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.S))
-                    {
-                        this.RequestMovingBackward();
-                    }
-                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.S))
-                    {
-                        this.RequestStopMovingBackward();
-                    }
-                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.A))
-                    {
-                        this.RequestTurningLeft();
-                    }
-                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.A))
-                    {
-                        this.RequestStopTurningLeft();
-                    }
-                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.D))
-                    {
-                        this.RequestTurningRight();
-                    }
-                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.D))
-                    {
-                        this.RequestStopTurningRight();
-                    }
-                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.Space))
-                    {
-                        this.RequestMovingUp();
-                    }
-                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.Space))
-                    {
-                        this.RequestStopMovingUp();
-                    }
-                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.LeftShift))
-                    {
-                        this.RequestMovingDown();
-                    }
-                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.LeftShift))
-                    {
-                        this.RequestStopMovingDown();
-                    }
-                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.F))
-                    {
-                        GameNetwork.MyPeer.ControlledAgent.HandleStopUsingAction();
-                        ActionIndexCache ac = ActionIndexCache.act_none;
-                        this.GetPilotAgent().SetActionChannel(0, ac, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0, false, -0.2f, 0, true);
-                    }
-                }
-            }
-            if (this.GetPilotAgent() == null)
-            {
-                if (this.IsMovingBackward) this.StopMovingBackward();
-                if (this.IsMovingDown) this.StopMovingDown();
-                if (this.IsMovingForward) this.StopMovingForward();
-                if (this.IsMovingUp) this.StopMovingUp();
-                if (this.IsTurningLeft) this.StopTurningLeft();
-                if (this.IsTurningRight) this.StopTurningRight();
-            }
-        }
-
-        protected override void OnFixedTick(float fixedDt)
-        {
-            if (!initCompleted)
-            {
-                return;
-            }
-            base.OnFixedTick(fixedDt);
-        }
-
-        protected override void OnTickOccasionally(float currentFrameDeltaTime)
-        {
-            if (!initCompleted)
-            {
-                return;
-            }
-            base.OnTickOccasionally(currentFrameDeltaTime);
-        }
-
-        protected override void OnTickParallel2(float dt)
-        {
-            if (!initCompleted)
-            {
-                return;
-            }
-            base.OnTickParallel2(dt);
-        }
-
-        protected override void OnTickParallel3(float dt)
-        {
-            if (!initCompleted)
-            {
-                return;
-            }
-            base.OnTickParallel3(dt);
-        }
-
-        protected override void OnParallelFixedTick(float fixedDt)
-        {
-            if (!initCompleted)
-            {
-                return;
-            }
-            base.OnParallelFixedTick(fixedDt);
-        }
-
-        // Token: 0x06002CC7 RID: 11463 RVA: 0x000B01C0 File Offset: 0x000AE3C0
-        protected override void OnTick(float dt)
-        {
-            if(!initCompleted)
-            {
-                return;
-            }
-
-            base.OnTick(dt);
-            this.MoveControl();
-
-            if (GameNetwork.IsServer)
-            {
-                MatrixFrame frame = this.MoveObjectTick(dt);
-                base.SetFrameSynched(ref frame);
-            }
-
-
-            if (!base.GameEntity.IsVisibleIncludeParents())
-            {
-                return;
-            }
-#if SERVER
-            if (!GameNetwork.IsClientOrReplay)
-            {
-                foreach (StandingPointWithWeaponRequirement standingPointWithWeaponRequirement in this.AmmoPickUpPoints)
-                {
-                    if (standingPointWithWeaponRequirement.HasUser)
-                    {
-                        Agent userAgent = standingPointWithWeaponRequirement.UserAgent;
-                        ActionIndexCache currentAction = userAgent.GetCurrentAction(1);
-                        if (!(currentAction == PE_Mangonel.act_pickup_boulder_begin))
-                        {
-                            if (currentAction == PE_Mangonel.act_pickup_boulder_end)
-                            {
-                                MissionWeapon missionWeapon = new MissionWeapon(this.OriginalMissileItem, null, null, 1);
-                                userAgent.EquipWeaponToExtraSlotAndWield(ref missionWeapon);
-                                userAgent.StopUsingGameObject(true);
-                                this.ConsumeAmmo();
-                                if (userAgent.IsAIControlled)
-                                {
-                                    return;
-                                }
-                            }
-                            else if (!userAgent.SetActionChannel(1, PE_Mangonel.act_pickup_boulder_begin, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && userAgent.Controller != AgentControllerType.AI)
-                            {
-                                userAgent.StopUsingGameObject(true);
-                            }
-                        }
-                    }
-                }
-            }
-#endif
-            switch (base.State)
-            {
-                case RangedSiegeWeapon.WeaponState.LoadingAmmo:
-                    if (!GameNetwork.IsClientOrReplay)
-                    {
-                        if (this.LoadAmmoStandingPoint.HasUser)
-                        {
-                            Agent userAgent2 = this.LoadAmmoStandingPoint.UserAgent;
-                            if (userAgent2.GetCurrentAction(1) == this._loadAmmoEndAnimationActionIndex)
-                            {
-                                EquipmentIndex wieldedItemIndex = userAgent2.GetPrimaryWieldedItemIndex();// GetWieldedItemIndex(Agent.HandIndex.MainHand);
-                                Debug.Print(wieldedItemIndex.ToString());
-                                if (wieldedItemIndex != EquipmentIndex.None && userAgent2.Equipment[wieldedItemIndex].CurrentUsageItem.WeaponClass == this.OriginalMissileItem.PrimaryWeapon.WeaponClass)
-                                {
-                                    base.ChangeProjectileEntityServer(userAgent2, userAgent2.Equipment[wieldedItemIndex].Item.StringId);
-                                    userAgent2.RemoveEquippedWeapon(wieldedItemIndex);
-                                    this._timeElapsedAfterLoading = 0f;
-                                    base.Projectile.SetVisibleSynched(true, false);
-                                    base.State = RangedSiegeWeapon.WeaponState.WaitingBeforeIdle;
-                                    return;
-                                }
-                                userAgent2.StopUsingGameObject(true);
-                                if (!userAgent2.IsPlayerControlled)
-                                {
-                                    base.SendAgentToAmmoPickup(userAgent2);
-                                    return;
-                                }
-                            }
-                            else if (userAgent2.GetCurrentAction(1) != this._loadAmmoBeginAnimationActionIndex && !userAgent2.SetActionChannel(1, this._loadAmmoBeginAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true))
-                            {
-                                for (EquipmentIndex equipmentIndex = EquipmentIndex.WeaponItemBeginSlot; equipmentIndex < EquipmentIndex.NumAllWeaponSlots; equipmentIndex++)
-                                {
-                                    if (!userAgent2.Equipment[equipmentIndex].IsEmpty && userAgent2.Equipment[equipmentIndex].CurrentUsageItem.WeaponClass == this.OriginalMissileItem.PrimaryWeapon.WeaponClass)
-                                    {
-                                        userAgent2.RemoveEquippedWeapon(equipmentIndex);
-                                    }
-                                }
-                                userAgent2.StopUsingGameObject(true);
-                                if (!userAgent2.IsPlayerControlled)
-                                {
-                                    base.SendAgentToAmmoPickup(userAgent2);
-                                    return;
-                                }
-                            }
-                        }
-                        else if (this.LoadAmmoStandingPoint.HasAIMovingTo)
-                        {
-                            Agent movingAgent = this.LoadAmmoStandingPoint.MovingAgent;
-                            EquipmentIndex wieldedItemIndex2 = movingAgent.GetPrimaryWieldedItemIndex();// WieldedItemIndex(Agent.HandIndex.MainHand);
-                            if (wieldedItemIndex2 == EquipmentIndex.None || movingAgent.Equipment[wieldedItemIndex2].CurrentUsageItem.WeaponClass != this.OriginalMissileItem.PrimaryWeapon.WeaponClass)
-                            {
-                                movingAgent.StopUsingGameObject(true);
-                                base.SendAgentToAmmoPickup(movingAgent);
-                            }
-                        }
-                    }
-                    break;
-                case RangedSiegeWeapon.WeaponState.WaitingBeforeIdle:
-                    this._timeElapsedAfterLoading += dt;
-                    if (this._timeElapsedAfterLoading > 1f)
-                    {
-                        base.State = RangedSiegeWeapon.WeaponState.Idle;
-                        return;
-                    }
-                    break;
-                case RangedSiegeWeapon.WeaponState.Reloading:
-                case RangedSiegeWeapon.WeaponState.ReloadingPaused:
-                    break;
-                default:
-                    return;
-            }
-        }
-
-        protected override void ApplyCurrentDirectionToEntity()
-        {
-            /*MatrixFrame rotationObjectInitialFrame = this.RotationObject.GameEntity.GetFrame();
-			rotationObjectInitialFrame.rotation.RotateAboutUp(this.currentDirection);
-			this.RotationObject.GameEntity.SetFrame(ref rotationObjectInitialFrame);*/
-        }
-
-        // Token: 0x06002CC8 RID: 11464 RVA: 0x000B05F4 File Offset: 0x000AE7F4
-        protected override void OnTickParallel(float dt)
-        {
-            if (!initCompleted)
-            {
-                return;
-            }
-
-            base.OnTickParallel(dt);
-            if (!GameEntity.IsVisibleIncludeParents())
-            {
-                return;
-            }
-            if (State == RangedSiegeWeapon.WeaponState.WaitingBeforeProjectileLeaving)
-            {
-                UpdateProjectilePosition();
-            }
-            if (_verticalAdjuster.Skeleton != null)
-            {
-                float parameter = MBMath.ClampFloat((CurrentReleaseAngle - BottomReleaseAngleRestriction) / (TopReleaseAngleRestriction - BottomReleaseAngleRestriction), 0f, 1f);
-                _verticalAdjuster.Skeleton.SetAnimationParameterAtChannel(0, parameter);
-            }
-            var matrixFrame = SkeletonOwnerObjects[0].GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToParent(_verticalAdjusterStartingLocalFrame);
-            _verticalAdjuster.SetFrame(ref matrixFrame);
-            var globalFrame = _body.GameEntity.GetGlobalFrame();
-            for (int i = 0; i < StandingPoints.Count; i++)
-            {
-                if (StandingPoints[i].HasUser)
-                {
-                    if (StandingPoints[i].UserAgent.IsInBeingStruckAction)
-                    {
-                        StandingPoints[i].UserAgent.ClearHandInverseKinematics();
-                    }
-                    else if (StandingPoints[i] != PilotStandingPoint)
-                    {
-                        if (StandingPoints[i].UserAgent.GetCurrentAction(1) != _reload2IdleActionIndex)
-                        {
-                            StandingPoints[i].UserAgent.SetHandInverseKinematicsFrameForMissionObjectUsage(_standingPointLocalIKFrames[i], globalFrame, 0f);
-                        }
-                        else
-                        {
-                            StandingPoints[i].UserAgent.ClearHandInverseKinematics();
-                        }
+                        ReloadSound.Resume();
                     }
                     else
                     {
-                        StandingPoints[i].UserAgent.SetHandInverseKinematicsFrameForMissionObjectUsage(_standingPointLocalIKFrames[i], globalFrame, 0f);
-                    }
-                }
-            }
-            if (!GameNetwork.IsClientOrReplay)
-            {
-                for (int j = 0; j < _rotateStandingPoints.Count; j++)
-                {
-                    StandingPoint standingPoint = _rotateStandingPoints[j];
-                    if (standingPoint.HasUser && !standingPoint.UserAgent.SetActionChannel(1, (j == 0) ? _rotateLeftAnimationActionIndex : _rotateRightAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && standingPoint.UserAgent.Controller != AgentControllerType.AI)
-                    {
-                        standingPoint.UserAgent.StopUsingGameObjectMT(true);
-                    }
-                }
-                if (base.PilotAgent != null)
-                {
-                    ActionIndexCache currentAction = base.PilotAgent.GetCurrentAction(1);
-                    if (base.State == RangedSiegeWeapon.WeaponState.WaitingBeforeProjectileLeaving)
-                    {
-                        if (base.PilotAgent.IsInBeingStruckAction)
-                        {
-                            if (currentAction != ActionIndexCache.act_none && currentAction != PE_Mangonel.act_strike_bent_over)
-                            {
-                                base.PilotAgent.SetActionChannel(1, PE_Mangonel.act_strike_bent_over, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
-                            }
-                        }
-                        else if (!base.PilotAgent.SetActionChannel(1, this._shootAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && base.PilotAgent.Controller != AgentControllerType.AI)
-                        {
-                            base.PilotAgent.StopUsingGameObjectMT(true);
-                        }
-                    }
-                    else if (!base.PilotAgent.SetActionChannel(1, this._idleAnimationActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && currentAction != this._reload1AnimationActionIndex && currentAction != this._shootAnimationActionIndex && base.PilotAgent.Controller != AgentControllerType.AI)
-                    {
-                        base.PilotAgent.StopUsingGameObjectMT(true);
-                    }
-                }
-                if (this._reloadWithoutPilot.HasUser)
-                {
-                    Agent userAgent = this._reloadWithoutPilot.UserAgent;
-                    if (!userAgent.SetActionChannel(1, this._reload2IdleActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true) && userAgent.GetCurrentAction(1) != this._reload2AnimationActionIndex && userAgent.Controller != AgentControllerType.AI)
-                    {
-                        userAgent.StopUsingGameObjectMT(true);
-                    }
-                }
-            }
-            if (base.State == RangedSiegeWeapon.WeaponState.Reloading)
-            {
-                foreach (StandingPoint standingPoint2 in this.ReloadStandingPoints)
-                {
-                    if (standingPoint2.HasUser)
-                    {
-                        ActionIndexCache currentAction2 = standingPoint2.UserAgent.GetCurrentAction(1);
-                        if (currentAction2 == this._reload1AnimationActionIndex || currentAction2 == this._reload2AnimationActionIndex)
-                        {
-                            standingPoint2.UserAgent.SetCurrentActionProgress(1, this._body.GameEntity.Skeleton.GetAnimationParameterAtChannel(0));
-                        }
-                        else if (!GameNetwork.IsClientOrReplay)
-                        {
-                            ActionIndexCache actionIndexCache = (standingPoint2 == base.PilotStandingPoint) ? this._reload1AnimationActionIndex : this._reload2AnimationActionIndex;
-                            if (!standingPoint2.UserAgent.SetActionChannel(1, actionIndexCache, false, 0UL, 0f, 1f, -0.2f, 0.4f, this._body.GameEntity.Skeleton.GetAnimationParameterAtChannel(0), false, -0.2f, 0, true) && standingPoint2.UserAgent.Controller != AgentControllerType.AI)
-                            {
-                                standingPoint2.UserAgent.StopUsingGameObjectMT(true);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Token: 0x06002CC9 RID: 11465 RVA: 0x000B0B8C File Offset: 0x000AED8C
-        protected override void SetActivationLoadAmmoPoint(bool activate)
-        {
-            this.LoadAmmoStandingPoint.SetIsDeactivatedSynched(!activate);
-        }
-
-        // Token: 0x06002CCA RID: 11466 RVA: 0x000B0BA0 File Offset: 0x000AEDA0
-        protected override void UpdateProjectilePosition()
-        {
-            MatrixFrame boneEntitialFrameWithIndex = this.SkeletonOwnerObjects[0].GameEntity.GetBoneEntitialFrameWithIndex(this._missileBoneIndex);
-            base.Projectile.GameEntity.SetFrame(ref boneEntitialFrameWithIndex);
-        }
-
-        // Token: 0x06002CCB RID: 11467 RVA: 0x000B0BD8 File Offset: 0x000AEDD8
-        protected override void OnRangedSiegeWeaponStateChange()
-        {
-            base.OnRangedSiegeWeaponStateChange();
-            RangedSiegeWeapon.WeaponState state = base.State;
-            if (state != RangedSiegeWeapon.WeaponState.Idle)
-            {
-                if (state != RangedSiegeWeapon.WeaponState.Shooting)
-                {
-                    if (state == RangedSiegeWeapon.WeaponState.WaitingBeforeIdle)
-                    {
-                        this.UpdateProjectilePosition();
-                        return;
+                        ReloadSound.PlayInPosition(base.GameEntity.GetGlobalFrame().origin);
                     }
                 }
                 else
                 {
-                    if (!GameNetwork.IsClientOrReplay)
+                    ReloadSound = SoundEvent.CreateEvent(ReloadSoundIndex, base.Scene);
+                    ReloadSound.PlayInPosition(base.GameEntity.GetGlobalFrame().origin);
+                }
+
+                break;
+            case WeaponState.ReloadingPaused:
+                if (ReloadSound != null && ReloadSound.IsValid)
+                {
+                    ReloadSound.Pause();
+                }
+
+                break;
+            case WeaponState.WaitingBeforeProjectileLeaving:
+                AttackClickWillReload = WeaponNeedsClickToReload;
+                if (!GameNetwork.IsDedicatedServer)
+                {
+                    int fireSoundIndex = FireSoundIndex;
+                    MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
+                    SoundManager.StartOneShotEventWithIndex(fireSoundIndex, in globalFrame.origin);
+                }
+
+                break;
+            case WeaponState.Shooting:
+                if (CameraHolder != null)
+                {
+                    _cameraState = CameraState.DontMove;
+                    DontMoveTimer = 0.35f;
+                }
+
+                break;
+            case WeaponState.LoadingAmmo:
+                if (ReloadSound != null && ReloadSound.IsValid)
+                {
+                    ReloadSound.Stop();
+                }
+
+                ReloadSound = null;
+                break;
+            case WeaponState.WaitingAfterShooting:
+                AttackClickWillReload = WeaponNeedsClickToReload;
+                CheckAmmo();
+                break;
+            case WeaponState.WaitingBeforeReloading:
+                AttackClickWillReload = false;
+                if (CameraHolder != null && WeaponMovesDownToReload)
+                {
+                    _cameraState = CameraState.MoveDownToReload;
+                }
+
+                CheckAmmo();
+                break;
+            case WeaponState.Idle:
+            case WeaponState.WaitingBeforeIdle:
+                _cameraState = ((_cameraState == CameraState.FreeMove) ? CameraState.ApproachToCamera : CameraState.StickToWeapon);
+                break;
+            default:
+                Debug.FailedAssert("Invalid WeaponState.", "C:\\Develop\\MB3\\Source\\Bannerlord\\TaleWorlds.MountAndBlade\\Objects\\Siege\\RangedSiegeWeapon.cs", "OnRangedSiegeWeaponStateChange", 895);
+                break;
+        }
+
+        if (GameNetwork.IsClientOrReplay)
+        {
+            return;
+        }
+
+        switch (State)
+        {
+            case WeaponState.Reloading:
+                {
+                    for (int j = 0; j < SkeletonOwnerObjects.Length; j++)
                     {
-                        base.Projectile.SetVisibleSynched(false, false);
-                        return;
+                        if (SkeletonOwnerObjects[j].GameEntity.IsSkeletonAnimationPaused())
+                        {
+                            SkeletonOwnerObjects[j].ResumeSkeletonAnimationSynched();
+                        }
+                        else
+                        {
+                            SkeletonOwnerObjects[j].SetAnimationAtChannelSynched(SetUpAnimations[j], 0);
+                        }
                     }
-                    base.Projectile.GameEntity.SetVisibilityExcludeParents(false);
-                    return;
+
+                    _currentReloaderCount = 1;
+                    break;
                 }
+            case WeaponState.ReloadingPaused:
+                {
+                    SynchedMissionObject[] skeletonOwnerObjects = SkeletonOwnerObjects;
+                    for (int k = 0; k < skeletonOwnerObjects.Length; k++)
+                    {
+                        skeletonOwnerObjects[k].PauseSkeletonAnimationSynched();
+                    }
+
+                    break;
+                }
+            case WeaponState.WaitingBeforeProjectileLeaving:
+                {
+                    for (int i = 0; i < SkeletonOwnerObjects.Length; i++)
+                    {
+                        SkeletonOwnerObjects[i].SetAnimationAtChannelSynched(FireAnimations[i], 0);
+                    }
+
+                    break;
+                }
+            case WeaponState.Shooting:
+                ShootProjectile();
+                break;
+            case WeaponState.LoadingAmmo:
+                SetActivationLoadAmmoPoint(activate: true);
+                ReloaderAgent = null;
+                break;
+            case WeaponState.WaitingBeforeIdle:
+                SendReloaderAgentToOriginalPoint();
+                SetActivationLoadAmmoPoint(activate: false);
+                break;
+            default:
+                Debug.FailedAssert("Invalid WeaponState.", "C:\\Develop\\MB3\\Source\\Bannerlord\\TaleWorlds.MountAndBlade\\Objects\\Siege\\RangedSiegeWeapon.cs", "OnRangedSiegeWeaponStateChange", 971);
+                break;
+            case WeaponState.Idle:
+            case WeaponState.WaitingAfterShooting:
+            case WeaponState.WaitingBeforeReloading:
+                break;
+        }
+    }
+
+    protected virtual void SetActivationLoadAmmoPoint(bool activate)
+    {
+    }
+
+    protected override float GetDetachmentWeightAux(BattleSideEnum side)
+    {
+        if (!HasAmmo)
+        {
+            return float.MinValue;
+        }
+
+        return base.GetDetachmentWeightAux(side);
+    }
+
+    protected float GetDetachmentWeightAuxForExternalAmmoWeapons(BattleSideEnum side)
+    {
+        if (IsDisabledForBattleSideAI(side))
+        {
+            return float.MinValue;
+        }
+
+        _usableStandingPoints.Clear();
+        bool flag = false;
+        bool flag2 = false;
+        bool flag3 = !base.PilotStandingPoint.HasUser && !base.PilotStandingPoint.HasAIMovingTo && (ReloaderAgent == null || ReloaderAgentOriginalPoint != base.PilotStandingPoint);
+        int num = -1;
+        StandingPoint standingPoint = null;
+        bool flag4 = false;
+        for (int i = 0; i < base.StandingPoints.Count; i++)
+        {
+            StandingPoint standingPoint2 = base.StandingPoints[i];
+            if (!standingPoint2.GameEntity.HasTag("can_pick_up_ammo"))
+            {
+                continue;
+            }
+
+            if (ReloaderAgent == null || standingPoint2 != ReloaderAgentOriginalPoint)
+            {
+                if (standingPoint2.IsUsableBySide(side))
+                {
+                    if (!standingPoint2.HasAIMovingTo)
+                    {
+                        if (!flag2)
+                        {
+                            _usableStandingPoints.Clear();
+                            num = -1;
+                        }
+
+                        flag2 = true;
+                    }
+                    else if (flag2 || standingPoint2.MovingAgent.Formation.Team.Side != side)
+                    {
+                        continue;
+                    }
+
+                    flag = true;
+                    _usableStandingPoints.Add((i, standingPoint2));
+                    if (flag3 && base.PilotStandingPoint == standingPoint2)
+                    {
+                        num = _usableStandingPoints.Count - 1;
+                    }
+                }
+                else if (flag3 && standingPoint2.HasAIUser && (standingPoint == null || PilotReservePriorityValues[standingPoint2] > PilotReservePriorityValues[standingPoint] || flag4))
+                {
+                    standingPoint = standingPoint2;
+                    flag4 = false;
+                }
+            }
+            else if (flag3 && standingPoint == null)
+            {
+                standingPoint = standingPoint2;
+                flag4 = true;
+            }
+        }
+
+        if (standingPoint != null)
+        {
+            if (flag4)
+            {
+                ReloaderAgentOriginalPoint = base.PilotStandingPoint;
             }
             else
             {
-                if (!GameNetwork.IsClientOrReplay)
-                {
-                    base.Projectile.SetVisibleSynched(true, false);
-                    return;
-                }
-                base.Projectile.GameEntity.SetVisibilityExcludeParents(true);
+                Agent userAgent = standingPoint.UserAgent;
+                userAgent.StopUsingGameObjectMT(isSuccessful: true, Agent.StopUsingGameObjectFlags.DoNotWieldWeaponAfterStoppingUsingGameObject);
+                userAgent.AIMoveToGameObjectEnable(base.PilotStandingPoint, this, base.Ai.GetScriptedFrameFlags(userAgent));
+            }
+
+            if (num != -1)
+            {
+                _usableStandingPoints.RemoveAt(num);
             }
         }
 
-        // Token: 0x06002CCC RID: 11468 RVA: 0x000B0C51 File Offset: 0x000AEE51
-        protected override void GetSoundEventIndices()
+        _areUsableStandingPointsVacant = flag2;
+        if (!flag)
         {
-            this.MoveSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/move");
-            this.ReloadSoundIndex = SoundEvent.GetEventIdFromString("event:/mission/siege/mangonel/reload");
+            return float.MinValue;
         }
 
-        // Token: 0x17000800 RID: 2048
-        // (get) Token: 0x06002CCD RID: 11469 RVA: 0x000B0C74 File Offset: 0x000AEE74
-        protected override float HorizontalAimSensitivity
-        {
-            get
-            {
-                if (DefaultSide == BattleSideEnum.Defender)
-                {
-                    return 0.25f;
-                }
-
-                return 0.05f + (from rotateStandingPoint in this._rotateStandingPoints
-                                where rotateStandingPoint.HasUser && !rotateStandingPoint.UserAgent.IsInBeingStruckAction
-                                select rotateStandingPoint).Sum((StandingPoint rotateStandingPoint) => 0.1f);
-            }
-        }
-
-        // Token: 0x17000801 RID: 2049
-        // (get) Token: 0x06002CCE RID: 11470 RVA: 0x000B0CE3 File Offset: 0x000AEEE3
-        protected override float VerticalAimSensitivity
-        {
-            get
-            {
-                return 0.1f;
-            }
-        }
-
-        // Token: 0x17000802 RID: 2050
-        // (get) Token: 0x06002CCF RID: 11471 RVA: 0x000B0CEC File Offset: 0x000AEEEC
-        protected override Vec3 ShootingDirection
-        {
-            get
-            {
-                Mat3 rotation = this._body.GameEntity.GetGlobalFrame().rotation;
-                rotation.RotateAboutSide(-CurrentReleaseAngle);
-                return rotation.TransformToParent(new Vec3(0f, -1f, 0f, -1f));
-            }
-        }
-
-        // Token: 0x17000803 RID: 2051
-        // (get) Token: 0x06002CD0 RID: 11472 RVA: 0x000B0D40 File Offset: 0x000AEF40
-        /*protected override Vec3 VisualizationShootingDirection
-        {
-            get
-            {
-                Mat3 rotation = this._body.GameEntity.GetGlobalFrame().rotation;
-                rotation.RotateAboutSide(-this.VisualizeReleaseTrajectoryAngle);
-                return rotation.TransformToParent(new Vec3(0f, -1f, 0f, -1f));
-            }
-        }*/
-
-        // Token: 0x17000804 RID: 2052
-        // (get) Token: 0x06002CD1 RID: 11473 RVA: 0x000B0D91 File Offset: 0x000AEF91
-        // (set) Token: 0x06002CD2 RID: 11474 RVA: 0x000B0DBD File Offset: 0x000AEFBD
-        protected override bool HasAmmo
-        {
-            get
-            {
-                return base.HasAmmo || base.CurrentlyUsedAmmoPickUpPoint != null || this.LoadAmmoStandingPoint.HasUser || this.LoadAmmoStandingPoint.HasAIMovingTo;
-            }
-            set
-            {
-                base.HasAmmo = value;
-            }
-        }
-
-        public bool IsMovingForward { get; set; }
-        public bool IsMovingBackward { get; set; }
-        public bool IsTurningRight { get; set; }
-        public bool IsTurningLeft { get; set; }
-        public bool IsMovingUp { get; set; }
-        public bool IsMovingDown { get; set; }
-        public bool DestroyedByStoneOnly = false;
-        public float HitPoint;
-        public float MaxHitPoint = 200f;
-        public string ParticleEffectOnDestroy = "psys_siege_sturgia_wall_destruction";
-
-        public string SoundEffectOnDestroy = "event:/mission/siege/generic/stone_destroy";
-
-        // Token: 0x06002CD3 RID: 11475 RVA: 0x000B0DC8 File Offset: 0x000AEFC8
-        protected override void ApplyAimChange()
-        {
-            base.ApplyAimChange();
-            this.ShootingDirection.Normalize();
-        }
-
-        // Token: 0x06002CD4 RID: 11476 RVA: 0x000B0DEA File Offset: 0x000AEFEA
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
-        {
-            if (!gameEntity.HasTag(this.AmmoPickUpTag))
-            {
-                return new TextObject("{=NbpcDXtJ}Mangonel", null);
-            }
-            return new TextObject("{=pzfbPbWW}Boulder", null);
-        }
-
-        // Token: 0x06002CD5 RID: 11477 RVA: 0x000B0E1C File Offset: 0x000AF01C
-        public override TextObject GetActionTextForStandingPoint(UsableMissionObject usableGameObject)
-        {
-            TextObject textObject;
-            if (usableGameObject.GameEntity.HasTag("reload"))
-            {
-                textObject = new TextObject((base.PilotStandingPoint == usableGameObject) ? "{=fEQAPJ2e}{KEY} Use" : "{=Na81xuXn}{KEY} Rearm", null);
-            }
-            else if (usableGameObject.GameEntity.HasTag("rotate"))
-            {
-                textObject = new TextObject("{=5wx4BF5h}{KEY} Rotate", null);
-            }
-            else if (usableGameObject.GameEntity.HasTag(this.AmmoPickUpTag))
-            {
-                textObject = new TextObject("{=bNYm3K6b}{KEY} Pick Up", null);
-            }
-            else if (usableGameObject.GameEntity.HasTag("ammoload"))
-            {
-                textObject = new TextObject("{=ibC4xPoo}{KEY} Load Ammo", null);
-            }
-            else
-            {
-                textObject = new TextObject("{=fEQAPJ2e}{KEY} Use", null);
-            }
-            textObject.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
-            return textObject;
-        }
-
-        // Token: 0x06002CD6 RID: 11478 RVA: 0x000B0EE4 File Offset: 0x000AF0E4
-        public override TargetFlags GetTargetFlags()
-        {
-            TargetFlags targetFlags = TargetFlags.None;
-            targetFlags |= TargetFlags.IsFlammable;
-            targetFlags |= TargetFlags.IsSiegeEngine;
-            targetFlags |= TargetFlags.IsAttacker;
-            if (base.IsDestroyed || this.IsDeactivated)
-            {
-                targetFlags |= TargetFlags.NotAThreat;
-            }
-            if (this.Side == BattleSideEnum.Attacker && DebugSiegeBehavior.DebugDefendState == DebugSiegeBehavior.DebugStateDefender.DebugDefendersToMangonels)
-            {
-                targetFlags |= TargetFlags.DebugThreat;
-            }
-            if (this.Side == BattleSideEnum.Defender && DebugSiegeBehavior.DebugAttackState == DebugSiegeBehavior.DebugStateAttacker.DebugAttackersToMangonels)
-            {
-                targetFlags |= TargetFlags.DebugThreat;
-            }
-            return targetFlags;
-        }
-
-        // Token: 0x06002CD7 RID: 11479 RVA: 0x000B0F47 File Offset: 0x000AF147
-        public override float GetTargetValue(List<Vec3> weaponPos)
-        {
-            return 40f * base.GetUserMultiplierOfWeapon() * this.GetDistanceMultiplierOfWeapon(weaponPos[0]) * base.GetHitPointMultiplierOfWeapon();
-        }
-
-        // Token: 0x06002CD8 RID: 11480 RVA: 0x000B0F6C File Offset: 0x000AF16C
-        public override float ProcessTargetValue(float baseValue, TargetFlags flags)
-        {
-            if (flags.HasAnyFlag(TargetFlags.NotAThreat))
-            {
-                return -1000f;
-            }
-            if (flags.HasAnyFlag(TargetFlags.IsSiegeEngine))
-            {
-                baseValue *= 1.5f;
-            }
-            if (flags.HasAnyFlag(TargetFlags.IsStructure))
-            {
-                baseValue *= 2.5f;
-            }
-            if (flags.HasAnyFlag(TargetFlags.IsSmall))
-            {
-                baseValue *= 0.5f;
-            }
-            if (flags.HasAnyFlag(TargetFlags.IsMoving))
-            {
-                baseValue *= 0.8f;
-            }
-            if (flags.HasAnyFlag(TargetFlags.DebugThreat))
-            {
-                baseValue *= 10000f;
-            }
-            return baseValue;
-        }
-
-        // Token: 0x06002CD9 RID: 11481 RVA: 0x000B0FE9 File Offset: 0x000AF1E9
-        protected override float GetDetachmentWeightAux(BattleSideEnum side)
-        {
-            return base.GetDetachmentWeightAuxForExternalAmmoWeapons(side);
-        }
-
-        // Token: 0x06002CDA RID: 11482 RVA: 0x000B0FF2 File Offset: 0x000AF1F2
-        public void SetSpawnedFromSpawner()
-        {
-            this._spawnedFromSpawner = true;
-        }
-
-        public void OnSpawnedByPrefab(PE_PrefabSpawner spawner)
-        {
-            this._spawnedFromSpawner = true;
-        }
-
-        public UsableMachine GetAttachedObject()
-        {
-            return this;
-        }
-
-        public void SetFrameAfterTick(MatrixFrame frame)
-        {
-            this._setFrameAfterTick = frame;
-            this._frameSetFlag = true;
-        }
-
-        public float GetAdvanceSpeed()
+        if (flag2)
         {
             return 1f;
         }
 
-        public float GetRotationSpeed()
+        if (_isDetachmentRecentlyEvaluated)
         {
-            return 0.3f;
+            return 0.01f;
         }
 
-        public float GetElevationSpeed()
+        return 0.1f;
+    }
+
+    public override TickRequirement GetTickRequirement()
+    {
+        if (base.GameEntity.IsVisibleIncludeParents())
         {
-            return 1f;
+            return TickRequirement.Tick | base.GetTickRequirement();
         }
 
-        public bool GetCanAdvance()
+        return base.GetTickRequirement();
+    }
+
+    protected internal override void OnTick(float dt)
+    {
+        base.OnTick(dt);
+        if (!base.GameEntity.IsVisibleIncludeParents())
         {
-            return true;
+            return;
         }
 
-        public bool GetCanRotate()
+        if (!GameNetwork.IsClientOrReplay)
         {
-            return true;
-        }
-
-        public bool GetCanElevate()
-        {
-            return false;
-        }
-
-        public bool GetAlwaysAlignToTerritory()
-        {
-            return true;
-        }
-
-        public void SetHitPoint(float hitPoint, Vec3 impactDirection)
-        {
-
-            this.HitPoint = hitPoint;
-
-            MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
-            if (this.HitPoint > this.MaxHitPoint) this.HitPoint = this.MaxHitPoint;
-            if (this.HitPoint < 0) this.HitPoint = 0;
-
-            if (this.HitPoint == 0)
+            UpdateState(dt);
+            if (base.PilotAgent != null && !base.PilotAgent.IsInBeingStruckAction)
             {
-                for (int i = 0; i < base.StandingPoints.Count; i++)
+                if (base.PilotAgent.MovementFlags.HasAnyFlag(Agent.MovementControlFlag.AttackMask))
                 {
-                    if (this.StandingPoints[i].HasUser)
+                    if (State == WeaponState.Idle)
                     {
-                        this.StandingPoints[i].UserAgent.StopUsingGameObjectMT(false);
+                        _aiRequestsShoot = false;
+                        Shoot();
+                    }
+                    else if (State == WeaponState.WaitingAfterShooting && AttackClickWillReload)
+                    {
+                        _aiRequestsManualReload = false;
+                        ManualReload();
                     }
                 }
-                if (this.ParticleEffectOnDestroy != "")
+
+                if (_aiRequestsManualReload)
                 {
-                    Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnDestroy), globalFrame);
-                }
-                if (this.SoundEffectOnDestroy != "")
-                {
-                    Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
+                    ManualReload();
                 }
 
-                base.GameEntity.Remove(0);
+                if (_aiRequestsShoot)
+                {
+                    Shoot();
+                }
+            }
+
+            _aiRequestsShoot = false;
+            _aiRequestsManualReload = false;
+        }
+
+        HandleUserAiming(dt);
+    }
+
+    protected static bool ApproachToAngle(ref float angle, float angleToApproach, bool isMouse, float speed_limit, float dt, float sensitivity)
+    {
+        speed_limit = MathF.Abs(speed_limit);
+        if (angle != angleToApproach)
+        {
+            float num = sensitivity * dt;
+            float num2 = MathF.Abs(angle - angleToApproach);
+            if (isMouse)
+            {
+                num *= MathF.Max(num2 * 8f, 0.15f);
+            }
+
+            if (speed_limit > 0f)
+            {
+                num = MathF.Min(num, speed_limit * dt);
+            }
+
+            if (num2 <= num)
+            {
+                angle = angleToApproach;
+            }
+            else
+            {
+                angle += num * (float)MathF.Sign(angleToApproach - angle);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    protected virtual void HandleUserAiming(float dt)
+    {
+        bool flag = false;
+        float horizontalAimSensitivity = HorizontalAimSensitivity;
+        float verticalAimSensitivity = VerticalAimSensitivity;
+        bool flag2 = false;
+        if (_cameraState != CameraState.DontMove)
+        {
+            if (_inputGiven)
+            {
+                flag2 = true;
+                if (CanRotate())
+                {
+                    if (_inputX != 0f)
+                    {
+                        TargetDirection += horizontalAimSensitivity * dt * _inputX;
+                        TargetDirection = MBMath.WrapAngle(TargetDirection);
+                        TargetDirection = MBMath.ClampAngle(TargetDirection, CurrentDirection, 0.7f);
+                        TargetDirection = MBMath.ClampAngle(TargetDirection, 0f, DirectionRestriction);
+                    }
+
+                    if (_inputY != 0f)
+                    {
+                        TargetReleaseAngle += verticalAimSensitivity * dt * _inputY;
+                        TargetReleaseAngle = MBMath.ClampAngle(TargetReleaseAngle, CurrentReleaseAngle + 0.049999997f, 0.6f);
+                        TargetReleaseAngle = MBMath.ClampAngle(TargetReleaseAngle, ReleaseAngleRestrictionCenter, ReleaseAngleRestrictionAngle);
+                    }
+                }
+
+                _inputGiven = false;
+                _inputX = 0f;
+                _inputY = 0f;
+            }
+            else if (_exactInputGiven)
+            {
+                bool flag3 = false;
+                if (CanRotate())
+                {
+                    if (TargetDirection != _inputTargetX)
+                    {
+                        float num = horizontalAimSensitivity * dt;
+                        if (MathF.Abs(TargetDirection - _inputTargetX) < num)
+                        {
+                            TargetDirection = _inputTargetX;
+                        }
+                        else if (TargetDirection < _inputTargetX)
+                        {
+                            TargetDirection += num;
+                            flag3 = true;
+                        }
+                        else
+                        {
+                            TargetDirection -= num;
+                            flag3 = true;
+                        }
+
+                        TargetDirection = MBMath.WrapAngle(TargetDirection);
+                        TargetDirection = MBMath.ClampAngle(TargetDirection, CurrentDirection, 0.7f);
+                        TargetDirection = MBMath.ClampAngle(TargetDirection, 0f, DirectionRestriction);
+                    }
+
+                    if (TargetReleaseAngle != _inputTargetY)
+                    {
+                        float num2 = verticalAimSensitivity * dt;
+                        if (MathF.Abs(TargetReleaseAngle - _inputTargetY) < num2)
+                        {
+                            TargetReleaseAngle = _inputTargetY;
+                        }
+                        else if (TargetReleaseAngle < _inputTargetY)
+                        {
+                            TargetReleaseAngle += num2;
+                            flag3 = true;
+                        }
+                        else
+                        {
+                            TargetReleaseAngle -= num2;
+                            flag3 = true;
+                        }
+
+                        TargetReleaseAngle = MBMath.ClampAngle(TargetReleaseAngle, CurrentReleaseAngle + 0.049999997f, 0.6f);
+                        TargetReleaseAngle = MBMath.ClampAngle(TargetReleaseAngle, ReleaseAngleRestrictionCenter, ReleaseAngleRestrictionAngle);
+                    }
+                }
+                else
+                {
+                    flag3 = true;
+                }
+
+                if (!flag3)
+                {
+                    _exactInputGiven = false;
+                }
             }
         }
 
-
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
+        switch (_cameraState)
         {
-            reportDamage = true;
-            MissionWeapon missionWeapon = weapon;
-            WeaponComponentData currentUsageItem = missionWeapon.CurrentUsageItem;
-
-            if (this.DestroyedByStoneOnly)
-            {
-                if (currentUsageItem == null || (currentUsageItem.WeaponClass != WeaponClass.Stone && currentUsageItem.WeaponClass != WeaponClass.Boulder) || !currentUsageItem.WeaponFlags.HasAnyFlag(WeaponFlags.NotUsableWithOneHand))
+            case CameraState.StickToWeapon:
+                flag = ApproachToAngle(ref CurrentDirection, TargetDirection, UsesMouseForAiming, -1f, dt, horizontalAimSensitivity) || flag;
+                flag = ApproachToAngle(ref CurrentReleaseAngle, TargetReleaseAngle, UsesMouseForAiming, -1f, dt, verticalAimSensitivity) || flag;
+                CameraDirection = CurrentDirection;
+                CameraReleaseAngle = CurrentReleaseAngle;
+                break;
+            case CameraState.DontMove:
+                DontMoveTimer -= dt;
+                if (DontMoveTimer < 0f)
                 {
-                    damage = 0;
+                    if (!AttackClickWillReload && WeaponMovesDownToReload)
+                    {
+                        _cameraState = CameraState.MoveDownToReload;
+                        MaxRotateSpeed = 0f;
+                        ReloadTargetReleaseAngle = MBMath.ClampAngle((MathF.Abs(CurrentReleaseAngle) > 0.17453292f) ? 0f : CurrentReleaseAngle, CurrentReleaseAngle - 0.049999997f, 0.6f);
+                        TargetDirection = CameraDirection;
+                        CameraReleaseAngle = TargetReleaseAngle;
+                    }
+                    else
+                    {
+                        _cameraState = CameraState.StickToWeapon;
+                    }
+                }
+
+                break;
+            case CameraState.MoveDownToReload:
+                MaxRotateSpeed += dt * 1.2f;
+                MaxRotateSpeed = MathF.Min(MaxRotateSpeed, 1f);
+                flag = ApproachToAngle(ref CurrentReleaseAngle, ReloadTargetReleaseAngle, UsesMouseForAiming, 0.4f + MaxRotateSpeed, dt, verticalAimSensitivity) || flag;
+                flag = ApproachToAngle(ref CameraDirection, TargetDirection, UsesMouseForAiming, -1f, dt, horizontalAimSensitivity) || flag;
+                flag = ApproachToAngle(ref CameraReleaseAngle, ReloadTargetReleaseAngle, UsesMouseForAiming, 0.5f + MaxRotateSpeed, dt, verticalAimSensitivity) || flag;
+                if (!flag)
+                {
+                    _cameraState = CameraState.RememberLastShotDirection;
+                }
+
+                break;
+            case CameraState.RememberLastShotDirection:
+                if (State == WeaponState.Idle || flag2)
+                {
+                    _cameraState = CameraState.FreeMove;
+                    this.OnReloadDone?.Invoke();
+                }
+
+                break;
+            case CameraState.FreeMove:
+                flag = ApproachToAngle(ref CameraDirection, TargetDirection, UsesMouseForAiming, -1f, dt, horizontalAimSensitivity) || flag;
+                flag = ApproachToAngle(ref CameraReleaseAngle, TargetReleaseAngle, UsesMouseForAiming, -1f, dt, verticalAimSensitivity) || flag;
+                MaxRotateSpeed = 0f;
+                break;
+            case CameraState.ApproachToCamera:
+                MaxRotateSpeed += 0.9f * dt + MaxRotateSpeed * 2f * dt;
+                flag = ApproachToAngle(ref CameraDirection, TargetDirection, UsesMouseForAiming, -1f, dt, horizontalAimSensitivity) || flag;
+                flag = ApproachToAngle(ref CameraReleaseAngle, TargetReleaseAngle, UsesMouseForAiming, -1f, dt, verticalAimSensitivity) || flag;
+                flag = ApproachToAngle(ref CurrentDirection, TargetDirection, UsesMouseForAiming, MaxRotateSpeed, dt, horizontalAimSensitivity) || flag;
+                flag = ApproachToAngle(ref CurrentReleaseAngle, TargetReleaseAngle, UsesMouseForAiming, MaxRotateSpeed, dt, verticalAimSensitivity) || flag;
+                if (!flag)
+                {
+                    _cameraState = CameraState.StickToWeapon;
+                }
+
+                break;
+        }
+
+        if (CameraHolder != null)
+        {
+            MatrixFrame frame = _cameraHolderInitialFrame;
+            frame.rotation.RotateAboutForward(CameraDirection - CurrentDirection);
+            frame.rotation.RotateAboutSide(CameraReleaseAngle - CurrentReleaseAngle);
+            CameraHolder.SetFrame(ref frame);
+            frame = CameraHolder.GetGlobalFrame();
+            frame.rotation.s.z = 0f;
+            frame.rotation.s.Normalize();
+            frame.rotation.u = Vec3.CrossProduct(frame.rotation.s, frame.rotation.f);
+            frame.rotation.u.Normalize();
+            frame.rotation.f = Vec3.CrossProduct(frame.rotation.u, frame.rotation.s);
+            frame.rotation.f.Normalize();
+            CameraHolder.SetGlobalFrame(in frame);
+        }
+
+        if (flag && !_hasFrameChangedInPreviousFrame)
+        {
+            OnRotationStarted();
+        }
+        else if (!flag && _hasFrameChangedInPreviousFrame)
+        {
+            OnRotationStopped();
+        }
+
+        _hasFrameChangedInPreviousFrame = flag;
+        if ((flag && GameNetwork.IsClient && base.PilotAgent == Agent.Main) || GameNetwork.IsServerOrRecorder)
+        {
+            float num3 = ((GameNetwork.IsClient && base.PilotAgent == Agent.Main) ? 0.0001f : 0.02f);
+            if (_syncTimer > 0.2f && (MathF.Abs(CurrentDirection - _lastSyncedDirection) > num3 || MathF.Abs(CurrentReleaseAngle - _lastSyncedReleaseAngle) > num3))
+            {
+                _lastSyncedDirection = CurrentDirection;
+                _lastSyncedReleaseAngle = CurrentReleaseAngle;
+                MissionLobbyComponent missionBehavior = Mission.Current.GetMissionBehavior<MissionLobbyComponent>();
+                if ((missionBehavior == null || missionBehavior.CurrentMultiplayerState != MissionLobbyComponent.MultiplayerGameState.Ending) && GameNetwork.IsClient && base.PilotAgent == Agent.Main)
+                {
+                    GameNetwork.BeginModuleEventAsClient();
+                    GameNetwork.WriteMessage(new SetMachineRotation(base.Id, CurrentDirection, CurrentReleaseAngle));
+                    GameNetwork.EndModuleEventAsClient();
+                }
+
+                if (GameNetwork.IsServerOrRecorder)
+                {
+                    GameNetwork.BeginBroadcastModuleEvent();
+                    GameNetwork.WriteMessage(new SetMachineTargetRotation(base.Id, CurrentDirection, CurrentReleaseAngle));
+                    GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.ExcludeTargetPlayer | GameNetwork.EventBroadcastFlags.AddToMissionRecord, base.PilotAgent?.MissionPeer?.GetNetworkPeer());
                 }
             }
-            if (impactDirection == null) impactDirection = Vec3.Zero;
+        }
 
+        _syncTimer += dt;
+        if (_syncTimer >= 1f)
+        {
+            _syncTimer -= 1f;
+        }
 
-            this.SetHitPoint(this.HitPoint - damage, impactDirection);
-            if (GameNetwork.IsServer)
-            {
-                LoggerHelper.LogAnAction(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerHitToDestructable, null, new object[] { this.GetType().Name });
-            }
-            
-            finalDamage = damage;
+        if (flag)
+        {
+            ApplyAimChange();
+        }
+    }
 
+    public void GiveInput(float inputX, float inputY)
+    {
+        _exactInputGiven = false;
+        _inputGiven = true;
+        _inputX = inputX;
+        _inputY = inputY;
+        _inputX = MBMath.ClampFloat(_inputX, -1f, 1f);
+        _inputY = MBMath.ClampFloat(_inputY, -1f, 1f);
+    }
+
+    public void GiveExactInput(float targetX, float targetY)
+    {
+        _exactInputGiven = true;
+        _inputGiven = false;
+        _inputTargetX = MBMath.ClampAngle(targetX, 0f, DirectionRestriction);
+        _inputTargetY = MBMath.ClampAngle(targetY, ReleaseAngleRestrictionCenter, ReleaseAngleRestrictionAngle);
+    }
+
+    protected virtual bool CanRotate()
+    {
+        return State == WeaponState.Idle;
+    }
+
+    protected virtual void ApplyAimChange()
+    {
+        if (CanRotate())
+        {
+            ApplyCurrentDirectionToEntity();
+            return;
+        }
+
+        TargetDirection = CurrentDirection;
+        TargetReleaseAngle = CurrentReleaseAngle;
+    }
+
+    protected virtual void ApplyCurrentDirectionToEntity()
+    {
+        MatrixFrame frame = _rotationObjectInitialFrame;
+        frame.rotation.RotateAboutUp(CurrentDirection);
+        RotationObject.GameEntity.SetFrame(ref frame);
+    }
+
+    public virtual float GetTargetReleaseAngle(Vec3 target)
+    {
+        return Mission.GetMissileVerticalAimCorrection(target - MissileStartingGlobalPositionForSimulation, ShootingSpeed, ref OriginalMissileWeaponStatsDataForTargeting, ItemObject.GetAirFrictionConstant(OriginalMissileItem.PrimaryWeapon.WeaponClass, OriginalMissileItem.PrimaryWeapon.WeaponFlags));
+    }
+
+    private void CalculateLocalAnglesFromGlobalDirection(Vec3 globalDirection, out float localTargetDirection, out float localTargetAngle)
+    {
+        globalDirection.Normalize();
+        MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
+        if (!globalFrame.rotation.IsUnit())
+        {
+            globalFrame.rotation.Orthonormalize();
+        }
+
+        globalFrame.rotation.RotateAboutAnArbitraryVector(in globalFrame.rotation.u, (float)Math.PI);
+        Vec3 vec = globalFrame.rotation.TransformToLocal(in globalDirection);
+        localTargetDirection = vec.AsVec2.RotationInRadians;
+        localTargetAngle = MathF.Atan2(vec.z, MathF.Sqrt(vec.x * vec.x + vec.y * vec.y));
+    }
+
+    private void CalculateLocalDirectionAndLocalAngleToShootTarget(Vec3 target, out float localTargetDirection, out float localTargetAngle)
+    {
+        float targetReleaseAngle = GetTargetReleaseAngle(target);
+        if (targetReleaseAngle > (float)Math.PI / 2f)
+        {
+            localTargetDirection = (float)Math.PI;
+            localTargetAngle = (float)Math.PI;
+            return;
+        }
+
+        Vec3 globalDirection = new Vec3((target - MissileStartingGlobalPositionForSimulation).AsVec2).NormalizedCopy();
+        globalDirection += new Vec3(0f, 0f, MathF.Sin(targetReleaseAngle));
+        globalDirection.Normalize();
+        Vec3 globalVelocity = GetGlobalVelocity();
+        globalDirection *= ShootingSpeed;
+        globalDirection -= new Vec3(globalVelocity.AsVec2);
+        globalDirection.Normalize();
+        CalculateLocalAnglesFromGlobalDirection(globalDirection, out localTargetDirection, out localTargetAngle);
+    }
+
+    public virtual bool AimAtThreat(Threat threat)
+    {
+        Vec3 estimatedTargetGlobalPoint = GetEstimatedTargetGlobalPoint(threat);
+        return AimAtTarget(estimatedTargetGlobalPoint);
+    }
+
+    public bool AimAtTarget(Vec3 target)
+    {
+        CalculateLocalDirectionAndLocalAngleToShootTarget(target, out var localTargetDirection, out var localTargetAngle);
+        if (localTargetDirection >= (float)Math.PI)
+        {
             return false;
         }
 
-        // Token: 0x040011A6 RID: 4518
-        private const string BodyTag = "body";
+        if (!_exactInputGiven || localTargetDirection != _inputTargetX || localTargetAngle != _inputTargetY)
+        {
+            GiveExactInput(localTargetDirection, localTargetAngle);
+        }
 
-        // Token: 0x040011A7 RID: 4519
-        private const string RopeTag = "rope";
+        return CheckIsTargetReached(target);
+    }
 
-        // Token: 0x040011A8 RID: 4520
-        private const string RotateTag = "rotate";
+    public virtual bool CheckIsTargetReached(Vec3 target)
+    {
+        if (MathF.Abs(CurrentDirection - _inputTargetX) < 0.001f)
+        {
+            return MathF.Abs(CurrentReleaseAngle - _inputTargetY) < 0.001f;
+        }
 
-        // Token: 0x040011A9 RID: 4521
-        private const string LeftTag = "left";
+        return false;
+    }
 
-        // Token: 0x040011AA RID: 4522
-        private const string VerticalAdjusterTag = "vertical_adjuster";
+    public Vec3 GetEstimatedTargetGlobalPoint(Threat threat)
+    {
+        Vec3 targetingPosition = threat.TargetingPosition;
+        return targetingPosition + GetEstimatedTargetMovementVector(targetingPosition, threat.GetGlobalVelocity());
+    }
 
-        // Token: 0x040011AB RID: 4523
-        private static readonly ActionIndexCache act_usage_mangonel_idle = ActionIndexCache.Create("act_usage_mangonel_idle");
+    public Vec3 GetEstimatedTargetGlobalPointForAgent(Agent agent)
+    {
+        return agent.CollisionCapsuleCenter + GetEstimatedTargetMovementVector(agent.CollisionCapsuleCenter, agent.GetAverageRealGlobalVelocity());
+    }
 
-        // Token: 0x040011AC RID: 4524
-        private static readonly ActionIndexCache act_usage_mangonel_load_ammo_begin = ActionIndexCache.Create("act_usage_mangonel_load_ammo_begin");
+    public virtual void AimAtRotation(float horizontalRotation, float verticalRotation)
+    {
+        horizontalRotation = MBMath.ClampFloat(horizontalRotation, -(float)Math.PI, (float)Math.PI);
+        verticalRotation = MBMath.ClampFloat(verticalRotation, -(float)Math.PI, (float)Math.PI);
+        horizontalRotation = MBMath.ClampAngle(horizontalRotation, 0f, DirectionRestriction);
+        verticalRotation = MBMath.ClampAngle(verticalRotation, ReleaseAngleRestrictionCenter, ReleaseAngleRestrictionAngle);
+        if (!_exactInputGiven || horizontalRotation != _inputTargetX || verticalRotation != _inputTargetY)
+        {
+            GiveExactInput(horizontalRotation, verticalRotation);
+        }
+    }
 
-        // Token: 0x040011AD RID: 4525
-        private static readonly ActionIndexCache act_usage_mangonel_load_ammo_end = ActionIndexCache.Create("act_usage_mangonel_load_ammo_end");
+    protected void OnLoadingAmmoPointUsingCancelled(Agent agent, bool isCanceledBecauseOfAnimation)
+    {
+        if (agent.IsAIControlled)
+        {
+            if (isCanceledBecauseOfAnimation)
+            {
+                SendAgentToAmmoPickup(agent);
+            }
+            else
+            {
+                SendReloaderAgentToOriginalPoint();
+            }
+        }
+    }
 
-        // Token: 0x040011AE RID: 4526
-        private static readonly ActionIndexCache act_pickup_boulder_begin = ActionIndexCache.Create("act_pickup_boulder_begin");
+    protected void OnAmmoPickupUsingCancelled(Agent agent, bool isCanceledBecauseOfAnimation)
+    {
+        if (agent.IsAIControlled)
+        {
+            SendAgentToAmmoPickup(agent);
+        }
+    }
 
-        // Token: 0x040011AF RID: 4527
-        private static readonly ActionIndexCache act_pickup_boulder_end = ActionIndexCache.Create("act_pickup_boulder_end");
+    protected void SendAgentToAmmoPickup(Agent agent)
+    {
+        ReloaderAgent = agent;
+        EquipmentIndex primaryWieldedItemIndex = agent.GetPrimaryWieldedItemIndex();
+        if (primaryWieldedItemIndex != EquipmentIndex.None && agent.Equipment[primaryWieldedItemIndex].CurrentUsageItem.WeaponClass == OriginalMissileItem.PrimaryWeapon.WeaponClass)
+        {
+            agent.AIMoveToGameObjectEnable(LoadAmmoStandingPoint, this, base.Ai.GetScriptedFrameFlags(agent));
+            return;
+        }
 
-        // Token: 0x040011B0 RID: 4528
-        private static readonly ActionIndexCache act_usage_mangonel_reload = ActionIndexCache.Create("act_usage_mangonel_reload");
+        StandingPoint standingPoint = base.AmmoPickUpPoints.FirstOrDefault((StandingPoint x) => !x.HasUser);
+        if (standingPoint != null)
+        {
+            agent.AIMoveToGameObjectEnable(standingPoint, this, base.Ai.GetScriptedFrameFlags(agent));
+        }
+        else
+        {
+            SendReloaderAgentToOriginalPoint();
+        }
+    }
 
-        // Token: 0x040011B1 RID: 4529
-        private static readonly ActionIndexCache act_usage_mangonel_reload_2 = ActionIndexCache.Create("act_usage_mangonel_reload_2");
+    protected void SendReloaderAgentToOriginalPoint()
+    {
+        if (ReloaderAgent == null)
+        {
+            return;
+        }
 
-        // Token: 0x040011B2 RID: 4530
-        private static readonly ActionIndexCache act_usage_mangonel_reload_2_idle = ActionIndexCache.Create("act_usage_mangonel_reload_2_idle");
+        if (ReloaderAgentOriginalPoint != null && !ReloaderAgentOriginalPoint.HasAIMovingTo && !ReloaderAgentOriginalPoint.HasUser)
+        {
+            if (ReloaderAgent.InteractingWithAnyGameObject())
+            {
+                ReloaderAgent.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.None);
+            }
 
-        // Token: 0x040011B3 RID: 4531
-        private static readonly ActionIndexCache act_usage_mangonel_rotate_left = ActionIndexCache.Create("act_usage_mangonel_rotate_left");
+            ReloaderAgent.AIMoveToGameObjectEnable(ReloaderAgentOriginalPoint, this, base.Ai.GetScriptedFrameFlags(ReloaderAgent));
+        }
+        else if (ReloaderAgentOriginalPoint == null || (ReloaderAgentOriginalPoint.MovingAgent != ReloaderAgent && ReloaderAgentOriginalPoint.UserAgent != ReloaderAgent))
+        {
+            if (ReloaderAgent.IsUsingGameObject)
+            {
+                ReloaderAgent.StopUsingGameObject();
+            }
 
-        // Token: 0x040011B4 RID: 4532
-        private static readonly ActionIndexCache act_usage_mangonel_rotate_right = ActionIndexCache.Create("act_usage_mangonel_rotate_right");
+            ReloaderAgent = null;
+        }
+    }
 
-        // Token: 0x040011B5 RID: 4533
-        private static readonly ActionIndexCache act_usage_mangonel_shoot = ActionIndexCache.Create("act_usage_mangonel_shoot");
+    private void UpdateState(float dt)
+    {
+        if (LoadAmmoStandingPoint != null)
+        {
+            if (ReloaderAgent != null)
+            {
+                if (!ReloaderAgent.IsActive() || ReloaderAgent.Detachment != this)
+                {
+                    ReloaderAgent = null;
+                }
+                else if (ReloaderAgentOriginalPoint.UserAgent == ReloaderAgent)
+                {
+                    ReloaderAgent = null;
+                }
+            }
 
-        // Token: 0x040011B6 RID: 4534
-        private static readonly ActionIndexCache act_usage_mangonel_big_idle = ActionIndexCache.Create("act_usage_mangonel_big_idle");
+            if (State == WeaponState.LoadingAmmo && ReloaderAgent == null && !LoadAmmoStandingPoint.HasUser)
+            {
+                SortCanPickUpAmmoStandingPoints();
+                StandingPoint standingPoint = null;
+                StandingPoint standingPoint2 = null;
+                foreach (StandingPoint canPickUpAmmoStandingPoint in CanPickUpAmmoStandingPoints)
+                {
+                    if (canPickUpAmmoStandingPoint.HasUser && canPickUpAmmoStandingPoint.UserAgent.IsAIControlled)
+                    {
+                        if (canPickUpAmmoStandingPoint != base.PilotStandingPoint)
+                        {
+                            standingPoint = canPickUpAmmoStandingPoint;
+                            break;
+                        }
 
-        // Token: 0x040011B7 RID: 4535
-        private static readonly ActionIndexCache act_usage_mangonel_big_shoot = ActionIndexCache.Create("act_usage_mangonel_big_shoot");
+                        standingPoint2 = canPickUpAmmoStandingPoint;
+                    }
+                }
 
-        // Token: 0x040011B8 RID: 4536
-        private static readonly ActionIndexCache act_usage_mangonel_big_reload = ActionIndexCache.Create("act_usage_mangonel_big_reload");
+                if (standingPoint == null && standingPoint2 != null)
+                {
+                    standingPoint = standingPoint2;
+                }
 
-        // Token: 0x040011B9 RID: 4537
-        private static readonly ActionIndexCache act_usage_mangonel_big_load_ammo_begin = ActionIndexCache.Create("act_usage_mangonel_big_load_ammo_begin");
+                if (standingPoint != null)
+                {
+                    if (HasAmmo)
+                    {
+                        Agent userAgent = standingPoint.UserAgent;
+                        userAgent.StopUsingGameObject(isSuccessful: true, Agent.StopUsingGameObjectFlags.DoNotWieldWeaponAfterStoppingUsingGameObject);
+                        ReloaderAgentOriginalPoint = standingPoint;
+                        SendAgentToAmmoPickup(userAgent);
+                    }
+                    else
+                    {
+                        base.IsDisabledForAI = true;
+                    }
+                }
+            }
+        }
 
-        // Token: 0x040011BA RID: 4538
-        private static readonly ActionIndexCache act_usage_mangonel_big_load_ammo_end = ActionIndexCache.Create("act_usage_mangonel_big_load_ammo_end");
+        switch (State)
+        {
+            case WeaponState.Reloading:
+                {
+                    int num = 0;
+                    if (ReloadStandingPoints.Count == 0)
+                    {
+                        if (base.PilotAgent != null && !base.PilotAgent.IsInBeingStruckAction)
+                        {
+                            num = 1;
+                        }
+                    }
+                    else
+                    {
+                        foreach (StandingPoint reloadStandingPoint in ReloadStandingPoints)
+                        {
+                            if (reloadStandingPoint.HasUser && !reloadStandingPoint.UserAgent.IsInBeingStruckAction)
+                            {
+                                num++;
+                            }
+                        }
+                    }
 
-        // Token: 0x040011BB RID: 4539
-        private static readonly ActionIndexCache act_strike_bent_over = ActionIndexCache.Create("act_strike_bent_over");
+                    if (num == 0)
+                    {
+                        State = WeaponState.ReloadingPaused;
+                        break;
+                    }
 
-        // Token: 0x040011BC RID: 4540
-        private string _missileBoneName = "end_throwarm";
+                    if (_currentReloaderCount != num)
+                    {
+                        _currentReloaderCount = num;
+                        float animationSpeed = MathF.Sqrt(_currentReloaderCount);
+                        for (int j = 0; j < SkeletonOwnerObjects.Length; j++)
+                        {
+                            float animationParameterAtChannel2 = SkeletonOwnerObjects[j].GameEntity.Skeleton.GetAnimationParameterAtChannel(0);
+                            SkeletonOwnerObjects[j].SetAnimationAtChannelSynched(SetUpAnimations[j], 0, animationSpeed);
+                            if (animationParameterAtChannel2 > 0f)
+                            {
+                                SkeletonOwnerObjects[j].SetAnimationChannelParameterSynched(0, animationParameterAtChannel2);
+                            }
+                        }
+                    }
 
-        // Token: 0x040011BD RID: 4541
-        private List<StandingPoint> _rotateStandingPoints;
+                    for (int k = 0; k < Skeletons.Length; k++)
+                    {
+                        int animationIndexAtChannel2 = Skeletons[k].GetAnimationIndexAtChannel(0);
+                        float animationParameterAtChannel3 = Skeletons[k].GetAnimationParameterAtChannel(0);
+                        Skeletons[k].SetAnimationSpeedAtChannel(0, FinalReloadSpeed * ReloadSpeedMultiplier);
+                        if (animationIndexAtChannel2 == SetUpAnimationIndices[k] && animationParameterAtChannel3 >= 0.9999f)
+                        {
+                            State = WeaponState.LoadingAmmo;
+                            _animationTimeElapsed = 0f;
+                        }
+                    }
 
-        // Token: 0x040011BE RID: 4542
-        private SynchedMissionObject _body;
+                    break;
+                }
+            case WeaponState.ReloadingPaused:
+                if (ReloadStandingPoints.Count == 0)
+                {
+                    if (base.PilotAgent != null && !base.PilotAgent.IsInBeingStruckAction)
+                    {
+                        State = WeaponState.Reloading;
+                    }
 
-        // Token: 0x040011BF RID: 4543
-        private SynchedMissionObject _rope;
+                    break;
+                }
 
-        // Token: 0x040011C0 RID: 4544
-        private WeakGameEntity _verticalAdjuster;
-        
-        private Skeleton _verticalAdjusterSkeleton;
+                {
+                    foreach (StandingPoint reloadStandingPoint2 in ReloadStandingPoints)
+                    {
+                        if (reloadStandingPoint2.HasUser && !reloadStandingPoint2.UserAgent.IsInBeingStruckAction)
+                        {
+                            State = WeaponState.Reloading;
+                            break;
+                        }
+                    }
 
-        // Token: 0x040011C1 RID: 4545
-        private MatrixFrame _verticalAdjusterStartingLocalFrame;
+                    break;
+                }
+            case WeaponState.WaitingBeforeReloading:
+                _animationTimeElapsed += dt;
+                if (!HasAmmo)
+                {
+                    SetIsDisabledForAI(isDisabledForAI: true);
+                }
+                else
+                {
+                    if (!(_animationTimeElapsed >= TimeGapBetweenShootingEndAndReloadingStart) || (_cameraState != CameraState.RememberLastShotDirection && _cameraState != CameraState.FreeMove && _cameraState != 0 && !(CameraHolder == null)))
+                    {
+                        break;
+                    }
 
-        // Token: 0x040011C2 RID: 4546
-        private float _timeElapsedAfterLoading;
+                    if (ReloadStandingPoints.Count != 0)
+                    {
+                        {
+                            foreach (StandingPoint reloadStandingPoint3 in ReloadStandingPoints)
+                            {
+                                if (reloadStandingPoint3.HasUser && !reloadStandingPoint3.UserAgent.IsInBeingStruckAction)
+                                {
+                                    State = WeaponState.Reloading;
+                                    break;
+                                }
+                            }
 
-        // Token: 0x040011C3 RID: 4547
-        private MatrixFrame[] _standingPointLocalIKFrames;
+                            break;
+                        }
+                    }
 
-        // Token: 0x040011C4 RID: 4548
-        private StandingPoint _reloadWithoutPilot;
-        private StandingPoint moverStandingPoint;
-        public string MoverStandingPointTag = "mover";
-        // Token: 0x040011C5 RID: 4549
-        public string MangonelBodySkeleton = "mangonel_skeleton";
+                    if (base.PilotAgent != null && !base.PilotAgent.IsInBeingStruckAction)
+                    {
+                        State = WeaponState.Reloading;
+                    }
+                }
 
-        // Token: 0x040011C6 RID: 4550
-        public string MangonelBodyFire = "mangonel_fire";
+                break;
+            case WeaponState.WaitingBeforeProjectileLeaving:
+                _animationTimeElapsed += dt;
+                if (_animationTimeElapsed >= TimeGapBetweenShootActionAndProjectileLeaving)
+                {
+                    State = WeaponState.Shooting;
+                }
 
-        // Token: 0x040011C7 RID: 4551
-        public string MangonelBodyReload = "mangonel_set_up";
+                break;
+            case WeaponState.Shooting:
+                {
+                    for (int i = 0; i < Skeletons.Length; i++)
+                    {
+                        int animationIndexAtChannel = Skeletons[i].GetAnimationIndexAtChannel(0);
+                        float animationParameterAtChannel = Skeletons[i].GetAnimationParameterAtChannel(0);
+                        if (animationIndexAtChannel == FireAnimationIndices[i] && animationParameterAtChannel >= 0.9999f)
+                        {
+                            State = ((!AttackClickWillReload) ? WeaponState.WaitingBeforeReloading : WeaponState.WaitingAfterShooting);
+                            _animationTimeElapsed = 0f;
+                        }
+                    }
 
-        // Token: 0x040011C8 RID: 4552
-        public string MangonelRopeFire = "mangonel_holder_fire";
+                    break;
+                }
+            default:
+                Debug.FailedAssert("Invalid WeaponState.", "C:\\Develop\\MB3\\Source\\Bannerlord\\TaleWorlds.MountAndBlade\\Objects\\Siege\\RangedSiegeWeapon.cs", "UpdateState", 2001);
+                break;
+            case WeaponState.Idle:
+            case WeaponState.WaitingAfterShooting:
+            case WeaponState.LoadingAmmo:
+            case WeaponState.WaitingBeforeIdle:
+                break;
+        }
+    }
 
-        // Token: 0x040011C9 RID: 4553
-        public string MangonelRopeReload = "mangonel_holder_set_up";
+    public bool Shoot()
+    {
+        LastShooterAgent = base.PilotAgent;
+        if (State == WeaponState.Idle)
+        {
+            State = WeaponState.WaitingBeforeProjectileLeaving;
+            if (!GameNetwork.IsClientOrReplay)
+            {
+                _animationTimeElapsed = 0f;
+            }
 
-        // Token: 0x040011CA RID: 4554
-        public string MangonelAimAnimation = "mangonel_a_anglearm_state";
+            return true;
+        }
 
-        // Token: 0x040011CB RID: 4555
-        public string ProjectileBoneName = "end_throwarm";
+        return false;
+    }
 
-        // Token: 0x040011CC RID: 4556
-        public string IdleActionName;
+    public void ManualReload()
+    {
+        if (AttackClickWillReload)
+        {
+            State = WeaponState.WaitingBeforeReloading;
+        }
+    }
 
-        // Token: 0x040011CD RID: 4557
-        public string ShootActionName;
+    public void AiRequestsShoot()
+    {
+        _aiRequestsShoot = true;
+    }
 
-        // Token: 0x040011CE RID: 4558
-        public string Reload1ActionName;
+    public void AiRequestsManualReload()
+    {
+        _aiRequestsManualReload = true;
+    }
 
-        // Token: 0x040011CF RID: 4559
-        public string Reload2ActionName;
+    private Vec3 GetBallisticErrorAppliedDirection(float BallisticErrorAmount)
+    {
+        Mat3 mat = default(Mat3);
+        mat.f = ShootingDirection;
+        mat.u = Vec3.Up;
+        Mat3 mat2 = mat;
+        mat2.Orthonormalize();
+        float a = MBRandom.RandomFloat * ((float)Math.PI * 2f);
+        mat2.RotateAboutForward(a);
+        float f = BallisticErrorAmount * MBRandom.RandomFloat;
+        mat2.RotateAboutSide(f.ToRadians());
+        return mat2.f;
+    }
 
-        // Token: 0x040011D0 RID: 4560
-        public string RotateLeftActionName;
+    protected void ShootProjectile()
+    {
+        if (LoadedMissileItem.StringId == MultipleProjectileId)
+        {
+            ItemObject @object = Game.Current.ObjectManager.GetObject<ItemObject>(MultipleProjectileFlyingId);
+            for (int i = 0; i < MultipleProjectileCount; i++)
+            {
+                ShootProjectileAux(@object, randomizeMissileSpeed: true);
+            }
+        }
+        else if (LoadedMissileItem.StringId == MultipleFireProjectileId)
+        {
+            ItemObject object2 = Game.Current.ObjectManager.GetObject<ItemObject>(MultipleFireProjectileFlyingId);
+            for (int j = 0; j < MultipleProjectileCount; j++)
+            {
+                ShootProjectileAux(object2, randomizeMissileSpeed: true);
+            }
+        }
+        else if (LoadedMissileItem.StringId == SingleProjectileId)
+        {
+            ShootProjectileAux(Game.Current.ObjectManager.GetObject<ItemObject>(SingleProjectileFlyingId), randomizeMissileSpeed: false);
+        }
+        else if (LoadedMissileItem.StringId == SingleFireProjectileId)
+        {
+            ShootProjectileAux(Game.Current.ObjectManager.GetObject<ItemObject>(SingleFireProjectileFlyingId), randomizeMissileSpeed: false);
+        }
+        else
+        {
+            ShootProjectileAux(LoadedMissileItem, randomizeMissileSpeed: false);
+        }
 
-        // Token: 0x040011D1 RID: 4561
-        public string RotateRightActionName;
+        LastShooterAgent = null;
+    }
 
-        // Token: 0x040011D2 RID: 4562
-        public string LoadAmmoBeginActionName;
+    protected virtual Mission.Missile ShootProjectileAux(ItemObject missileItem, bool randomizeMissileSpeed)
+    {
+        SetupProjectileToShoot(randomizeMissileSpeed, out var direction, out var orientation, out var missileBaseSpeed, out var missileShootingSpeed);
+        MissionObject missionObjectToIgnore = base.GameEntity.Root.GetFirstScriptOfType<MissionObject>() ?? this;
+        return Mission.Current.AddCustomMissile(LastShooterAgent, new MissionWeapon(missileItem, null, LastShooterAgent.Origin?.Banner, 1), ProjectileEntityCurrentGlobalPosition, direction, orientation, missileShootingSpeed, missileBaseSpeed, addRigidBody: false, missionObjectToIgnore);
+    }
 
-        // Token: 0x040011D3 RID: 4563
-        public string LoadAmmoEndActionName;
+    protected void SetupProjectileToShoot(bool randomizeMissileSpeed, out Vec3 direction, out Mat3 orientation, out float missileBaseSpeed, out float missileShootingSpeed)
+    {
+        orientation = Mat3.Identity;
+        Vec3 globalVelocity = GetGlobalVelocity();
+        if (randomizeMissileSpeed)
+        {
+            float num = ShootingSpeed * MBRandom.RandomFloatRanged(0.9f, 1.1f);
+            orientation.f = GetBallisticErrorAppliedDirection(2.5f);
+            orientation.Orthonormalize();
+            direction = num * orientation.f + globalVelocity;
+            missileShootingSpeed = direction.Normalize();
+            missileBaseSpeed = num;
+        }
+        else
+        {
+            orientation.f = GetBallisticErrorAppliedDirection(MaximumBallisticError);
+            orientation.Orthonormalize();
+            direction = ShootingSpeed * orientation.f + globalVelocity;
+            missileShootingSpeed = direction.Normalize();
+            missileBaseSpeed = ShootingSpeed;
+        }
+    }
 
-        // Token: 0x040011D4 RID: 4564
-        public string Reload2IdleActionName;
+    protected void OnRotationStarted()
+    {
+        if (MoveSound == null || !MoveSound.IsValid)
+        {
+            MoveSound = SoundEvent.CreateEvent(MoveSoundIndex, base.Scene);
+            MoveSound.PlayInPosition(RotationObject.GameEntity.GlobalPosition);
+        }
+    }
 
-        // Token: 0x040011D5 RID: 4565
-        public float ProjectileSpeed = 40f;
+    protected void OnRotationStopped()
+    {
+        MoveSound.Stop();
+        MoveSound = null;
+    }
 
-        // Token: 0x040011D6 RID: 4566
-        private ActionIndexCache _idleAnimationActionIndex;
+    public abstract override SiegeEngineType GetSiegeEngineType();
 
-        // Token: 0x040011D7 RID: 4567
-        private ActionIndexCache _shootAnimationActionIndex;
+    public bool CanShootAtBox(Vec3 boxMin, Vec3 boxMax, uint attempts = 5u)
+    {
+        Vec3 v;
+        Vec3 vec = (v = (boxMin + boxMax) / 2f);
+        v.z = boxMin.z;
+        Vec3 v2 = vec;
+        v2.z = boxMax.z;
+        uint num = attempts;
+        do
+        {
+            Vec3 target = Vec3.Lerp(v, v2, (float)num / (float)attempts);
+            if (CanShootAtPoint(target))
+            {
+                return true;
+            }
 
-        // Token: 0x040011D8 RID: 4568
-        private ActionIndexCache _reload1AnimationActionIndex;
+            num--;
+        }
+        while (num != 0);
+        return false;
+    }
 
-        // Token: 0x040011D9 RID: 4569
-        private ActionIndexCache _reload2AnimationActionIndex;
+    public bool CanShootAtThreat(Threat threat)
+    {
+        Vec3 targetingPosition = threat.TargetingPosition;
+        Vec3 estimatedTargetMovementVector = GetEstimatedTargetMovementVector(targetingPosition, threat.GetGlobalVelocity());
+        targetingPosition += estimatedTargetMovementVector;
+        return CanShootAtPoint(targetingPosition);
+    }
 
-        // Token: 0x040011DA RID: 4570
-        private ActionIndexCache _rotateLeftAnimationActionIndex;
+    public virtual Vec3 GetEstimatedTargetMovementVector(Vec3 targetCurrentPosition, Vec3 targetVelocity)
+    {
+        if (targetVelocity != Vec3.Zero)
+        {
+            return targetVelocity * ((base.GameEntity.GlobalPosition - targetCurrentPosition).Length / ShootingSpeed + TimeGapBetweenShootActionAndProjectileLeaving);
+        }
 
-        // Token: 0x040011DB RID: 4571
-        private ActionIndexCache _rotateRightAnimationActionIndex;
+        return Vec3.Zero;
+    }
 
-        // Token: 0x040011DC RID: 4572
-        private ActionIndexCache _loadAmmoBeginAnimationActionIndex;
+    public bool CanShootAtAgent(Agent agent)
+    {
+        Vec3 estimatedTargetGlobalPointForAgent = GetEstimatedTargetGlobalPointForAgent(agent);
+        return CanShootAtPoint(estimatedTargetGlobalPointForAgent);
+    }
 
-        // Token: 0x040011DD RID: 4573
-        private ActionIndexCache _loadAmmoEndAnimationActionIndex;
+    public bool CanShootAtPoint(Vec3 target)
+    {
+        CalculateLocalDirectionAndLocalAngleToShootTarget(target, out var localTargetDirection, out var localTargetAngle);
+        if (localTargetAngle < BottomReleaseAngleRestriction || localTargetAngle > TopReleaseAngleRestriction)
+        {
+            return false;
+        }
 
-        // Token: 0x040011DE RID: 4574
-        private ActionIndexCache _reload2IdleActionIndex;
+        if (DirectionRestriction / 2f - MathF.Abs(localTargetDirection) < 0f)
+        {
+            return false;
+        }
 
-        // Token: 0x040011DF RID: 4575
-        private sbyte _missileBoneIndex;
-        private bool _frameSetFlag;
-        private MatrixFrame _setFrameAfterTick;
+        if (CheckFriendlyFireForObjects(target))
+        {
+            return false;
+        }
+
+        Vec3 missileStartingGlobalPositionForSimulation = MissileStartingGlobalPositionForSimulation;
+        MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
+        Vec3 v = globalFrame.rotation.u;
+        Vec3 v2 = globalFrame.rotation.s;
+        if (!v.IsUnit)
+        {
+            v.Normalize();
+        }
+
+        if (!v2.IsUnit)
+        {
+            v2.Normalize();
+        }
+
+        globalFrame.rotation.RotateAboutAnArbitraryVector(in v, (float)Math.PI + localTargetDirection);
+        globalFrame.rotation.RotateAboutAnArbitraryVector(in v2, localTargetAngle);
+        float x = globalFrame.rotation.GetEulerAngles().x;
+        Vec3 vec = ((MissileStartingPositionEntityForSimulation == null) ? CanShootAtPointCheckingOffset : Vec3.Zero);
+        return CanSeePointBallistic(missileStartingGlobalPositionForSimulation + vec, x, ShootingSpeed, target);
+    }
+
+    private bool CanSeePointBallistic(Vec3 startGlobalPos, float verticalAngle, float shootingSpeed, Vec3 targetGlobalPos)
+    {
+        float num = shootingSpeed * MathF.Sin(verticalAngle);
+        float num2 = num / 9.806f;
+        float num3 = num * num2;
+        float num4 = 4.903f * num2 * num2;
+        Vec3 vec = (startGlobalPos + targetGlobalPos) / 2f + new Vec3(0f, 0f, (num4 + num3) / 2f);
+        float projectileRadiusCached = _projectileRadiusCached;
+        float collisionDistance = 0f;
+        Vec3 closestPoint = Vec3.Invalid;
+        UIntPtr entityIndex = UIntPtr.Zero;
+        float collisionDistance2;
+        if (verticalAngle <= 0f)
+        {
+            Agent agent = Mission.Current.RayCastForClosestAgent(startGlobalPos, targetGlobalPos, -1, projectileRadiusCached, out collisionDistance2);
+            if (agent != null && !agent.IsEnemyOf(base.PilotAgent))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            Vec3 targetPoint = ((verticalAngle <= 0f) ? targetGlobalPos : vec);
+            if (EngineApplicationInterface.IScene.RayCastForClosestEntityOrTerrainIgnoreEntity(base.Scene.Pointer, in startGlobalPos, in targetPoint, projectileRadiusCached, ref collisionDistance, ref closestPoint, ref entityIndex, BodyFlags.CommonCollisionExcludeFlagsForMissile, base.GameEntity.Root.Pointer) && entityIndex != UIntPtr.Zero && new GameEntity(entityIndex) != null)
+            {
+                return false;
+            }
+
+            Agent agent2 = Mission.Current.RayCastForClosestAgent(startGlobalPos, vec, -1, projectileRadiusCached, out collisionDistance2);
+            if (agent2 != null && !agent2.IsEnemyOf(base.PilotAgent))
+            {
+                return false;
+            }
+
+            agent2 = Mission.Current.RayCastForClosestAgent(vec, targetGlobalPos, -1, projectileRadiusCached * 2f, out collisionDistance2);
+            if (agent2 != null && !agent2.IsEnemyOf(base.PilotAgent))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected virtual bool CheckFriendlyFireForObjects(Vec3 target)
+    {
+        if (Side == BattleSideEnum.Attacker)
+        {
+            foreach (SiegeWeapon item in Mission.Current.GetAttackerWeaponsForFriendlyFirePreventing())
+            {
+                if (item.GameEntity != null && item.GameEntity.IsVisibleIncludeParents())
+                {
+                    Vec3 point = item.GameEntity.ComputeGlobalPhysicsBoundingBoxCenter();
+                    Vec3 lineSegmentBegin = MissileStartingGlobalPositionForSimulation;
+                    if ((MBMath.GetClosestPointOnLineSegmentToPoint(in lineSegmentBegin, in target, in point) - point).LengthSquared < 100f)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    protected internal virtual bool IsTargetValid(ITargetable target)
+    {
+        return true;
+    }
+
+    public override OrderType GetOrder(BattleSideEnum side)
+    {
+        if (!base.IsDestroyed)
+        {
+            if (Side != side)
+            {
+                return OrderType.AttackEntity;
+            }
+
+            return OrderType.Use;
+        }
+
+        return OrderType.None;
+    }
+
+    protected override WeakGameEntity GetEntityToAttachNavMeshFaces()
+    {
+        return RotationObject.GameEntity;
+    }
+
+    public abstract float ProcessTargetValue(float baseValue, TargetFlags flags);
+
+    public override void OnAfterReadFromNetwork((BaseSynchedMissionObjectReadableRecord, ISynchedMissionObjectReadableRecord) synchedMissionObjectReadableRecord, bool allowVisibilityUpdate = true)
+    {
+        base.OnAfterReadFromNetwork(synchedMissionObjectReadableRecord, allowVisibilityUpdate);
+        RangedSiegeWeaponRecord rangedSiegeWeaponRecord = (RangedSiegeWeaponRecord)(object)synchedMissionObjectReadableRecord.Item2;
+        _state = (WeaponState)rangedSiegeWeaponRecord.State;
+        TargetDirection = rangedSiegeWeaponRecord.TargetDirection;
+        TargetReleaseAngle = MBMath.ClampFloat(rangedSiegeWeaponRecord.TargetReleaseAngle, BottomReleaseAngleRestriction, TopReleaseAngleRestriction);
+        AmmoCount = rangedSiegeWeaponRecord.AmmoCount;
+        CurrentDirection = TargetDirection;
+        CurrentReleaseAngle = TargetReleaseAngle;
+        CurrentDirection = TargetDirection;
+        CurrentReleaseAngle = TargetReleaseAngle;
+        ApplyCurrentDirectionToEntity();
+        CheckAmmo();
+        UpdateAmmoMesh();
+        ChangeProjectileEntityClient(rangedSiegeWeaponRecord.ProjectileIndex);
+    }
+
+    protected virtual void UpdateAmmoMesh()
+    {
+        WeakGameEntity weakGameEntity = base.AmmoPickUpPoints[0].GameEntity;
+        int num = 20 - AmmoCount;
+        while (weakGameEntity.Parent.IsValid)
+        {
+            for (int i = 0; i < weakGameEntity.MultiMeshComponentCount; i++)
+            {
+                MetaMesh metaMesh = weakGameEntity.GetMetaMesh(i);
+                for (int j = 0; j < metaMesh.MeshCount; j++)
+                {
+                    metaMesh.GetMeshAtIndex(j).SetVectorArgument(0f, num, 0f, 0f);
+                }
+            }
+
+            weakGameEntity = weakGameEntity.Parent;
+        }
+    }
+
+    protected override bool IsAnyUserBelongsToFormation(Formation formation)
+    {
+        return base.IsAnyUserBelongsToFormation(formation) | (ReloaderAgent?.Formation == formation);
+    }
+
+    public virtual Vec3 GetGlobalVelocity()
+    {
+        return Vec3.Zero;
+    }
+
+    private float ComputeProjectileCapsuleRadius()
+    {
+        float result = 0.01f;
+        if (LoadedMissileItem.BodyName != null)
+        {
+            PhysicsShape fromResource = PhysicsShape.GetFromResource(LoadedMissileItem.BodyName);
+            BoundingBox boundingBox = new BoundingBox(in Vec3.Zero);
+            fromResource.GetBoundingBox(out boundingBox);
+            result = (boundingBox.max.AsVec2 - boundingBox.min.AsVec2).Length / 2f;
+        }
+
+        return result;
+    }
+
+    private void OnLoadedMissileItemChanged()
+    {
+        if (!LoadedMissileItem.StringId.Equals(_lastLoadedMissileItemId))
+        {
+            _projectileRadiusCached = ComputeProjectileCapsuleRadius();
+            _lastLoadedMissileItemId = LoadedMissileItem.StringId;
+        }
+    }
+
+    public void SetPlayerForceUse(bool value)
+    {
+        PlayerForceUse = value;
+    }
+
+    protected override bool ShouldDisableTickIfMachineDisabled()
+    {
+        return base.AmmoPickUpPoints.Count == 0;
+    }
+
+    public override void OnShipCaptured(BattleSideEnum newDefaultSide)
+    {
+        base.OnShipCaptured(newDefaultSide);
+        DefaultSide = newDefaultSide;
     }
 }

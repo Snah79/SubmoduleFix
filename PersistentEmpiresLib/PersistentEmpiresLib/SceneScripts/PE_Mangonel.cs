@@ -81,6 +81,12 @@ namespace PersistentEmpiresLib.SceneScripts
             return new PE_MangonelAI(this);
         }
 
+        public void PreInit()
+        {
+            _loadAmmoEndAnimationActionIndex = ActionIndexCache.Create(LoadAmmoEndActionName);
+            _loadAmmoBeginAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoBeginActionName);
+        }
+
         protected override void OnInit()
         {
             AmmoPickUpTag = null;
@@ -95,8 +101,6 @@ namespace PersistentEmpiresLib.SceneScripts
             EnemyRangeToStopUsing = 7f;
             moverStandingPoint = GameEntity.GetFirstChildEntityWithTag(MoverStandingPointTag).GetFirstScriptOfType<StandingPoint>();
 
-            _loadAmmoEndAnimationActionIndex = ActionIndexCache.Create(LoadAmmoEndActionName);
-            _loadAmmoBeginAnimationActionIndex = ActionIndexCache.Create(this.LoadAmmoBeginActionName);
             //if (base.AmmoPickUpPoints != null)
             //{
             //    foreach (StandingPoint ammoPickUpPoint in base.AmmoPickUpPoints)

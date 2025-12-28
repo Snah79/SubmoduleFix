@@ -138,6 +138,11 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
+        protected override void UpdateAmmoMesh()
+        {
+            // Wer not using any ammo stashes.
+        }
+
         protected override bool HasAmmo
         {
             get

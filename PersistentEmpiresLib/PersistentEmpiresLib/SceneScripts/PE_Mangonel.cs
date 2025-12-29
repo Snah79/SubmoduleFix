@@ -139,7 +139,7 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         protected override void UpdateAmmoMesh()
-        {
+        { 
             // Wer not using any ammo stashes.
         }
 
@@ -240,9 +240,12 @@ namespace PersistentEmpiresLib.SceneScripts
             _body = list.Count > 0 ? list[0] : this;
             _bodySkeleton = _body.GameEntity.Skeleton;
             RotationObject = _body;
-            
-            var list2 = base.GameEntity.CollectChildrenEntitiesWithTag("vertical_adjuster");
-            
+
+            var tlist2 = new List<WeakGameEntity>();// base.GameEntity.CollectChildrenEntitiesWithTag("vertical_adjuster");
+            GameEntity.GetChildrenRecursive(ref tlist2);
+
+            var list2 = tlist2.Where(x => x.Tags.Contains("vertical_adjuster")).ToList();
+
             _verticalAdjuster = TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(list2[0]);
             _verticalAdjusterSkeleton = _verticalAdjuster.Skeleton;
             if (_verticalAdjusterSkeleton != null)
@@ -255,9 +258,9 @@ namespace PersistentEmpiresLib.SceneScripts
             base.OnInit();
             this.InitiateMoveSynch();
             HitPoint = MaxHitPoint;
-            //LoadAmmoStandingPoint.InitRequiredWeaponClasses(new WeaponClass[] { OriginalMissileItem.PrimaryWeapon.WeaponClass });
-            //LoadAmmoStandingPoint.InitRequiredWeapon(null);
-            //LoadAmmoStandingPoint.InitGivenWeapon(null);
+            LoadAmmoStandingPoint.InitRequiredWeaponClasses(new WeaponClass[] { OriginalMissileItem.PrimaryWeapon.WeaponClass });
+            LoadAmmoStandingPoint.InitRequiredWeapon(OriginalMissileItem);
+            LoadAmmoStandingPoint.InitGivenWeapon(null);
             TimeGapBetweenShootActionAndProjectileLeaving = 0.23f;
             TimeGapBetweenShootingEndAndReloadingStart = 0f;
             _rotateStandingPoints = new List<StandingPoint>();
@@ -307,7 +310,7 @@ namespace PersistentEmpiresLib.SceneScripts
             }
 
             EnemyRangeToStopUsing = 7f;
-            moverStandingPoint = GameEntity.GetFirstChildEntityWithTag(MoverStandingPointTag).GetFirstScriptOfType<StandingPoint>();
+            moverStandingPoint = GameEntity.GetFirstChildEntityWithTag(MoverStandingPointTag).GetFirstScriptOfType<StandingPoint>();            
             SetScriptComponentToTick(GetTickRequirement());
             //--UpdateProjectilePosition();
         }
@@ -607,7 +610,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     continue;
                 }
 
-                if (StandingPoints[i].UserAgent.IsInBeingStruckAction)// || AmmoPickUpPoints.IndexOf(StandingPoints[i]) >= 0)
+                if (StandingPoints[i].UserAgent.IsInBeingStruckAction || AmmoPickUpPoints.IndexOf(StandingPoints[i]) >= 0)
                 {
                     StandingPoints[i].UserAgent.ClearHandInverseKinematics();
                     continue;

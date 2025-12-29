@@ -154,6 +154,13 @@ namespace PersistentEmpiresHarmony
             original = typeof(GameNetworkMessage).GetMethod("ReadBannerCodeFromPacket", BindingFlags.Public | BindingFlags.Static);
             prefix = typeof(PatchReadBannerCodeFromPacket).GetMethod("PrefixReadBannerCodeFromPacket", BindingFlags.Public | BindingFlags.Static);
             HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
+
+            // Temp
+             //original = typeof(MissionNetworkComponent).GetMethod("HandleClientEventRequestUseObject", BindingFlags.NonPublic | BindingFlags.Instance);
+             //prefix = typeof(PatchTemporary).GetMethod("PrefixHandleClientEventRequestUseObject", BindingFlags.Public | BindingFlags.Static);
+             //HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
+             //Debug.Print("** Persistent Harmony ** Patched [MissionNetworkComponent::HandleClientEventRequestUseObject]", 0, Debug.DebugColor.Yellow);
         }
     }
 }
+    

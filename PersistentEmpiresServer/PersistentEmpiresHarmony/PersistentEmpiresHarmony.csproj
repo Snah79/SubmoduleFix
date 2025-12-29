@@ -79,6 +79,9 @@
         <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     </ItemGroup>
     <ItemGroup>
+      <ProjectReference Include="..\..\PersistentEmpiresLib\PersistentEmpiresLib\PersistentEmpiresLib.csproj" />
+    </ItemGroup>
+    <ItemGroup>
         <None Update="0Harmony.xml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>

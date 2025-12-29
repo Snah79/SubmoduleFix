@@ -158,7 +158,7 @@ namespace PersistentEmpiresLib.SceneScripts
             MatrixFrame adjSpawnFrame = new MatrixFrame(spawnFrame.rotation, vecspawnFrame);
 
             MissionObject mObject = Mission.Current.CreateMissionObjectFromPrefab(spawnableItem.PrefabName, adjSpawnFrame, DefaultAction);
-
+            //TaleWorlds.Engine.GameEntity.Instantiate(Mission.Current.Scene, spawnableItem.PrefabName, bool callScriptCallbacks, bool createPhysics = true, string scriptInclusingTag = "")
             this.SpawnedPrefabs.Add(mObject.GameEntity);
 
             LoggerHelper.LogAnAction(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerSpawnedPrefab, null, new object[] {

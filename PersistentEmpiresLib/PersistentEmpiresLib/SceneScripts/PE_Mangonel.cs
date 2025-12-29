@@ -383,19 +383,19 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 if (Agent.Main != null && this.GetPilotAgent() == Agent.Main)
                 {
-                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.W))
+                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.S))
                     {
                         this.RequestMovingForward();
                     }
-                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.W))
+                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.S))
                     {
                         this.RequestStopMovingForward();
                     }
-                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.S))
+                    if (Mission.Current.InputManager.IsKeyPressed(InputKey.W))
                     {
                         this.RequestMovingBackward();
                     }
-                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.S))
+                    else if (Mission.Current.InputManager.IsKeyReleased(InputKey.W))
                     {
                         this.RequestStopMovingBackward();
                     }

@@ -15,7 +15,7 @@
             <Children>
 
                 <!--Done Button-->
-                <Standard.PopupCloseButton HorizontalAlignment="Center" Command.Click="ExecuteDone" VerticalAlignment="Center" MarginTop="585" Parameter.ButtonText="Go Back" Parameter.InputKeyDataSource="{DoneInputKey}" />
+                <!--<Standard.PopupCloseButton HorizontalAlignment="Center" Command.Click="ExecuteDone" VerticalAlignment="Center" MarginTop="585" Parameter.ButtonText="Go Back" Parameter.InputKeyDataSource="{DoneInputKey}" />-->
 
                 <BrushWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="655" SuggestedHeight="555" HorizontalAlignment="Center" VerticalAlignment="Center" MarginBottom="6" Brush="GameMenu.Tournament.Frame" DoNotAcceptEvents="true">
                     <Children>
@@ -165,7 +165,7 @@
                         <RichTextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" MarginTop="35" VerticalAlignment="Center" Brush="Recruitment.Popup.Title.Text" Brush.FontSize="40" IsDisabled="true" Text="Kick Player" />
                     </Children>
                 </Widget>
-
+				<Standard.DialogCloseButtons HorizontalAlignment="Center" Parameter.DoneButtonAction="ExecuteDone" Parameter.DoneButtonText="Go Back" VerticalAlignment="Center" MarginBottom="585" Parameter.InputKeyDataSource="{DoneInputKey}"/>
             </Children>
         </Widget>
     </Window>

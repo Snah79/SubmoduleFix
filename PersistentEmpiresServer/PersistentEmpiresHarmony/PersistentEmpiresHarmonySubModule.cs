@@ -138,8 +138,7 @@ namespace PersistentEmpiresHarmony
             // prefix = typeof(PatchGameNetwork).GetMethod("PrefixWriteMessage", BindingFlags.Public | BindingFlags.Static);
             // HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
             // Debug.Print("** Persistent Harmony ** Patched [GameNetwork::WriteMessage]", 0, Debug.DebugColor.Yellow);
-
-
+            
             // Better Sync
 
             original = typeof(MissionNetworkComponent).GetMethod("SendExistingObjectsToPeer", BindingFlags.NonPublic | BindingFlags.Instance);

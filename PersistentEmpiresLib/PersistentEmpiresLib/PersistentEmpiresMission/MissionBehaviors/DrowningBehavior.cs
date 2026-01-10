@@ -1,10 +1,12 @@
-﻿using System;
+﻿using RestSharp.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using static TaleWorlds.MountAndBlade.Agent;
 
 namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 {
@@ -45,14 +47,14 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             if (this.IsSetProperly && affectedAgent.IsActive() && !affectedAgent.IsHuman && affectedAgent.Position.Z < UpperLimit && affectedAgent.Position.Z > LowerLimit)
             {
-                if(affectedAgent.Health < blow.InflictedDamage)
+                if (affectedAgent.Health < blow.InflictedDamage)
                 {
                     // Restore health which was already removed for agent and mark him for fading out.
                     affectedAgent.Health += blow.InflictedDamage;
-                    lock(_lock)
-                    {
-                        _agentsToRemove.Add(affectedAgent);
-                    }
+                }
+                lock (_lock)
+                {
+                    _agentsToRemove.Add(affectedAgent);
                 }
             }
         }
@@ -67,7 +69,23 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
                     for (int i = 0; i < agentCount; i++)
                     {
-                        _agentsToRemove[i].FadeOut(false, false);
+                        if (_agentsToRemove[i].RiderAgent != null)
+                        {
+                            var blow = new Blow(_agentsToRemove[i].Index);
+                            blow.DamageType = DamageTypes.Blunt;
+                            blow.BoneIndex = -1;
+                            blow.GlobalPosition = _agentsToRemove[i].Position;
+                            blow.BaseMagnitude = 1f;
+                            blow.InflictedDamage = 400;
+                            blow.SwingDirection = _agentsToRemove[i].LookDirection;
+                            blow.Direction = _agentsToRemove[i].LookDirection;
+                            blow.WeaponRecord.FillAsMeleeBlow(null, null, -1, -1);
+                            _agentsToRemove[i].Die(blow);
+                        }
+                        else
+                        {
+                            _agentsToRemove[i].FadeOut(false, false);
+                        }
                     }
 
                     _agentsToRemove.Clear();

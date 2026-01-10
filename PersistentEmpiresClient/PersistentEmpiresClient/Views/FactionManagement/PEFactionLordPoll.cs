@@ -35,8 +35,8 @@ namespace PersistentEmpires.Views.Views.FactionManagement
             this._gauntletLayer = new GauntletLayer("PEFactionLordPoll_GauntletLayer", 24, false);
             this._gauntletLayer.LoadMovie("MultiplayerPollingProgress", this._dataSource);
             this._input.RegisterHotKeyCategory(HotKeyManager.GetCategory("PollHotkeyCategory"));
-            this._dataSource.AddKey(HotKeyManager.GetCategory("PollHotkeyCategory").GetGameKey(106));
-            this._dataSource.AddKey(HotKeyManager.GetCategory("PollHotkeyCategory").GetGameKey(107));
+            this._dataSource.AddKey(HotKeyManager.GetCategory("PollHotkeyCategory").GetGameKey(108));
+            this._dataSource.AddKey(HotKeyManager.GetCategory("PollHotkeyCategory").GetGameKey(109));
             base.MissionScreen.AddLayer(this._gauntletLayer);
         }
 
@@ -65,17 +65,17 @@ namespace PersistentEmpires.Views.Views.FactionManagement
         }
         public override void OnMissionScreenTick(float dt)
         {
-            base.OnMissionScreenTick(dt);
+            //    base.OnMissionScreenTick(dt);
             if (this._isActive)
             {
-                if (this._input.IsGameKeyPressed(106))
+                if (MissionScreen.InputManager.IsGameKeyPressed(108))
                 {
                     this._isActive = false;
                     this._factionPollComponent.Vote(true);
                     this._dataSource.OnPollOptionPicked();
                     return;
                 }
-                if (this._input.IsGameKeyPressed(107))
+                if (MissionScreen.InputManager.IsGameKeyPressed(109))
                 {
                     this._isActive = false;
                     this._factionPollComponent.Vote(false);
@@ -83,6 +83,5 @@ namespace PersistentEmpires.Views.Views.FactionManagement
                 }
             }
         }
-
     }
 }

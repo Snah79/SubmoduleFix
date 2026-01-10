@@ -33,10 +33,6 @@ namespace PersistentEmpiresClient.ViewsVM.AdminPanel.Buttons
                     , GameTexts.FindText("PE_InquiryData_Cancel", null).ToString()
                     , DoSelectFaction
                     , DoCancelAction));
-
-            GameNetwork.BeginModuleEventAsClient();
-            GameNetwork.WriteMessage(new RequestPermBan(SelectedPlayer.GetPeer()));
-            GameNetwork.EndModuleEventAsClient();
         }
 
         private void DoCancelAction(List<InquiryElement> list)

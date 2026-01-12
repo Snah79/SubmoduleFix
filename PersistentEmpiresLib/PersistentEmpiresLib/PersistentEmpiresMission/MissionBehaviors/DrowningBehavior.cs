@@ -69,23 +69,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
                     for (int i = 0; i < agentCount; i++)
                     {
-                        if (_agentsToRemove[i].RiderAgent != null)
-                        {
-                            var blow = new Blow(_agentsToRemove[i].Index);
-                            blow.DamageType = DamageTypes.Blunt;
-                            blow.BoneIndex = -1;
-                            blow.GlobalPosition = _agentsToRemove[i].Position;
-                            blow.BaseMagnitude = 1f;
-                            blow.InflictedDamage = 400;
-                            blow.SwingDirection = _agentsToRemove[i].LookDirection;
-                            blow.Direction = _agentsToRemove[i].LookDirection;
-                            blow.WeaponRecord.FillAsMeleeBlow(null, null, -1, -1);
-                            _agentsToRemove[i].Die(blow);
-                        }
-                        else
-                        {
-                            _agentsToRemove[i].FadeOut(false, false);
-                        }
+                        RemoveNoneHumanAgent(_agentsToRemove[i]);
                     }
 
                     _agentsToRemove.Clear();
@@ -139,10 +123,31 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     }
                     else
                     {
-                        agent.FadeOut(false, false);
+                        RemoveNoneHumanAgent(agent);
                     }
                 });
                 delAgentList.Clear();
+            }
+        }
+
+        private void RemoveNoneHumanAgent(Agent agent)
+        {
+            if (agent.RiderAgent != null)
+            {
+                var blow = new Blow(agent.Index);
+                blow.DamageType = DamageTypes.Blunt;
+                blow.BoneIndex = -1;
+                blow.GlobalPosition = agent.Position;
+                blow.BaseMagnitude = 1f;
+                blow.InflictedDamage = 400;
+                blow.SwingDirection = agent.LookDirection;
+                blow.Direction = agent.LookDirection;
+                blow.WeaponRecord.FillAsMeleeBlow(null, null, -1, -1);
+                agent.Die(blow);
+            }
+            else
+            {
+                agent.FadeOut(false, false);
             }
         }
 

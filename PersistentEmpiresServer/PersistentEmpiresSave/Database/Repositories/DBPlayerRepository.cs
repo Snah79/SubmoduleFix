@@ -17,6 +17,7 @@ using System.Xml.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.ObjectSystem;
 using TaleWorlds.PlayerServices;
 using static PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors.SaveSystemBehavior;
 
@@ -284,17 +285,37 @@ namespace PersistentEmpiresSave.Database.Repositories
             PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
             Debug.Print("[Save Module] CREATING DBPlayer FOR PLAYER " + (peer != null ? peer.UserName : "NETWORK COMMUNICATOR IS NULL !!!!") + " IS CONTROLLEDAGENT NULL ? " + (peer.ControlledAgent == null) + " IS REPRESENTATIVE NULL ? " + (persistentEmpireRepresentative == null));
 
-            DBPlayer dbPlayer = new DBPlayer
+            DBPlayer dbPlayer = null;
+            
+            if (persistentEmpireRepresentative?.GetClassId() == null)
             {
-                PlayerId = peer.VirtualPlayer.ToPlayerId(),
-                Name = peer.VirtualPlayer.UserName.EncodeSpecialMariaDbChars(),
-                Hunger = persistentEmpireRepresentative?.GetHunger() ?? 10,
-                FactionIndex = persistentEmpireRepresentative?.GetFactionIndex() ?? 0,
-                Health = (int)(peer.ControlledAgent?.Health ?? 100),
-                Money = persistentEmpireRepresentative?.Gold ?? 100,
-                Class = persistentEmpireRepresentative?.GetClassId() ?? PersistentEmpireBehavior.DefaultClass,            
-                WoundedUntil = persistentEmpireRepresentative.GetWoundedUntil(),
-            };
+                var tmp = MBObjectManager.Instance.GetObjectTypeList<MultiplayerClassDivisions.MPHeroClass>().FirstOrDefault((mpHeroClass) => mpHeroClass.HeroCharacter.StringId == PersistentEmpireBehavior.DefaultClass);
+                dbPlayer = new DBPlayer
+                {
+                    PlayerId = peer.VirtualPlayer.ToPlayerId(),
+                    Name = peer.VirtualPlayer.UserName.EncodeSpecialMariaDbChars(),
+                    Hunger = 100,
+                    FactionIndex = 0,
+                    Health = tmp.Health,
+                    Money = ConfigManager.StartingGold,
+                    Class = PersistentEmpireBehavior.DefaultClass,
+                    WoundedUntil = null,
+                };
+            }
+            else
+            {
+                dbPlayer = new DBPlayer
+                {
+                    PlayerId = peer.VirtualPlayer.ToPlayerId(),
+                    Name = peer.VirtualPlayer.UserName.EncodeSpecialMariaDbChars(),
+                    Hunger = persistentEmpireRepresentative?.GetHunger() ?? 10,
+                    FactionIndex = persistentEmpireRepresentative?.GetFactionIndex() ?? 0,
+                    Health = (int)(peer.ControlledAgent?.Health ?? 100),
+                    Money = persistentEmpireRepresentative?.Gold ?? 100,
+                    Class = persistentEmpireRepresentative?.GetClassId() ?? PersistentEmpireBehavior.DefaultClass,
+                    WoundedUntil = persistentEmpireRepresentative.GetWoundedUntil(),
+                };
+            }
             try
             {
                 if(peer.ControlledAgent != null)

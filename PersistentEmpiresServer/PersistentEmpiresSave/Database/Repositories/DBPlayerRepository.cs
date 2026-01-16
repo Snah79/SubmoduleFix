@@ -292,8 +292,8 @@ namespace PersistentEmpiresSave.Database.Repositories
                     Name = peer.VirtualPlayer.UserName.EncodeSpecialMariaDbChars(),
                     Hunger = persistentEmpireRepresentative?.GetHunger() ?? 100,
                     FactionIndex = persistentEmpireRepresentative?.GetFactionIndex() ?? 0,
-                    Health = (int)(peer.ControlledAgent?.Health ?? 100),
-                    Money = persistentEmpireRepresentative?.Gold ?? tmp.Health,
+                    Health = (int)(peer.ControlledAgent?.Health ?? tmp.Health),
+                    Money = persistentEmpireRepresentative?.Gold ?? ConfigManager.StartingGold,
                     Class = persistentEmpireRepresentative?.GetClassId(), // can never be null
                     WoundedUntil = persistentEmpireRepresentative.GetWoundedUntil(),
                 };

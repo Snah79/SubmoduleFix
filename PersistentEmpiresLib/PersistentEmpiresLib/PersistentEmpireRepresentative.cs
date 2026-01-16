@@ -10,6 +10,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.ObjectSystem;
 
 namespace PersistentEmpiresLib
 {
@@ -44,6 +45,11 @@ namespace PersistentEmpiresLib
             playerInventory = new Inventory(5, 10, "PlayerInventory");
             hunger = 100;
             this.SpawnTimer = new Timer(Mission.Current.CurrentTime, 3f, false);
+            var tmp = MBObjectManager.Instance.GetObjectTypeList<MultiplayerClassDivisions.MPHeroClass>().FirstOrDefault((mpHeroClass) => mpHeroClass.HeroCharacter.StringId == _classId);
+            if (tmp != null)
+            {
+                LoadedHealth = tmp.Health;
+            }
         }
 
         public PE_SpawnFrame GetNextSpawnFrame()

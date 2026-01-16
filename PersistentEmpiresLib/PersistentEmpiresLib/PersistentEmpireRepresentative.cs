@@ -37,6 +37,7 @@ namespace PersistentEmpiresLib
         public string AttachToAgentId { get; set; } 
         public int[] LoadedAmmo { get; set; }
         private long? WoundedUntil { get; set; }
+        public string PlayeIdFromDb { get; set; }
 
         public PersistentEmpireRepresentative()
         {

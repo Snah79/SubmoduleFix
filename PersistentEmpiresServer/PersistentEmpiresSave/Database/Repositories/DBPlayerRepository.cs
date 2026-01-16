@@ -282,40 +282,21 @@ namespace PersistentEmpiresSave.Database.Repositories
 
         private static DBPlayer CreateDBPlayer(NetworkCommunicator peer)
         {
-            PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
-            Debug.Print("[Save Module] CREATING DBPlayer FOR PLAYER " + (peer != null ? peer.UserName : "NETWORK COMMUNICATOR IS NULL !!!!") + " IS CONTROLLEDAGENT NULL ? " + (peer.ControlledAgent == null) + " IS REPRESENTATIVE NULL ? " + (persistentEmpireRepresentative == null));
+            var persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+            var tmp = MBObjectManager.Instance.GetObjectTypeList<MultiplayerClassDivisions.MPHeroClass>().FirstOrDefault((mpHeroClass) => mpHeroClass.HeroCharacter.StringId == PersistentEmpireBehavior.DefaultClass);
 
-            DBPlayer dbPlayer = null;
-            
-            if (persistentEmpireRepresentative?.GetClassId() == null)
-            {
-                var tmp = MBObjectManager.Instance.GetObjectTypeList<MultiplayerClassDivisions.MPHeroClass>().FirstOrDefault((mpHeroClass) => mpHeroClass.HeroCharacter.StringId == PersistentEmpireBehavior.DefaultClass);
-                dbPlayer = new DBPlayer
+            Debug.Print("[Save Module] CREATING DBPlayer FOR PLAYER " + (peer != null ? peer.UserName : "NETWORK COMMUNICATOR IS NULL !!!!") + " IS CONTROLLEDAGENT NULL ? " + (peer.ControlledAgent == null) + " IS REPRESENTATIVE NULL ? " + (persistentEmpireRepresentative == null));
+            DBPlayer dbPlayer = new DBPlayer
                 {
                     PlayerId = peer.VirtualPlayer.ToPlayerId(),
                     Name = peer.VirtualPlayer.UserName.EncodeSpecialMariaDbChars(),
-                    Hunger = 100,
-                    FactionIndex = 0,
-                    Health = tmp.Health,
-                    Money = ConfigManager.StartingGold,
-                    Class = PersistentEmpireBehavior.DefaultClass,
-                    WoundedUntil = null,
-                };
-            }
-            else
-            {
-                dbPlayer = new DBPlayer
-                {
-                    PlayerId = peer.VirtualPlayer.ToPlayerId(),
-                    Name = peer.VirtualPlayer.UserName.EncodeSpecialMariaDbChars(),
-                    Hunger = persistentEmpireRepresentative?.GetHunger() ?? 10,
+                    Hunger = persistentEmpireRepresentative?.GetHunger() ?? 100,
                     FactionIndex = persistentEmpireRepresentative?.GetFactionIndex() ?? 0,
                     Health = (int)(peer.ControlledAgent?.Health ?? 100),
-                    Money = persistentEmpireRepresentative?.Gold ?? 100,
-                    Class = persistentEmpireRepresentative?.GetClassId() ?? PersistentEmpireBehavior.DefaultClass,
+                    Money = persistentEmpireRepresentative?.Gold ?? tmp.Health,
+                    Class = persistentEmpireRepresentative?.GetClassId(), // can never be null
                     WoundedUntil = persistentEmpireRepresentative.GetWoundedUntil(),
                 };
-            }
             try
             {
                 if(peer.ControlledAgent != null)

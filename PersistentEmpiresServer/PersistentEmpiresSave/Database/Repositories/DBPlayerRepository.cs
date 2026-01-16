@@ -382,22 +382,24 @@ namespace PersistentEmpiresSave.Database.Repositories
 
         private static DBPlayer CreateDBPlayer(NetworkCommunicator peer, Equipment equipment)
         {
-            PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+            var persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+            var tmp = MBObjectManager.Instance.GetObjectTypeList<MultiplayerClassDivisions.MPHeroClass>().FirstOrDefault((mpHeroClass) => mpHeroClass.HeroCharacter.StringId == PersistentEmpireBehavior.DefaultClass);
+
             Debug.Print("[Save Module] CREATING DBPlayer FOR PLAYER " + (peer != null ? peer.UserName : "NETWORK COMMUNICATOR IS NULL !!!!") + " IS CONTROLLEDAGENT NULL ? " + (peer.ControlledAgent == null) + " IS REPRESENTATIVE NULL ? " + (persistentEmpireRepresentative == null));
 
             DBPlayer dbPlayer = new DBPlayer
             {
                 PlayerId = peer.VirtualPlayer.ToPlayerId(),
                 Name = peer.VirtualPlayer.UserName.EncodeSpecialMariaDbChars(),
-                Hunger = persistentEmpireRepresentative?.GetHunger() ?? 10,
+                Hunger = persistentEmpireRepresentative?.GetHunger() ?? 100,
                 FactionIndex = persistentEmpireRepresentative?.GetFactionIndex() ?? 0,
-                Health = (int)(peer.ControlledAgent?.Health ?? 100),
-                Money = persistentEmpireRepresentative?.Gold ?? 100,
-                Class = persistentEmpireRepresentative?.GetClassId() ?? PersistentEmpireBehavior.DefaultClass,
+                Health = (int)(peer.ControlledAgent?.Health ?? tmp.Health),
+                Money = persistentEmpireRepresentative?.Gold ?? ConfigManager.StartingGold,
+                Class = persistentEmpireRepresentative?.GetClassId(), // can never be null
+                WoundedUntil = persistentEmpireRepresentative.GetWoundedUntil(),
                 PosX = peer.ControlledAgent?.IsActive() == true ? peer.ControlledAgent.Position.X : 0,
                 PosY = peer.ControlledAgent?.IsActive() == true ? peer.ControlledAgent.Position.Y : 0,
                 PosZ = peer.ControlledAgent?.IsActive() == true ? peer.ControlledAgent.Position.Z : 0,
-                WoundedUntil = persistentEmpireRepresentative.GetWoundedUntil(),
             };
 
             if (!equipment[EquipmentIndex.Weapon0].IsEmpty)

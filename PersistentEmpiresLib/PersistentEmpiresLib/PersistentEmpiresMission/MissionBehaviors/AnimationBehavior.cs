@@ -19,6 +19,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private bool isActive;
         public static string AnimationModuleName = Main.ModuleName;
         public static string AnimationFileName = "Animations";
+        public static AnimationBehavior Instance;
+
+        public AnimationBehavior()
+        {
+            Instance = this;
+        }
 
         private List<string> ParseXml()
         {
@@ -104,12 +110,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
 
-        private void PlayAnimation(Agent agent, string animationId)
+        public void PlayAnimation(Agent agent, string animationId)
         {
-
-
             if (agent.IsOnLand() == false) return;
+
             ActionIndexCache actionIndexCache = ActionIndexCache.Create(animationId);
+            
             if (animationId == "act_none")
             {
                 agent.SetActionChannel(0, actionIndexCache, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);

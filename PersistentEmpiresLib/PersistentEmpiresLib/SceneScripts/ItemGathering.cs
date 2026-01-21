@@ -73,29 +73,29 @@ namespace PersistentEmpiresLib.SceneScripts
         
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
-            //if (GameNetwork.IsServer && base.HasUser)
-            //{
-            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
-            //}
-#if SERVER
-            if (base.HasUser)
-            {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
-            }
-#endif
-            if(this.IsDestroyed)
-            {
+//            //if (GameNetwork.IsServer && base.HasUser)
+//            //{
+//            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
+//            //}
+//#if SERVER
+//            if (base.HasUser)
+//            {
+//                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
+//            }
+//#endif
+//            if(this.IsDestroyed)
+//            {
                 return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.TickOccasionally;
-            }
+//            }
 
-            return base.GetTickRequirement();
+//            return base.GetTickRequirement();
         }
 
-        protected override void OnTick(float dt)
-        {
-            base.OnTick(dt);
-            this.DoTick(dt);
-        }
+        //protected override void OnTick(float dt)
+        //{
+        //    base.OnTick(dt);
+        //    this.DoTick(dt);
+        //}
 
         protected override void OnTickOccasionally(float currentFrameDeltaTime)
         {
@@ -113,7 +113,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     if (this.UseWillEndAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                     {
                         base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
-                        GetTickRequirement();
+                        //GetTickRequirement();
                     }
                 }
             }
@@ -121,7 +121,7 @@ namespace PersistentEmpiresLib.SceneScripts
             if (this.IsDestroyed && this.DestroyedAt + this.RespawnTime < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             {
                 this.UpdateIsDestroyed(false);
-                GetTickRequirement();
+                //GetTickRequirement();
             }
         }
         public void UpdateIsDestroyed(bool isDestroyed)

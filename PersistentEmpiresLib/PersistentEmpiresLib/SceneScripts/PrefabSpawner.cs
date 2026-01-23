@@ -192,7 +192,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private void DefaultAction(GameEntity entity)
         {
-            if(entity.Name == "pe_mangoneltest1")
+            if(entity.Name == "pe_mangoneltest1" || entity.Name == "pe_mangoneltest3")
             {
                 var childs = new List<GameEntity>();
                 entity.Root.GetChildrenRecursive(ref childs);
@@ -219,6 +219,8 @@ namespace PersistentEmpiresLib.SceneScripts
                         peMangonel.PreInit();
                     }
                 }
+
+                entity.SetPhysicsState(true, true);
             }
         }
 

@@ -72,6 +72,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 #endif
         }
 
+#if SERVER
         public void InitializeSyncMessages()
         {
             var chunkSize = ConfigManager.GetIntConfig("SyncronizationSize", 100);
@@ -94,10 +95,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public override void AfterStart()
         {
             base.AfterStart();
-            if (GameNetwork.IsServer)
-            {
-                this.InitializeTeleportDoors();
-            }
+
+            this.InitializeTeleportDoors();
         }
 
         private void SyncDestructibleWithItems(NetworkCommunicator peer)
@@ -397,7 +396,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 GameNetwork.EndModuleEventAsServer();
             }
         }
-
+#endif
         public override void OnRemoveBehavior()
         {
             base.OnRemoveBehavior();

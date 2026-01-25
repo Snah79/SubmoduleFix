@@ -639,6 +639,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                         sw.Write(message);
                     }
                 }
+
+                DiscordBehavior.NotifyException(exception);
             }
             catch(Exception ex)
             {

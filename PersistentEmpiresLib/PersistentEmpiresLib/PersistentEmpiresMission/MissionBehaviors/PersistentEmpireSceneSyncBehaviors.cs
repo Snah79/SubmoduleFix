@@ -5,10 +5,14 @@ using PersistentEmpiresLib.SceneScripts.Extensions;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.MountAndBlade.DedicatedCustomServer;
+using static PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors.PersistentEmpireSceneSyncBehaviors;
 
 namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 {
@@ -21,6 +25,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public Queue<SyncingTrack> peerSyncDestructableHitPointsQueue = new Queue<SyncingTrack>();
         public Queue<SyncingTrack> peerSyncItemGatheringQueue = new Queue<SyncingTrack>();
         public Queue<SyncingTrack> peerSyncDestructableWithItemsQueue = new Queue<SyncingTrack>();
+
+        private object _synclock = new object();
 
         public class SyncingTrack
         {
@@ -53,6 +59,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             return result;
         }
+
         public int RepairTimeoutAfterHit = 5 * 60;
 
         public override void OnBehaviorInitialize()
@@ -67,20 +74,23 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public void InitializeSyncMessages()
         {
+            var chunkSize = ConfigManager.GetIntConfig("SyncronizationSize", 100);
+
             List<GameEntity> gameEntity = new List<GameEntity>();
-            this.syncDestructableHitPoints = ChunkList<PE_RepairableDestructableComponent>(100, Mission.Current.MissionObjects
+            this.syncDestructableHitPoints = ChunkList<PE_RepairableDestructableComponent>(chunkSize, Mission.Current.MissionObjects
                .Where(o => o is PE_RepairableDestructableComponent)
                .Select(r => (PE_RepairableDestructableComponent)r)
                .ToList());
-            this.syncItemGathering = ChunkList<PE_ItemGathering>(100, Mission.Current.MissionObjects
+            this.syncItemGathering = ChunkList<PE_ItemGathering>(chunkSize, Mission.Current.MissionObjects
                .Where(o => o is PE_ItemGathering)
                .Select(r => (PE_ItemGathering)r)
                .ToList());
-            this.syncDestructableWithItems = ChunkList<PE_DestructibleWithItem>(100, Mission.Current.MissionObjects
+            this.syncDestructableWithItems = ChunkList<PE_DestructibleWithItem>(chunkSize, Mission.Current.MissionObjects
                .Where(o => o is PE_DestructibleWithItem)
                .Select(r => (PE_DestructibleWithItem)r)
                .ToList());
         }
+
         public override void AfterStart()
         {
             base.AfterStart();
@@ -89,10 +99,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 this.InitializeTeleportDoors();
             }
         }
+
         private void SyncDestructibleWithItems(NetworkCommunicator peer)
         {
             this.peerSyncDestructableWithItemsQueue.Enqueue(new SyncingTrack(peer, 0, false));
         }
+
         private void SyncDestructableHitPoints(NetworkCommunicator peer)
         {
             this.peerSyncDestructableHitPointsQueue.Enqueue(new SyncingTrack(peer, 0, false));
@@ -106,54 +118,113 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         // private void SyncAttachableObjects()
         private void SendDestructibleWithItemsInQueue(SyncingTrack track, Queue<SyncingTrack> q)
         {
+            var myTrace = new StackTrace(0, true);
+
             if (track.chunkIndex >= this.syncDestructableWithItems.Count)
             {
                 q.Dequeue();
                 return;
             }
-            List<PE_DestructibleWithItem> toBeSend = this.syncDestructableWithItems[track.chunkIndex];
-            foreach (PE_DestructibleWithItem comp in toBeSend)
+            try
             {
-                GameNetwork.BeginModuleEventAsServer(track.peer);
-                GameNetwork.WriteMessage(new SyncObjectHitpointsForDestructibleWithItem(comp, Vec3.Zero, comp.HitPoint));
-                GameNetwork.EndModuleEventAsServer();
+                lock(_synclock)
+                {
+                    foreach (var comp in syncDestructableWithItems[track.chunkIndex])
+                    {
+                        GameNetwork.BeginModuleEventAsServer(track.peer);
+                        GameNetwork.WriteMessage(new SyncObjectHitpointsForDestructibleWithItem(comp, Vec3.Zero, comp.HitPoint));
+                        GameNetwork.EndModuleEventAsServer();
+                    }
+                    track.chunkIndex = track.chunkIndex + 1;
+                }
             }
-            track.chunkIndex = track.chunkIndex + 1;
+            catch(Exception ex)
+            {
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
 
+                if (!track.peer.IsConnectionActive || !track.peer.IsNetworkActive)
+                {
+                    q.Dequeue();
+                    return;
+                }
+
+                // force relog
+                DedicatedCustomServerSubModule.Instance.DedicatedCustomGameServer.KickPlayer(track.peer.VirtualPlayer.Id, false);
+            }
         }
+
         private void SendItemGatheringsInQueue(SyncingTrack track, Queue<SyncingTrack> q)
         {
+            var myTrace = new StackTrace(0, true);
+
             if (track.chunkIndex >= this.syncItemGathering.Count)
             {
                 q.Dequeue();
                 return;
             }
-            List<PE_ItemGathering> toBeSend = this.syncItemGathering[track.chunkIndex];
-            foreach (PE_ItemGathering itemGathering in toBeSend)
+            try
             {
-                GameNetwork.BeginModuleEventAsServer(track.peer);
-                GameNetwork.WriteMessage(new UpdateItemGatheringDestroyed(itemGathering, itemGathering.IsDestroyed));
-                GameNetwork.EndModuleEventAsServer();
+                lock (_synclock)
+                {
+                    foreach (var itemGathering in syncItemGathering[track.chunkIndex])
+                    {
+                        GameNetwork.BeginModuleEventAsServer(track.peer);
+                        GameNetwork.WriteMessage(new UpdateItemGatheringDestroyed(itemGathering, itemGathering.IsDestroyed));
+                        GameNetwork.EndModuleEventAsServer();
+                    }
+                    track.chunkIndex = track.chunkIndex + 1;
+                }
             }
-            track.chunkIndex = track.chunkIndex + 1;
+            catch (Exception ex)
+            {
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
 
+                if (!track.peer.IsConnectionActive || !track.peer.IsNetworkActive)
+                {
+                    q.Dequeue();
+                    return;
+                }
+
+                // force relog
+                DedicatedCustomServerSubModule.Instance.DedicatedCustomGameServer.KickPlayer(track.peer.VirtualPlayer.Id, false);
+            }
         }
+
         private void SendDestructableHitPointsInQueue(SyncingTrack track, Queue<SyncingTrack> q)
         {
+            var myTrace = new StackTrace(0, true);
+
             if (track.chunkIndex >= this.syncDestructableHitPoints.Count)
             {
                 q.Dequeue();
                 return;
             }
-            List<PE_RepairableDestructableComponent> toBeSend = this.syncDestructableHitPoints[track.chunkIndex];
-            foreach (PE_RepairableDestructableComponent comp in toBeSend)
+            try
             {
-                GameNetwork.BeginModuleEventAsServer(track.peer);
-                GameNetwork.WriteMessage(new SyncObjectHitpointsPE(comp, Vec3.Zero, comp.HitPoint));
-                GameNetwork.EndModuleEventAsServer();
+                lock (_synclock)
+                {
+                    foreach (var comp in syncDestructableHitPoints[track.chunkIndex])
+                    {
+                        GameNetwork.BeginModuleEventAsServer(track.peer);
+                        GameNetwork.WriteMessage(new SyncObjectHitpointsPE(comp, Vec3.Zero, comp.HitPoint));
+                        GameNetwork.EndModuleEventAsServer();
+                    }
+                    track.chunkIndex = track.chunkIndex + 1;
+                }
             }
-            track.chunkIndex = track.chunkIndex + 1;
+            catch (Exception ex)
+            {
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
 
+                if (!track.peer.IsConnectionActive || !track.peer.IsNetworkActive)
+                {
+                    q.Dequeue();
+                    return;
+                }
+
+                // force relog
+                DedicatedCustomServerSubModule.Instance.DedicatedCustomGameServer.KickPlayer(track.peer.VirtualPlayer.Id, false);
+            }
         }
 
         public override void OnMissionTick(float dt)
@@ -187,7 +258,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 this.SendDestructibleWithItemsInQueue(syncingTrack, queue);
             }
         }
-
 
         private void SyncCarts(NetworkCommunicator peer)
         {

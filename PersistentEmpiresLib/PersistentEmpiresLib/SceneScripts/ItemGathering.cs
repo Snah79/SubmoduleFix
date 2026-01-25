@@ -70,32 +70,11 @@ namespace PersistentEmpiresLib.SceneScripts
                 Debug.Print(this.DropsItem + " CANNOT BE FOUND ON PE_ITEMGATHERING", 0, Debug.DebugColor.Red);
             }
         }
-        
+
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
-//            //if (GameNetwork.IsServer && base.HasUser)
-//            //{
-//            //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
-//            //}
-//#if SERVER
-//            if (base.HasUser)
-//            {
-//                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
-//            }
-//#endif
-//            if(this.IsDestroyed)
-//            {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.TickOccasionally;
-//            }
-
-//            return base.GetTickRequirement();
+            return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.TickOccasionally;
         }
-
-        //protected override void OnTick(float dt)
-        //{
-        //    base.OnTick(dt);
-        //    this.DoTick(dt);
-        //}
 
         protected override void OnTickOccasionally(float currentFrameDeltaTime)
         {
@@ -124,8 +103,31 @@ namespace PersistentEmpiresLib.SceneScripts
                 //GetTickRequirement();
             }
         }
+
         public void UpdateIsDestroyed(bool isDestroyed)
         {
+#if SERVER
+            lock (PersistentEmpireSceneSyncBehaviors._synclock)
+            {
+                if (!isDestroyed)
+                {
+                    CurrentCount = this.ItemCount;
+                    GameEntity.SetVisibilityExcludeParents(true);
+                    IsDestroyed = false;
+                }
+                else
+                {
+                    IsDestroyed = true;
+                    GameEntity.SetVisibilityExcludeParents(false);
+                    DestroyedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                }
+
+                GameNetwork.BeginBroadcastModuleEvent();
+                GameNetwork.WriteMessage(new UpdateItemGatheringDestroyed(this, isDestroyed));
+                GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
+            }
+#endif
+#if CLIENT
             if (!isDestroyed)
             {
                 CurrentCount = this.ItemCount;
@@ -138,14 +140,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 GameEntity.SetVisibilityExcludeParents(false);
                 DestroyedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             }
-
-
-            if (GameNetwork.IsServer)
-            {
-                GameNetwork.BeginBroadcastModuleEvent();
-                GameNetwork.WriteMessage(new UpdateItemGatheringDestroyed(this, isDestroyed));
-                GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
-            }
+#endif
         }
 
         public override void OnUseStopped(Agent userAgent, bool isSuccessful, int preferenceIndex)
@@ -263,6 +258,7 @@ namespace PersistentEmpiresLib.SceneScripts
             }
             base.OnUse(userAgent, agentBoneIndex);
         }
+
         public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
             return new TextObject("Item Gathering");

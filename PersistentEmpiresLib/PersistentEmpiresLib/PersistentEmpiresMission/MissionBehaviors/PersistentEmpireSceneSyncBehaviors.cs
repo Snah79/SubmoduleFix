@@ -18,15 +18,15 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 {
     public class PersistentEmpireSceneSyncBehaviors : MissionNetwork
     {
-        public List<List<PE_RepairableDestructableComponent>> syncDestructableHitPoints = new List<List<PE_RepairableDestructableComponent>>();
-        public List<List<PE_ItemGathering>> syncItemGathering = new List<List<PE_ItemGathering>>();
-        public List<List<PE_DestructibleWithItem>> syncDestructableWithItems = new List<List<PE_DestructibleWithItem>>();
+        public List<IEnumerable<PE_RepairableDestructableComponent>> syncDestructableHitPoints = new List<IEnumerable<PE_RepairableDestructableComponent>>();
+        public List<IEnumerable<PE_ItemGathering>> syncItemGathering = new List<IEnumerable<PE_ItemGathering>>();
+        public List<IEnumerable<PE_DestructibleWithItem>> syncDestructableWithItems = new List<IEnumerable<PE_DestructibleWithItem>>();
 
         public Queue<SyncingTrack> peerSyncDestructableHitPointsQueue = new Queue<SyncingTrack>();
         public Queue<SyncingTrack> peerSyncItemGatheringQueue = new Queue<SyncingTrack>();
         public Queue<SyncingTrack> peerSyncDestructableWithItemsQueue = new Queue<SyncingTrack>();
 
-        private object _synclock = new object();
+        public static object _synclock = new object();
 
         public class SyncingTrack
         {
@@ -42,18 +42,18 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
 
-        public static List<List<T>> ChunkList<T>(int chunkSize, List<T> list)
+        public static List<IEnumerable<T>> ChunkList<T>(int chunkSize, IEnumerable<T> list)
         {
             if (chunkSize <= 0)
             {
                 throw new ArgumentException("Chunk size must be greater than zero.");
             }
 
-            List<List<T>> result = new List<List<T>>();
+            var result = new List<IEnumerable<T>>();
 
-            for (int i = 0; i < list.Count; i += chunkSize)
+            for (int i = 0; i < list.Count(); i += chunkSize)
             {
-                List<T> chunk = list.Skip(i).Take(chunkSize).ToList();
+                var chunk = list.Skip(i).Take(chunkSize);
                 result.Add(chunk);
             }
 
@@ -76,11 +76,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             var chunkSize = ConfigManager.GetIntConfig("SyncronizationSize", 100);
 
-            List<GameEntity> gameEntity = new List<GameEntity>();
+            //List<GameEntity> gameEntity = new List<GameEntity>();
             this.syncDestructableHitPoints = ChunkList<PE_RepairableDestructableComponent>(chunkSize, Mission.Current.MissionObjects
                .Where(o => o is PE_RepairableDestructableComponent)
                .Select(r => (PE_RepairableDestructableComponent)r)
-               .ToList());
+               );
             this.syncItemGathering = ChunkList<PE_ItemGathering>(chunkSize, Mission.Current.MissionObjects
                .Where(o => o is PE_ItemGathering)
                .Select(r => (PE_ItemGathering)r)

@@ -29,16 +29,6 @@ namespace PersistentEmpiresLib.SceneScripts
     }
     public class PE_DestructibleWithItem : PE_DestructableComponent
     {
-
-        public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
-        {
-            if (base.GameEntity.IsVisibleIncludeParents() && GameNetwork.IsServer)
-            {
-                return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
-            }
-            return base.GetTickRequirement();
-        }
-
         private List<DropItem> DropItems = new List<DropItem>();
         public string ItemDrops;
         public int RespawnAsSeconds = 5;
@@ -81,21 +71,19 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
-        protected override void OnTick(float dt)
+        public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
-            base.OnTick(dt);
+            return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.TickOccasionally;
+        }
+
+        protected override void OnTickOccasionally(float currentFrameDeltaTime)
+        {
+            base.OnTickOccasionally(currentFrameDeltaTime);
             if (this.destructed && this.destructedAt + this.RespawnAsSeconds < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             {
                 this.ResetObject();
             }
         }
-
-        //public void TriggerOnHit(Agent attackerAgent, int inflictedDamage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior)
-        //{
-        //    bool flag;
-        //    float flag2;
-        //    this.OnHit(attackerAgent, inflictedDamage, impactPosition, impactDirection, weapon, attackerScriptComponentBehavior, out flag, out flag2);
-        //}
 
         private void SpawnItem(Agent agent, ItemObject item)
         {
@@ -109,7 +97,31 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public void ResetObject()
         {
-            if (this.ApplyPhysicsOnDestruction)
+#if SERVER
+            lock (PersistentEmpireSceneSyncBehaviors._synclock)
+            {
+                if (this.ApplyPhysicsOnDestruction)
+                {
+                    base.GameEntity.RemoveBodyFlags(BodyFlags.Moveable, true);
+                    base.GameEntity.RemoveBodyFlags(BodyFlags.Dynamic, true);
+                    base.GameEntity.SetBodyFlagsRecursive(BodyFlags.BodyOwnerNone);
+                }
+                else
+                {
+                    GameEntity.SetVisibilityExcludeParents(true);
+                }
+                //base.GameEntity.RemovePhysics();
+                base.GameEntity.SetGlobalFrame(initialFrame);
+                //base.GameEntity.AddPhysics(base.GameEntity.Mass, base.GameEntity.CenterOfMass, base.GameEntity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName(this.PhysicMaterial), true, 0);
+                this.HitPoint = this.MaxHitPoint;
+                this.destructed = false;
+            }
+            GameNetwork.BeginBroadcastModuleEvent();
+            GameNetwork.WriteMessage(new ResetDestructableItem(this));
+            GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
+#endif
+#if CLIENT
+if (this.ApplyPhysicsOnDestruction)
             {
                 base.GameEntity.RemoveBodyFlags(BodyFlags.Moveable, true);
                 base.GameEntity.RemoveBodyFlags(BodyFlags.Dynamic, true);
@@ -124,18 +136,45 @@ namespace PersistentEmpiresLib.SceneScripts
             //base.GameEntity.AddPhysics(base.GameEntity.Mass, base.GameEntity.CenterOfMass, base.GameEntity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName(this.PhysicMaterial), true, 0);
             this.HitPoint = this.MaxHitPoint;
             this.destructed = false;
-
-            if (GameNetwork.IsServer)
-            {
-                GameNetwork.BeginBroadcastModuleEvent();
-                GameNetwork.WriteMessage(new ResetDestructableItem(this));
-                GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
-            }
+#endif
         }
 
-        
+
         public override void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
+#if SERVER
+            lock (PersistentEmpireSceneSyncBehaviors._synclock)
+            {
+                this.HitPoint = hitPoint;
+
+                if (this.HitPoint <= 0)
+                {
+                    MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
+                    if (this.ParticleEffectOnDestroy != "")
+                    {
+                        Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnDestroy), globalFrame);
+                    }
+                    if (this.SoundEffectOnDestroy != "")
+                    {
+                        Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
+                    }
+                    if (this.ApplyPhysicsOnDestruction)
+                    {
+                        base.GameEntity.AddPhysics(base.GameEntity.Mass, base.GameEntity.CenterOfMass, base.GameEntity.GetBodyShape(), impactDirection * 3, Vec3.Zero, PhysicsMaterial.GetFromName(this.PhysicMaterial), false, 0);
+                    }
+                    else
+                    {
+                        GameEntity.SetVisibilityExcludeParents(false);
+                    }
+                    destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
+                    destructed = true;
+                }
+            }
+            GameNetwork.BeginBroadcastModuleEvent();
+            GameNetwork.WriteMessage(new SyncObjectHitpointsPE(this, impactDirection, this.HitPoint));
+            GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
+#endif
+#if CLIENT
             this.HitPoint = hitPoint;
 
             if (this.HitPoint <= 0)
@@ -160,12 +199,8 @@ namespace PersistentEmpiresLib.SceneScripts
                 destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
                 destructed = true;
             }
-            if (GameNetwork.IsServer)
-            {
-                GameNetwork.BeginBroadcastModuleEvent();
-                GameNetwork.WriteMessage(new SyncObjectHitpointsPE(this, impactDirection, this.HitPoint));
-                GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
-            }
+#endif
+
         }
 
         protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)

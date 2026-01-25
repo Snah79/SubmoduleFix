@@ -48,13 +48,22 @@ namespace PersistentEmpiresLib.SceneScripts
         private bool destructed = false;
         private long destructedAt = 0;
 
+        private WeakGameEntity _weakEntity;
+
         protected override void OnInit()
         {
             base.OnInit();
-            this.initialFrame = base.GameEntity.GetGlobalFrame();
-            this._hitPoint = this.MaxHitPoint;
+            
+            _weakEntity = base.GameEntity;
 
+            if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                initialFrame = tmpGameEntity.GetGlobalFrame();
+            }
+            _hitPoint = MaxHitPoint;
+            
             string[] dropItemList = ItemDrops.Split('|');
+            
             foreach (string dropItemAsString in dropItemList)
             {
                 string[] args = dropItemAsString.Split(',');
@@ -87,12 +96,16 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private void SpawnItem(Agent agent, ItemObject item)
         {
-            MissionWeapon spawnWeapon = new MissionWeapon(item, null, null);
-            MatrixFrame frame = base.GameEntity.GetGlobalFrame();
-            frame.origin = agent.Position;
-            frame.origin.z += 1;
+            if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                var spawnWeapon = new MissionWeapon(item, null, null);
+                var frame = tmpGameEntity.GetGlobalFrame();
 
-            var entity = ItemHelper.SpawnWeaponWithNewEntityAux(this.Scene, spawnWeapon, Mission.WeaponSpawnFlags.WithPhysics | Mission.WeaponSpawnFlags.WithHolster, frame, -1, null, true);
+                frame.origin = agent.Position;
+                frame.origin.z += 1;
+
+                var entity = ItemHelper.SpawnWeaponWithNewEntityAux(Scene, spawnWeapon, Mission.WeaponSpawnFlags.WithPhysics | Mission.WeaponSpawnFlags.WithHolster, frame, -1, null, true);
+            }
         }
 
         public void ResetObject()
@@ -100,42 +113,49 @@ namespace PersistentEmpiresLib.SceneScripts
 #if SERVER
             lock (PersistentEmpireSceneSyncBehaviors._synclock)
             {
-                if (this.ApplyPhysicsOnDestruction)
+                if (_weakEntity.TryGetEntity(out var tmpGameEntity))
                 {
-                    base.GameEntity.RemoveBodyFlags(BodyFlags.Moveable, true);
-                    base.GameEntity.RemoveBodyFlags(BodyFlags.Dynamic, true);
-                    base.GameEntity.SetBodyFlagsRecursive(BodyFlags.BodyOwnerNone);
+                    if (ApplyPhysicsOnDestruction)
+                    {
+                        tmpGameEntity.RemoveBodyFlags(BodyFlags.Moveable, true);
+                        tmpGameEntity.RemoveBodyFlags(BodyFlags.Dynamic, true);
+                        tmpGameEntity.SetBodyFlagsRecursive(BodyFlags.BodyOwnerNone);
+                    }
+                    else
+                    {
+                        tmpGameEntity.SetVisibilityExcludeParents(true);
+                    }
+                    //tmpGameEntity.RemovePhysics();
+                    tmpGameEntity.SetGlobalFrame(initialFrame);
+                    //tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName(PhysicMaterial), true, 0);
+                    HitPoint = MaxHitPoint;
+                    destructed = false;
                 }
-                else
-                {
-                    GameEntity.SetVisibilityExcludeParents(true);
-                }
-                //base.GameEntity.RemovePhysics();
-                base.GameEntity.SetGlobalFrame(initialFrame);
-                //base.GameEntity.AddPhysics(base.GameEntity.Mass, base.GameEntity.CenterOfMass, base.GameEntity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName(this.PhysicMaterial), true, 0);
-                this.HitPoint = this.MaxHitPoint;
-                this.destructed = false;
             }
+
             GameNetwork.BeginBroadcastModuleEvent();
             GameNetwork.WriteMessage(new ResetDestructableItem(this));
             GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
 #endif
 #if CLIENT
-if (this.ApplyPhysicsOnDestruction)
+            if (_weakEntity.TryGetEntity(out var tmpGameEntity))
             {
-                base.GameEntity.RemoveBodyFlags(BodyFlags.Moveable, true);
-                base.GameEntity.RemoveBodyFlags(BodyFlags.Dynamic, true);
-                base.GameEntity.SetBodyFlagsRecursive(BodyFlags.BodyOwnerNone);
+                if (ApplyPhysicsOnDestruction)
+                {
+                    tmpGameEntity.RemoveBodyFlags(BodyFlags.Moveable, true);
+                    tmpGameEntity.RemoveBodyFlags(BodyFlags.Dynamic, true);
+                    tmpGameEntity.SetBodyFlagsRecursive(BodyFlags.BodyOwnerNone);
+                }
+                else
+                {
+                    tmpGameEntity.SetVisibilityExcludeParents(true);
+                }
+                //tmpGameEntity.RemovePhysics();
+                tmpGameEntity.SetGlobalFrame(initialFrame);
+                //tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName(PhysicMaterial), true, 0);
+                HitPoint = MaxHitPoint;
+                destructed = false;
             }
-            else
-            {
-                GameEntity.SetVisibilityExcludeParents(true);
-            }
-            //base.GameEntity.RemovePhysics();
-            base.GameEntity.SetGlobalFrame(initialFrame);
-            //base.GameEntity.AddPhysics(base.GameEntity.Mass, base.GameEntity.CenterOfMass, base.GameEntity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName(this.PhysicMaterial), true, 0);
-            this.HitPoint = this.MaxHitPoint;
-            this.destructed = false;
 #endif
         }
 
@@ -145,29 +165,35 @@ if (this.ApplyPhysicsOnDestruction)
 #if SERVER
             lock (PersistentEmpireSceneSyncBehaviors._synclock)
             {
-                this.HitPoint = hitPoint;
+                HitPoint = hitPoint;
 
-                if (this.HitPoint <= 0)
+                if (HitPoint <= 0)
                 {
-                    MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
-                    if (this.ParticleEffectOnDestroy != "")
+                    if (_weakEntity.TryGetEntity(out var tmpGameEntity))
                     {
-                        Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnDestroy), globalFrame);
+                        var globalFrame = tmpGameEntity.GetGlobalFrame();
+                        /*
+                        if (ParticleEffectOnDestroy != "")
+                        {
+                            Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(ParticleEffectOnDestroy), globalFrame);
+                        }
+                        if (SoundEffectOnDestroy != "")
+                        {
+                            Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
+                        }
+                        */
+                        if (ApplyPhysicsOnDestruction)
+                        {
+                            tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), impactDirection * 3, Vec3.Zero, PhysicsMaterial.GetFromName(PhysicMaterial), false, 0);
+                        }
+                        else
+                        {
+                            tmpGameEntity.SetVisibilityExcludeParents(false);
+                        }
+
+                        destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
+                        destructed = true;
                     }
-                    if (this.SoundEffectOnDestroy != "")
-                    {
-                        Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
-                    }
-                    if (this.ApplyPhysicsOnDestruction)
-                    {
-                        base.GameEntity.AddPhysics(base.GameEntity.Mass, base.GameEntity.CenterOfMass, base.GameEntity.GetBodyShape(), impactDirection * 3, Vec3.Zero, PhysicsMaterial.GetFromName(this.PhysicMaterial), false, 0);
-                    }
-                    else
-                    {
-                        GameEntity.SetVisibilityExcludeParents(false);
-                    }
-                    destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
-                    destructed = true;
                 }
             }
             GameNetwork.BeginBroadcastModuleEvent();
@@ -177,28 +203,33 @@ if (this.ApplyPhysicsOnDestruction)
 #if CLIENT
             this.HitPoint = hitPoint;
 
-            if (this.HitPoint <= 0)
-            {
-                MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
-                if (this.ParticleEffectOnDestroy != "")
+            if (HitPoint <= 0)
                 {
-                    Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnDestroy), globalFrame);
+                    if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                    {
+                        var globalFrame = tmpGameEntity.GetGlobalFrame();
+                        if (ParticleEffectOnDestroy != "")
+                        {
+                            Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(ParticleEffectOnDestroy), globalFrame);
+                        }
+                        if (SoundEffectOnDestroy != "")
+                        {
+                            Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
+                        }
+
+                        if (ApplyPhysicsOnDestruction)
+                        {
+                            tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), impactDirection * 3, Vec3.Zero, PhysicsMaterial.GetFromName(PhysicMaterial), false, 0);
+                        }
+                        else
+                        {
+                            tmpGameEntity.SetVisibilityExcludeParents(false);
+                        }
+
+                        destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
+                        destructed = true;
+                    }
                 }
-                if (this.SoundEffectOnDestroy != "")
-                {
-                    Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
-                }
-                if (this.ApplyPhysicsOnDestruction)
-                {
-                    base.GameEntity.AddPhysics(base.GameEntity.Mass, base.GameEntity.CenterOfMass, base.GameEntity.GetBodyShape(), impactDirection * 3, Vec3.Zero, PhysicsMaterial.GetFromName(this.PhysicMaterial), false, 0);
-                }
-                else
-                {
-                    GameEntity.SetVisibilityExcludeParents(false);
-                }
-                destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
-                destructed = true;
-            }
 #endif
 
         }

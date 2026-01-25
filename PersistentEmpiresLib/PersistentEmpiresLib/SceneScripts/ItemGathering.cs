@@ -55,19 +55,20 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnInit()
         {
             base.OnInit();
-            base.ActionMessage = new TextObject(this.Name);
+
+            ActionMessage = new TextObject(Name);
             TextObject descriptionMessage = new TextObject("Press {KEY} To Gather");
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
-            base.DescriptionMessage = descriptionMessage;
-            this.DropsItemObject = MBObjectManager.Instance.GetObject<ItemObject>(this.DropsItem);
-            this.CurrentCount = this.ItemCount;
+            DescriptionMessage = descriptionMessage;
+            DropsItemObject = MBObjectManager.Instance.GetObject<ItemObject>(DropsItem);
+            CurrentCount = this.ItemCount;
             if (RandomizedRespawn)
             {
-                this.RespawnTime += MBRandom.RandomInt(this.RandomRespawnOffset);
+                RespawnTime += MBRandom.RandomInt(RandomRespawnOffset);
             }
-            if (this.DropsItemObject == null)
+            if (DropsItemObject == null)
             {
-                Debug.Print(this.DropsItem + " CANNOT BE FOUND ON PE_ITEMGATHERING", 0, Debug.DebugColor.Red);
+                Debug.Print(DropsItem + " CANNOT BE FOUND ON PE_ITEMGATHERING", 0, Debug.DebugColor.Red);
             }
         }
 
@@ -238,9 +239,10 @@ namespace PersistentEmpiresLib.SceneScripts
             }
             ActionIndexCache actionIndexCache = ActionIndexCache.Create(this.Animation);
             userAgent.SetActionChannel(0, actionIndexCache, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
-            this.UseStartedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            this.UseWillEndAt = this.UseStartedAt + this.AnimationDurationInSeconds;
-            if (this.RotateWhenUsage)
+            UseStartedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            UseWillEndAt = UseStartedAt + AnimationDurationInSeconds;
+            
+            if (RotateWhenUsage)
             {
                 var entity = base.GameEntity.GetFirstChildEntityWithTag(this.LookPointTag);
                 GameEntityWithWorldPosition gameEntityWithWorldPosition = new GameEntityWithWorldPosition(entity);

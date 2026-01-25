@@ -1,4 +1,5 @@
 ﻿using TaleWorlds.Core;
+using TaleWorlds.Engine;
 
 namespace PersistentEmpiresLib.Helpers
 {
@@ -12,6 +13,13 @@ namespace PersistentEmpiresLib.Helpers
         public static string EncodeSpecialMariaDbChars(this string tmp)
         {
             return tmp.Replace(@"""", "'").Replace(@"''", @"'").Replace(@"'", @"\'").Replace(@"\\", @"\");
+        }
+
+        public static bool TryGetEntity(this WeakGameEntity _weakEntity, out GameEntity entity)
+        {
+            entity = GameEntity.CreateFromWeakEntity(_weakEntity);
+
+            return entity != null;
         }
     }
 }

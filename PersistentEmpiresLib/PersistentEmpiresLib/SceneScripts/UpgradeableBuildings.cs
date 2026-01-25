@@ -260,6 +260,7 @@ namespace PersistentEmpiresLib.SceneScripts
             }
             if (this.HitPoint == this.MaxHitPoint && this.IsUpgrading)
             {
+#if CLIENT
                 if (this.ParticleEffectOnUpgrade != "")
                 {
                     Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnUpgrade), globalFrame);
@@ -268,6 +269,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 {
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnUpgrade), globalFrame.origin, false, true, -1, -1);
                 }
+#endif
                 this.UpgradeBuilding();
                 this.IsUpgrading = false;
                 if (GameNetwork.IsServer)

@@ -1,4 +1,5 @@
-﻿using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
+﻿using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts.Extensions;
 using System;
 using System.Collections.Generic;
@@ -40,6 +41,7 @@ namespace PersistentEmpiresLib.SceneScripts
         private SkillObject RepairSkill;
 
         private List<RepairReceipt> receipt = new List<RepairReceipt>();
+        private WeakGameEntity _weakGameEntity;
 
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement() => !this.GameEntity.IsVisibleIncludeParents() ? base.GetTickRequirement() : ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel;
 
@@ -74,19 +76,23 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnInit()
         {
             initCompleted = false;
+
             base.OnInit();
-            if (this.RidingSkillId != "")
+
+            _weakGameEntity = GameEntity;
+
+            if (RidingSkillId != "")
             {
-                this.RidingSkill = MBObjectManager.Instance.GetObject<SkillObject>(this.RidingSkillId);
+                RidingSkill = MBObjectManager.Instance.GetObject<SkillObject>(RidingSkillId);
             }
-            if (this.RepairingSkillId != "")
+            if (RepairingSkillId != "")
             {
-                this.RepairSkill = MBObjectManager.Instance.GetObject<SkillObject>(this.RepairingSkillId);
+                RepairSkill = MBObjectManager.Instance.GetObject<SkillObject>(RepairingSkillId);
             }
-            this.ParseRepairReceipts();
-            this.ResetStrayDuration();
-            this.HitPoint = this.MaxHitPoint;
-            this.AlwaysAlignToTerritory = true;
+            ParseRepairReceipts();
+            ResetStrayDuration();
+            HitPoint = MaxHitPoint;
+            AlwaysAlignToTerritory = true;
             initCompleted = true;
         }
 
@@ -120,42 +126,50 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public override void SetHitPoint(float hitPoint, Vec3 impactDirection)
         {
-            this.HitPoint = hitPoint;
-            MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
-            if (this.HitPoint > this.MaxHitPoint) this.HitPoint = this.MaxHitPoint;
-            if (this.HitPoint < 0) this.HitPoint = 0;
+            HitPoint = hitPoint;
+            var globalFrame = GameEntity.GetGlobalFrame();
 
-            if (this.HitPoint == 0)
+            if (HitPoint > MaxHitPoint) HitPoint = MaxHitPoint;
+            if (HitPoint < 0) HitPoint = 0;
+
+            if (HitPoint == 0)
             {
-                if (this.PilotAgent != null)
+                if (PilotAgent != null)
                 {
-                    this.PilotAgent.StopUsingGameObjectMT(false);
+                    PilotAgent.StopUsingGameObjectMT(false);
                 }
-                if (this.ParticleEffectOnDestroy != "")
+#if CLIENT
+                if (ParticleEffectOnDestroy != "")
                 {
-                    Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnDestroy), globalFrame);
+                    Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(ParticleEffectOnDestroy), globalFrame);
                 }
-                if (this.SoundEffectOnDestroy != "")
+                if (SoundEffectOnDestroy != "")
                 {
-                    Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
+                    Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
                 }
-                base.GameEntity.Remove(0);
+#endif
+                Remove(0);
             }
-            if (this.HitPoint == this.MaxHitPoint)
+            if (HitPoint == MaxHitPoint)
             {
-                if (this.ParticleEffectOnRepair != "")
+#if CLIENT
+                if (ParticleEffectOnRepair != "")
                 {
-                    Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnRepair), globalFrame);
+                    Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(ParticleEffectOnRepair), globalFrame);
                 }
-                if (this.SoundEffectOnRepair != "")
+                if (SoundEffectOnRepair != "")
                 {
-                    Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnRepair), globalFrame.origin, false, true, -1, -1);
+                    Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(SoundEffectOnRepair), globalFrame.origin, false, true, -1, -1);
                 }
+#endif
             }
         }
         protected override void OnTick(float dt)
         {
-            if (base.GameEntity == null) return;
+            if (!_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
 
             if (!initCompleted)
             {
@@ -165,29 +179,29 @@ namespace PersistentEmpiresLib.SceneScripts
             base.OnTick(dt);
             if (GameNetwork.IsServer)
             {
-                if (this.PilotAgent != null)
+                if (PilotAgent != null)
                 {
-                    if (this.RidingSkill != null)
+                    if (RidingSkill != null)
                     {
-                        int skillValue = this.PilotAgent.Character.GetSkillValue(this.RidingSkill);
-                        if (skillValue < this.RidingSkillRequired)
+                        int skillValue = PilotAgent.Character.GetSkillValue(RidingSkill);
+                        if (skillValue < RidingSkillRequired)
                         {
-                            this.PilotAgent.StopUsingGameObjectMT(false);
+                            PilotAgent.StopUsingGameObjectMT(false);
                             return;
                         }
                     }
-                    this.ResetStrayDuration();
+                    ResetStrayDuration();
 
-                    if (this.PilotAgent.Position.Distance(base.GameEntity.GlobalPosition) > 5f)
+                    if (PilotAgent.Position.Distance(tmpGameEntity.GlobalPosition) > 5f)
                     {
-                        this.PilotAgent.StopUsingGameObjectMT(false);
+                        PilotAgent.StopUsingGameObjectMT(false);
                     }
                 }
             }
 
             if (GameNetwork.IsClient)
             {
-                if (Agent.Main != null && this.PilotAgent == Agent.Main)
+                if (Agent.Main != null && PilotAgent == Agent.Main)
                 {
                     if (Mission.Current.InputManager.IsKeyPressed(InputKey.W))
                     {
@@ -240,13 +254,13 @@ namespace PersistentEmpiresLib.SceneScripts
                     if (Mission.Current.InputManager.IsKeyPressed(InputKey.F))
                     {
                         GameNetwork.MyPeer.ControlledAgent.HandleStopUsingAction();
-                        this.isPlayerUsing = false;
+                        isPlayerUsing = false;
                         ActionIndexCache ac = ActionIndexCache.act_none;
-                        this.PilotAgent.SetActionChannel(0, ac, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0, false, -0.2f, 0, true);
+                        PilotAgent.SetActionChannel(0, ac, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0, false, -0.2f, 0, true);
                     }
                 }
             }
-            if (this.PilotAgent == null)
+            if (PilotAgent == null)
             {
                 if (base.IsMovingBackward) this.StopMovingBackward();
                 if (base.IsMovingDown) this.StopMovingDown();
@@ -310,9 +324,13 @@ namespace PersistentEmpiresLib.SceneScripts
             }
 
             base.OnTickParallel(dt);
-            if (!base.GameEntity.IsVisibleIncludeParents())
+
+            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
             {
-                return;
+                if (!tmpGameEntity.IsVisibleIncludeParents())
+                {
+                    return;
+                }
             }
         }
 
@@ -370,6 +388,14 @@ namespace PersistentEmpiresLib.SceneScripts
             finalDamage = damage;   
 
             return false;
+        }
+
+        internal void Remove(int v)
+        {
+            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                tmpGameEntity.Remove(80);
+            }
         }
     }
 }

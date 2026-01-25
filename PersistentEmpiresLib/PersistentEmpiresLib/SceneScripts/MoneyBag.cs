@@ -65,13 +65,18 @@ namespace PersistentEmpiresLib.SceneScripts
         private static readonly ActionIndexCache act_pickup_from_left_up_horseback_left_end = ActionIndexCache.Create("act_pickup_from_left_up_horseback_left_end");
         public override bool LockUserFrames { get => false; }
         public override bool LockUserPositions { get => false; }
+        private WeakGameEntity _weakGameEntity;
+
         protected override void OnInit()
         {
             base.OnInit();
-            base.ActionMessage = new TextObject("Money Bag");
+
+            _weakGameEntity = GameEntity;
+
+            ActionMessage = new TextObject("Money Bag");
             TextObject descriptionMessage = new TextObject("Press {KEY} To Loot");
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
-            base.DescriptionMessage = descriptionMessage;
+            DescriptionMessage = descriptionMessage;
         }
         public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
@@ -85,7 +90,7 @@ namespace PersistentEmpiresLib.SceneScripts
             //    return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel2;
             //}
 #if SERVER
-            if (base.HasUser)
+            if (HasUser)
             {
                 return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.Tick;
             }
@@ -96,23 +101,23 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnTick(float dt)
         {
             base.OnTick(dt);
-            this.DoTick(dt);
+            DoTick(dt);
         }
 
         protected void DoTick(float dt)
         {
 #if SERVER
-            if (base.HasUser)
+            if (HasUser)
             {
-                ActionIndexCache currentAction = base.UserAgent.GetCurrentAction(this._usedChannelIndex);
-                if (currentAction == this._successActionIndex)
+                ActionIndexCache currentAction = UserAgent.GetCurrentAction(_usedChannelIndex);
+                if (currentAction == _successActionIndex)
                 {
-                    base.UserAgent.StopUsingGameObjectMT(base.UserAgent.CanUseObject(this));
+                    UserAgent.StopUsingGameObjectMT(UserAgent.CanUseObject(this));
                     GetTickRequirement();
                 }
                 else if (currentAction != this._progressActionIndex)
                 {
-                    base.UserAgent.StopUsingGameObjectMT(false);
+                    UserAgent.StopUsingGameObjectMT(false);
                     GetTickRequirement();
                 }
             }
@@ -121,90 +126,106 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public void SetAmount(int amount)
         {
-            this._amount = amount;
+            _amount = amount;
         }
         
         public int GetAmount()
         {
-            return this._amount;
+            return _amount;
         }
 
         public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
-            if (base.HasUser) return;
+            if (HasUser)
+            {
+                return;
+            }
+            
             base.OnUse(userAgent, agentBoneIndex);
+
             // userAgent.StopUsingGameObjectMT(true, true, false);
             if (GameNetwork.IsServer)
             {
                 Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name);
 
-                MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
-                float num = globalFrame.origin.z;
-                float eyeGlobalHeight = userAgent.GetEyeGlobalHeight();
-                bool isLeftStance = userAgent.GetIsLeftStance();
-                if (userAgent.HasMount)
+                if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
                 {
-                    this._usedChannelIndex = 1;
-                    MatrixFrame frame = userAgent.Frame;
-                    bool flag = Vec2.DotProduct(frame.rotation.f.AsVec2.LeftVec(), (base.GameEntity.GetGlobalFrame().origin - frame.origin).AsVec2) > 0f;
-                    if (num < eyeGlobalHeight * 0.7f + userAgent.Position.z)
-                    {
+                    var globalFrame = tmpGameEntity.GetGlobalFrame();
+                    var num = globalFrame.origin.z;
 
-                        this._progressActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_down_horseback_begin : PE_MoneyBag.act_pickup_from_right_down_horseback_begin);
-                        this._successActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_down_horseback_end : PE_MoneyBag.act_pickup_from_right_down_horseback_end);
+                    var eyeGlobalHeight = userAgent.GetEyeGlobalHeight();
+                    var isLeftStance = userAgent.GetIsLeftStance();
+
+                    if (userAgent.HasMount)
+                    {
+                        var frame = userAgent.Frame;
+                        var flag = Vec2.DotProduct(frame.rotation.f.AsVec2.LeftVec(), (tmpGameEntity.GetGlobalFrame().origin - frame.origin).AsVec2) > 0f;
+
+                        _usedChannelIndex = 1;
+
+                        if (num < eyeGlobalHeight * 0.7f + userAgent.Position.z)
+                        {
+                            _progressActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_down_horseback_begin : PE_MoneyBag.act_pickup_from_right_down_horseback_begin);
+                            _successActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_down_horseback_end : PE_MoneyBag.act_pickup_from_right_down_horseback_end);
+                        }
+                        else if (num < eyeGlobalHeight * 1.1f + userAgent.Position.z)
+                        {
+                            _progressActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_middle_horseback_begin : PE_MoneyBag.act_pickup_from_right_middle_horseback_begin);
+                            _successActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_middle_horseback_end : PE_MoneyBag.act_pickup_from_right_middle_horseback_end);
+                        }
+                        else
+                        {
+                            _progressActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_up_horseback_begin : PE_MoneyBag.act_pickup_from_right_up_horseback_begin);
+                            _successActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_up_horseback_end : PE_MoneyBag.act_pickup_from_right_up_horseback_end);
+                        }
+                    }
+                    else if (num < eyeGlobalHeight * 0.4f + userAgent.Position.z)
+                    {
+                        _usedChannelIndex = 0;
+                        _progressActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_down_begin_left_stance : PE_MoneyBag.act_pickup_down_begin);
+                        _successActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_down_end_left_stance : PE_MoneyBag.act_pickup_down_end);
+
                     }
                     else if (num < eyeGlobalHeight * 1.1f + userAgent.Position.z)
                     {
-
-                        this._progressActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_middle_horseback_begin : PE_MoneyBag.act_pickup_from_right_middle_horseback_begin);
-                        this._successActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_middle_horseback_end : PE_MoneyBag.act_pickup_from_right_middle_horseback_end);
+                        _usedChannelIndex = 1;
+                        _progressActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_middle_begin_left_stance : PE_MoneyBag.act_pickup_middle_begin);
+                        _successActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_middle_end_left_stance : PE_MoneyBag.act_pickup_middle_end);
                     }
                     else
                     {
-                        this._progressActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_up_horseback_begin : PE_MoneyBag.act_pickup_from_right_up_horseback_begin);
-                        this._successActionIndex = (flag ? PE_MoneyBag.act_pickup_from_left_up_horseback_end : PE_MoneyBag.act_pickup_from_right_up_horseback_end);
+                        _usedChannelIndex = 1;
+                        _progressActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_up_begin_left_stance : PE_MoneyBag.act_pickup_up_begin);
+                        _successActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_up_end_left_stance : PE_MoneyBag.act_pickup_up_end);
                     }
+                    userAgent.SetActionChannel(_usedChannelIndex, _progressActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                 }
-                else if (num < eyeGlobalHeight * 0.4f + userAgent.Position.z)
-                {
-                    this._usedChannelIndex = 0;
-
-                    this._progressActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_down_begin_left_stance : PE_MoneyBag.act_pickup_down_begin);
-                    this._successActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_down_end_left_stance : PE_MoneyBag
-                        .act_pickup_down_end);
-
-                }
-                else if (num < eyeGlobalHeight * 1.1f + userAgent.Position.z)
-                {
-                    this._usedChannelIndex = 1;
-                    this._progressActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_middle_begin_left_stance : PE_MoneyBag.act_pickup_middle_begin);
-                    this._successActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_middle_end_left_stance : PE_MoneyBag.act_pickup_middle_end);
-                }
-                else
-                {
-                    this._usedChannelIndex = 1;
-                    this._progressActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_up_begin_left_stance : PE_MoneyBag.act_pickup_up_begin);
-                    this._successActionIndex = (isLeftStance ? PE_MoneyBag.act_pickup_up_end_left_stance : PE_MoneyBag.act_pickup_up_end);
-                }
-                userAgent.SetActionChannel(this._usedChannelIndex, this._progressActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
             }
         }
 
         public override void OnUseStopped(Agent userAgent, bool isSuccessful, int preferenceIndex)
         {
             base.OnUseStopped(userAgent, isSuccessful, preferenceIndex);
-            Debug.Print("[USING LOG] AGENT USE STOPPED " + this.GetType().Name);
+            Debug.Print("[USING LOG] AGENT USE STOPPED " + GetType().Name);
 
             if (isSuccessful)
             {
                 if (GameNetwork.IsServer)
                 {
                     PersistentEmpireRepresentative representative = userAgent.MissionPeer.GetNetworkPeer().GetComponent<PersistentEmpireRepresentative>();
-                    representative.GoldGain(this._amount);
-                    LoggerHelper.LogAnAction(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerPickedUpGold, null, new object[] { this._amount });
+                    representative.GoldGain(_amount);
+                    LoggerHelper.LogAnAction(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerPickedUpGold, null, new object[] { _amount });
                     // Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/ui/notification/coins_positive"), userAgent.Frame.origin, false, true, -1, -1);
                 }
-                base.GameEntity.Remove(80);
+                Remove(80);
+            }
+        }
+
+        internal void Remove(int reason)
+        {
+            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                tmpGameEntity.Remove(80);
             }
         }
     }

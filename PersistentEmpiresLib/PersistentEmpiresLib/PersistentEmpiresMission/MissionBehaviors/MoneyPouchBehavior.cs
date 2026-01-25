@@ -99,6 +99,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
 
         private static int _counter = 0;
+#if SERVER
         public override void OnMissionTick(float dt)
         {
             base.OnMissionTick(dt);
@@ -108,20 +109,16 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             // Reset counter
             _counter = 0;
 
-            if (GameNetwork.IsClientOrReplay) return;
-            
             foreach (PE_MoneyBag moneyBag in this.MoneyBagCreatedAt.Keys.ToList())
             {
-                if (this.MoneyBagCreatedAt[moneyBag] + 600 < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                if (MoneyBagCreatedAt[moneyBag] + 600 < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                 {
-                    this.MoneyBagCreatedAt.Remove(moneyBag);
-                    if (moneyBag.GameEntity != null)
-                    {
-                        moneyBag.GameEntity.Remove(80);
-                    }
+                    MoneyBagCreatedAt.Remove(moneyBag);
+                    moneyBag.Remove(80);
                 }
             }
         }
+#endif
 
         private void DropMoney(MatrixFrame frame, int amount)
         {

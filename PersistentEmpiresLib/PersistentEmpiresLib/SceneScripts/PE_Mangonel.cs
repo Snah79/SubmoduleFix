@@ -98,7 +98,7 @@ namespace PersistentEmpiresLib.SceneScripts
         public float MaxHitPoint = 200f;
         public string ParticleEffectOnDestroy = "psys_siege_sturgia_wall_destruction";
         public string SoundEffectOnDestroy = "event:/mission/siege/generic/stone_destroy";
-
+        private WeakGameEntity _weakGameEntity;
         protected override float MaximumBallisticError => 1.5f;
 
         protected override float ShootingSpeed => ProjectileSpeed;
@@ -256,6 +256,7 @@ namespace PersistentEmpiresLib.SceneScripts
             _verticalAdjusterStartingLocalFrame = _verticalAdjuster.GetFrame();
             _verticalAdjusterStartingLocalFrame = _body.GameEntity.GetBoneEntitialFrameWithIndex(0).TransformToLocal(in _verticalAdjusterStartingLocalFrame);
             base.OnInit();
+            _weakGameEntity = GameEntity;
             this.InitiateMoveSynch();
             HitPoint = MaxHitPoint;
             LoadAmmoStandingPoint.InitRequiredWeaponClasses(new WeaponClass[] { OriginalMissileItem.PrimaryWeapon.WeaponClass });
@@ -372,9 +373,12 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 if (this.GetPilotAgent() != null)
                 {
-                    if (this.GetPilotAgent().Position.Distance(base.GameEntity.GlobalPosition) > 5f)
+                    if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
                     {
-                        this.GetPilotAgent().StopUsingGameObjectMT(false);
+                        if (this.GetPilotAgent().Position.Distance(tmpGameEntity.GlobalPosition) > 5f)
+                        {
+                            this.GetPilotAgent().StopUsingGameObjectMT(false);
+                        }
                     }
                 }
             }
@@ -582,7 +586,14 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnTickParallel(float dt)
         {
             base.OnTickParallel(dt);
-            if (!base.GameEntity.IsVisibleIncludeParents())
+            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                if (!tmpGameEntity.IsVisibleIncludeParents())
+                {
+                    return;
+                }
+            }
+            else
             {
                 return;
             }
@@ -949,12 +960,18 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public void SetHitPoint(float hitPoint, Vec3 impactDirection)
         {
+            HitPoint = hitPoint;
+            
+            if (HitPoint > MaxHitPoint) HitPoint = MaxHitPoint;
+            
+            if (HitPoint < 0) HitPoint = 0;
 
-            this.HitPoint = hitPoint;
+            if (!_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
 
-            MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
-            if (this.HitPoint > this.MaxHitPoint) this.HitPoint = this.MaxHitPoint;
-            if (this.HitPoint < 0) this.HitPoint = 0;
+            var globalFrame = tmpGameEntity.GetGlobalFrame();
 
             if (this.HitPoint == 0)
             {
@@ -965,16 +982,17 @@ namespace PersistentEmpiresLib.SceneScripts
                         this.StandingPoints[i].UserAgent.StopUsingGameObjectMT(false);
                     }
                 }
-                if (this.ParticleEffectOnDestroy != "")
+#if CLIENT
+                if (ParticleEffectOnDestroy != "")
                 {
                     Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnDestroy), globalFrame);
                 }
-                if (this.SoundEffectOnDestroy != "")
+                if (SoundEffectOnDestroy != "")
                 {
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
                 }
-
-                base.GameEntity.Remove(0);
+#endif
+                tmpGameEntity.Remove(0);
             }
         }
 
@@ -1004,6 +1022,14 @@ namespace PersistentEmpiresLib.SceneScripts
             finalDamage = damage;
 
             return false;
-        }        
+        }
+
+        internal void Remove(int v)
+        {
+            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                tmpGameEntity.Remove(80);
+            }
+        }
     }
 }

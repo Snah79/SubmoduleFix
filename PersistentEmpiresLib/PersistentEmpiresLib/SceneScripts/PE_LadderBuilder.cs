@@ -90,6 +90,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
             if (this.ladderBuilt && this.HitPoint <= 0)
             {
+#if CLIENT
                 if (this.ParticleEffectOnDestroy != "")
                 {
                     Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnDestroy), base.GameEntity.GetGlobalFrame());
@@ -98,11 +99,13 @@ namespace PersistentEmpiresLib.SceneScripts
                 {
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), base.GameEntity.GetGlobalFrame().origin, false, true, -1, -1);
                 }
+#endif
                 this.siegeLadder.GameEntity.SetVisibilityExcludeParents(false);
                 ladderBuilt = false;
             }
             else if (this.ladderBuilt == false && this.HitPoint >= this.MaxHitPoint)
             {
+#if CLIENT
                 if (this.ParticleEffectOnRepair != "")
                 {
                     Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnRepair), base.GameEntity.GetGlobalFrame());
@@ -111,6 +114,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 {
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnRepair), base.GameEntity.GetGlobalFrame().origin, false, true, -1, -1);
                 }
+#endif
                 this.siegeLadder.GameEntity.SetVisibilityExcludeParents(true);
                 ladderBuilt = true;
             }

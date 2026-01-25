@@ -260,7 +260,8 @@ namespace PersistentEmpiresLib.SceneScripts
 
             if (this.HitPoint == 0)
             {
-                this.PilotAgent?.StopUsingGameObjectMT(false);
+                PilotAgent?.StopUsingGameObjectMT(false);
+#if CLIENT
                 if (!string.IsNullOrEmpty(this.ParticleEffectOnDestroy))
                 {
                     Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnDestroy), globalFrame);
@@ -269,10 +270,12 @@ namespace PersistentEmpiresLib.SceneScripts
                 {
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
                 }
+#endif
                 destroyed = true;
             }
             if (this.HitPoint == this.MaxHitPoint)
             {
+#if CLIENT
                 if (this.ParticleEffectOnRepair != "")
                 {
                     Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnRepair), globalFrame);
@@ -281,6 +284,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 {
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnRepair), globalFrame.origin, false, true, -1, -1);
                 }
+#endif
             }
         }
 

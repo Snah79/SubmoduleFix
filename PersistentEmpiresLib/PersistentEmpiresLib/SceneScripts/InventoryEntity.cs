@@ -79,6 +79,7 @@ namespace PersistentEmpiresLib.SceneScripts
         private static readonly ActionIndexCache act_pickup_from_left_up_horseback_left_end = ActionIndexCache.Create("act_pickup_from_left_up_horseback_left_end");
         public override bool LockUserFrames { get => false; }
         public override bool LockUserPositions { get => false; }
+        private WeakGameEntity _weakGameEntity;
 
         private string GenerateId()
         {
@@ -146,11 +147,14 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnInit()
         {
             base.OnInit();
-            base.ActionMessage = new TextObject(InventoryName);
+
+            _weakGameEntity = GameEntity;
+
+            ActionMessage = new TextObject(InventoryName);
             TextObject descriptionMessage = new TextObject("Press {KEY} To Open The Inventory");
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
-            base.DescriptionMessage = descriptionMessage;
-            this.playerInventoryComponent = Mission.Current.GetMissionBehavior<PlayerInventoryComponent>();
+            DescriptionMessage = descriptionMessage;
+            playerInventoryComponent = Mission.Current.GetMissionBehavior<PlayerInventoryComponent>();
         }
 
         protected override void OnRemoved(int removeReason)
@@ -162,11 +166,11 @@ namespace PersistentEmpiresLib.SceneScripts
         protected bool ValidateValues()
         {
             List<GameEntity> reference = new List<GameEntity>();
-            base.Scene.GetAllEntitiesWithScriptComponent<PE_InventoryEntity>(ref reference);
+            Scene.GetAllEntitiesWithScriptComponent<PE_InventoryEntity>(ref reference);
             List<PE_InventoryEntity> sameId = reference.Select(r => r.GetFirstScriptOfType<PE_InventoryEntity>()).Where(r => r.InventoryId == this.InventoryId && r != this).ToList();
             if (sameId.Count() > 0)
             {
-                MBEditor.AddEntityWarning(base.GameEntity, this.InventoryId + " has a same id with another chest");
+                MBEditor.AddEntityWarning(GameEntity, this.InventoryId + " has a same id with another chest");
                 return false;
             }
             return true;
@@ -197,80 +201,93 @@ namespace PersistentEmpiresLib.SceneScripts
 #if SERVER
         public void OpenInventory(Agent userAgent)
         {
-            Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/mission/movement/foley/door_open"), base.GameEntity.GetGlobalFrame().origin, false, true, -1, -1);
+            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/mission/movement/foley/door_open"), tmpGameEntity.GetGlobalFrame().origin, false, true, -1, -1);
                 this.playerInventoryComponent.OpenInventoryForPeer(userAgent.MissionPeer.GetNetworkPeer(), this.InventoryId);
-            // userAgent.StopUsingGameObjectMT(true);            
+                // userAgent.StopUsingGameObjectMT(true);            
+            }
         }        
 
         public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
-            float distance = base.GameEntity.GetGlobalFrame().origin.Distance(userAgent.Position);
-            if (distance >= this.Distance)
+            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
             {
-                userAgent.StopUsingGameObjectMT(false);
-                return;
-            }
+                var distance = tmpGameEntity.GetGlobalFrame().origin.Distance(userAgent.Position);
 
-            base.OnUse(userAgent, agentBoneIndex);
-            Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name + " ID " + this.InventoryId + " PLAYER " + userAgent.MissionPeer.DisplayedName);
-            if (this.GameEntity == null || this.InteractionEntity == null) return;
-
-            NetworkCommunicator player = userAgent.MissionPeer.GetNetworkPeer();
-            bool canUserUse = true;
-            if (this.CastleId > -1)
-            {
-                canUserUse = false;
-                Faction f = this.GetCastleBanner().GetOwnerFaction();
-                if (f.chestManagers.Contains(player.VirtualPlayer.ToPlayerId()) || f.marshalls.Contains(player.VirtualPlayer.ToPlayerId()) || f.lordId == player.VirtualPlayer.ToPlayerId()) canUserUse = true;
-                PE_RepairableDestructableComponent destructComponent = base.GameEntity.GetFirstScriptOfType<PE_RepairableDestructableComponent>();
-                if (destructComponent != null && destructComponent.IsBroken) canUserUse = true;
-                if (!canUserUse)
+                if (distance >= Distance)
                 {
-                    InformationComponent.Instance.SendMessage("This chest is locked by " + f.name, 0x0606c2d9, player);
+                    userAgent.StopUsingGameObjectMT(false);
                     return;
                 }
-            }
-            
-            if (GameNetwork.IsServer)
-            {
-                MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
-                float num = globalFrame.origin.z;
-                float eyeGlobalHeight = userAgent.GetEyeGlobalHeight();
-                bool isLeftStance = userAgent.GetIsLeftStance();
-                if (num < eyeGlobalHeight * 0.4f + userAgent.Position.z)
-                {
-                    this._usedChannelIndex = 0;
 
-                    this._progressActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_down_begin_left_stance : PE_InventoryEntity.act_pickup_down_begin);
-                    this._successActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_down_end_left_stance : PE_InventoryEntity
-                        .act_pickup_down_end);
+                base.OnUse(userAgent, agentBoneIndex);
+                
+                Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name + " ID " + this.InventoryId + " PLAYER " + userAgent.MissionPeer.DisplayedName);
+                
+                if (this.GameEntity == null || this.InteractionEntity == null) return;
 
-                }
-                else if (num < eyeGlobalHeight * 1.1f + userAgent.Position.z)
+                var player = userAgent.MissionPeer.GetNetworkPeer();
+                var canUserUse = true;
+
+                if (this.CastleId > -1)
                 {
-                    this._usedChannelIndex = 1;
-                    this._progressActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_middle_begin_left_stance : PE_InventoryEntity.act_pickup_middle_begin);
-                    this._successActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_middle_end_left_stance : PE_InventoryEntity.act_pickup_middle_end);
+                    canUserUse = false;
+                    var f = this.GetCastleBanner().GetOwnerFaction();
+                    
+                    if (f.chestManagers.Contains(player.VirtualPlayer.ToPlayerId()) || f.marshalls.Contains(player.VirtualPlayer.ToPlayerId()) || f.lordId == player.VirtualPlayer.ToPlayerId()) canUserUse = true;
+                    
+                    var destructComponent = tmpGameEntity.GetFirstScriptOfType<PE_RepairableDestructableComponent>();
+                    
+                    if (destructComponent != null && destructComponent.IsBroken) canUserUse = true;
+                    
+                    if (!canUserUse)
+                    {
+                        InformationComponent.Instance.SendMessage("This chest is locked by " + f.name, 0x0606c2d9, player);
+                        return;
+                    }
                 }
-                else
+
+                if (GameNetwork.IsServer)
                 {
-                    this._usedChannelIndex = 1;
-                    this._progressActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_up_begin_left_stance : PE_InventoryEntity.act_pickup_up_begin);
-                    this._successActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_up_end_left_stance : PE_InventoryEntity.act_pickup_up_end);
+                    var globalFrame = tmpGameEntity.GetGlobalFrame();
+                    var num = globalFrame.origin.z;
+                    var eyeGlobalHeight = userAgent.GetEyeGlobalHeight();
+                    var isLeftStance = userAgent.GetIsLeftStance();
+                    
+                    if (num < eyeGlobalHeight * 0.4f + userAgent.Position.z)
+                    {
+                        _usedChannelIndex = 0;
+                        _progressActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_down_begin_left_stance : PE_InventoryEntity.act_pickup_down_begin);
+                        _successActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_down_end_left_stance : PE_InventoryEntity.act_pickup_down_end);
+                    }
+                    else if (num < eyeGlobalHeight * 1.1f + userAgent.Position.z)
+                    {
+                        _usedChannelIndex = 1;
+                        _progressActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_middle_begin_left_stance : PE_InventoryEntity.act_pickup_middle_begin);
+                        _successActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_middle_end_left_stance : PE_InventoryEntity.act_pickup_middle_end);
+                    }
+                    else
+                    {
+                        _usedChannelIndex = 1;
+                        _progressActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_up_begin_left_stance : PE_InventoryEntity.act_pickup_up_begin);
+                        _successActionIndex = (isLeftStance ? PE_InventoryEntity.act_pickup_up_end_left_stance : PE_InventoryEntity.act_pickup_up_end);
+                    }
+                    userAgent.SetActionChannel(_usedChannelIndex, _progressActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
                 }
-                userAgent.SetActionChannel(this._usedChannelIndex, this._progressActionIndex, false, 0UL, 0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
             }
         }
 #endif
         public override void OnUseStopped(Agent userAgent, bool isSuccessful, int preferenceIndex)
         {
             base.OnUseStopped(userAgent, isSuccessful, preferenceIndex);
+            
             Debug.Print("[USING LOG] AGENT USE STOPPED " + this.GetType().Name);
 
             if (isSuccessful)
             {
 #if SERVER
-                this.OpenInventory(userAgent);
+                OpenInventory(userAgent);
 #endif
             }
         }
@@ -278,9 +295,9 @@ namespace PersistentEmpiresLib.SceneScripts
         public void OnEntityRemove()
         {
 #if SERVER
-            if (playerInventoryComponent.CustomInventories.ContainsKey(this.InventoryId) || playerInventoryComponent.LootableObjects.ContainsKey(this.InventoryId))
+            if (playerInventoryComponent.CustomInventories.ContainsKey(InventoryId) || playerInventoryComponent.LootableObjects.ContainsKey(InventoryId))
             {
-                playerInventoryComponent.CleanUpInventory(playerInventoryComponent.CustomInventories[this.InventoryId]);
+                playerInventoryComponent.CleanUpInventory(playerInventoryComponent.CustomInventories[InventoryId]);
             }
 #endif
         }
@@ -289,13 +306,21 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             // if(this.InventoryId.Trim() == "")
             // {
-            this.InventoryId = this.GenerateId();
+            InventoryId = GenerateId();
             // }
-            if (playerInventoryComponent.CustomInventories != null && !playerInventoryComponent.CustomInventories.ContainsKey(this.InventoryId))
+            if (playerInventoryComponent.CustomInventories != null && !playerInventoryComponent.CustomInventories.ContainsKey(InventoryId))
             {
-                Inventory inventory = new Inventory(this.Slot, this.StackCount, this.InventoryId, this);
+                Inventory inventory = new Inventory(Slot, StackCount, InventoryId, this);
                 inventory.GeneratedViaSpawner = true;
-                playerInventoryComponent.CustomInventories[this.InventoryId] = inventory;
+                playerInventoryComponent.CustomInventories[InventoryId] = inventory;
+            }
+        }
+
+        internal void Remove(int v)
+        {
+            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                tmpGameEntity.Remove(80);
             }
         }
     }

@@ -101,6 +101,7 @@ namespace PersistentEmpiresLib.SceneScripts
             this.HitPoint = hitPoint;
             if (this.batteringRamBuilt == false && this.HitPoint >= this.MaxHitPoint)
             {
+#if CLIENT
                 if (this.ParticleEffectOnRepair != "")
                 {
                     Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(this.ParticleEffectOnRepair), base.GameEntity.GetGlobalFrame());
@@ -109,6 +110,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 {
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnRepair), base.GameEntity.GetGlobalFrame().origin, false, true, -1, -1);
                 }
+#endif
                 this.batteringRam.GameEntity.SetVisibilityExcludeParents(true);
                 batteringRamBuilt = true;
             }

@@ -115,7 +115,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     this.LootableCreatedAt.Remove(inventoryId);
                     if (this.CustomInventories.ContainsKey(inventoryId) && this.LootableObjects.ContainsKey(inventoryId))
                     {
-                        this.LootableObjects[inventoryId].GameEntity.Remove(0);
+                        this.LootableObjects[inventoryId].Remove(0);
                     }
                 }
             }
@@ -1140,13 +1140,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
                 if (targetInventory.IsConsumable && targetInventory.IsInventoryEmpty())
                 {
-                    this.LootableObjects[targetInventory.InventoryId].GameEntity.Remove(0);
+                    LootableObjects[targetInventory.InventoryId].Remove(0);
                 }
 
             }
-            if (this.CustomInventories.ContainsKey(draggedFromInventory))
+            if (CustomInventories.ContainsKey(draggedFromInventory))
             {
-                Inventory targetInventory = this.CustomInventories[draggedFromInventory];
+                Inventory targetInventory = CustomInventories[draggedFromInventory];
                 if (!targetInventory.GeneratedViaSpawner && !targetInventory.IsConsumable && targetInventory.InventoryId != "PlayerInventory")
                 {
                     SaveSystemBehavior.HandleCreateOrSaveInventory(targetInventory.InventoryId);
@@ -1160,7 +1160,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
                 if (targetInventory.IsConsumable && targetInventory.IsInventoryEmpty())
                 {
-                    this.LootableObjects[targetInventory.InventoryId].GameEntity.Remove(0);
+                    LootableObjects[targetInventory.InventoryId].Remove(0);
                 }
             }
             return true;

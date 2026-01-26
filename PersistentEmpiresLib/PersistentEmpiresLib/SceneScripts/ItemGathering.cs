@@ -63,8 +63,8 @@ namespace PersistentEmpiresLib.SceneScripts
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
             DescriptionMessage = descriptionMessage;
 #endif
-#if SERVER
             DropsItemObject = MBObjectManager.Instance.GetObject<ItemObject>(DropsItem);
+#if SERVER
             CurrentCount = ItemCount;
             if (RandomizedRespawn)
             {

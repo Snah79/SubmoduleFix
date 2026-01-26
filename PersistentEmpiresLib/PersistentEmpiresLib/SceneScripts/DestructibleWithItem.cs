@@ -141,7 +141,7 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             HitPoint = hitPoint;
 
-            if (HitPoint <= 0)
+            if (HitPoint <= 0 && !destructed)
             {
                 if (_weakEntity.TryGetEntity(out var tmpGameEntity))
                 {
@@ -152,17 +152,21 @@ namespace PersistentEmpiresLib.SceneScripts
                     destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
                     destructed = true;
                 }
+
+                // update clients only when they need to be destroyed
+                GameNetwork.BeginBroadcastModuleEvent();
+                GameNetwork.WriteMessage(new SyncObjectHitpointsPE(this, impactDirection, HitPoint));
+                GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
             }
-            GameNetwork.BeginBroadcastModuleEvent();
-            GameNetwork.WriteMessage(new SyncObjectHitpointsPE(this, impactDirection, this.HitPoint));
-            GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
         }
 
         protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
-            reportDamage = true;
-            MissionWeapon missionWeapon = weapon;
-            WeaponComponentData currentUsageItem = missionWeapon.CurrentUsageItem;
+            reportDamage = false;
+
+            var missionWeapon = weapon;
+            var currentUsageItem = missionWeapon.CurrentUsageItem;
+
             if (weapon.Item == null || weapon.Item.StringId != this.RequiredItemId || this.destructed)
             {
                 reportDamage = false;
@@ -170,7 +174,9 @@ namespace PersistentEmpiresLib.SceneScripts
                 damage = 0;
                 return false;
             }
-            SkillObject requiredSkillObject = MBObjectManager.Instance.GetObject<SkillObject>(this.RequiredSkillId);
+
+            var requiredSkillObject = MBObjectManager.Instance.GetObject<SkillObject>(this.RequiredSkillId);
+            
             if (attackerAgent.Character.GetSkillValue(requiredSkillObject) < this.RequiredSkillLevel)
             {
                 reportDamage = false;
@@ -178,6 +184,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 damage = 0;
                 return false;
             }
+            
             if (attackerAgent == null)
             {
                 reportDamage = false;
@@ -216,8 +223,10 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                 }
             }
+            
             damage = 10;
             finalDamage = damage;
+
             SetHitPoint(HitPoint - damage, impactDirection, attackerScriptComponentBehavior);
 
             return false;

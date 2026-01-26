@@ -479,7 +479,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             message.MissionObject.UpdateIsDestroyed(message.IsDestroyed);
         }
 
-
         private void HandleHorseMarketSetReserveFromServer(HorseMarketSetReserve message)
         {
             message.Market.UpdateReserve(message.Stock);

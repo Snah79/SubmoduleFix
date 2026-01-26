@@ -108,25 +108,22 @@ namespace PersistentEmpiresLib.SceneScripts
         public void UpdateIsDestroyed(bool isDestroyed)
         {
 #if SERVER
-            lock (PersistentEmpireSceneSyncBehaviors._synclock)
+            if (!isDestroyed)
             {
-                if (!isDestroyed)
-                {
-                    CurrentCount = this.ItemCount;
-                    GameEntity.SetVisibilityExcludeParents(true);
-                    IsDestroyed = false;
-                }
-                else
-                {
-                    IsDestroyed = true;
-                    GameEntity.SetVisibilityExcludeParents(false);
-                    DestroyedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                }
-
-                GameNetwork.BeginBroadcastModuleEvent();
-                GameNetwork.WriteMessage(new UpdateItemGatheringDestroyed(this, isDestroyed));
-                GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
+                CurrentCount = this.ItemCount;
+                GameEntity.SetVisibilityExcludeParents(true);
+                IsDestroyed = false;
             }
+            else
+            {
+                IsDestroyed = true;
+                GameEntity.SetVisibilityExcludeParents(false);
+                DestroyedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            }
+
+            GameNetwork.BeginBroadcastModuleEvent();
+            GameNetwork.WriteMessage(new UpdateItemGatheringDestroyed(this, isDestroyed));
+            GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
 #endif
 #if CLIENT
             if (!isDestroyed)

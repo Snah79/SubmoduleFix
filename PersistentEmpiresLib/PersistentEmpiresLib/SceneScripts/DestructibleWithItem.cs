@@ -111,26 +111,23 @@ namespace PersistentEmpiresLib.SceneScripts
         public void ResetObject()
         {
 #if SERVER
-            lock (PersistentEmpireSceneSyncBehaviors._synclock)
+            if (_weakEntity.TryGetEntity(out var tmpGameEntity))
             {
-                if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                if (ApplyPhysicsOnDestruction)
                 {
-                    if (ApplyPhysicsOnDestruction)
-                    {
-                        tmpGameEntity.RemoveBodyFlags(BodyFlags.Moveable, true);
-                        tmpGameEntity.RemoveBodyFlags(BodyFlags.Dynamic, true);
-                        tmpGameEntity.SetBodyFlagsRecursive(BodyFlags.BodyOwnerNone);
-                    }
-                    else
-                    {
-                        tmpGameEntity.SetVisibilityExcludeParents(true);
-                    }
-                    //tmpGameEntity.RemovePhysics();
-                    tmpGameEntity.SetGlobalFrame(initialFrame);
-                    //tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName(PhysicMaterial), true, 0);
-                    HitPoint = MaxHitPoint;
-                    destructed = false;
+                    tmpGameEntity.RemoveBodyFlags(BodyFlags.Moveable, true);
+                    tmpGameEntity.RemoveBodyFlags(BodyFlags.Dynamic, true);
+                    tmpGameEntity.SetBodyFlagsRecursive(BodyFlags.BodyOwnerNone);
                 }
+                else
+                {
+                    tmpGameEntity.SetVisibilityExcludeParents(true);
+                }
+                //tmpGameEntity.RemovePhysics();
+                tmpGameEntity.SetGlobalFrame(initialFrame);
+                //tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName(PhysicMaterial), true, 0);
+                HitPoint = MaxHitPoint;
+                destructed = false;
             }
 
             GameNetwork.BeginBroadcastModuleEvent();
@@ -159,41 +156,37 @@ namespace PersistentEmpiresLib.SceneScripts
 #endif
         }
 
-
         public override void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
 #if SERVER
-            lock (PersistentEmpireSceneSyncBehaviors._synclock)
+            HitPoint = hitPoint;
+
+            if (HitPoint <= 0)
             {
-                HitPoint = hitPoint;
-
-                if (HitPoint <= 0)
+                if (_weakEntity.TryGetEntity(out var tmpGameEntity))
                 {
-                    if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                    var globalFrame = tmpGameEntity.GetGlobalFrame();
+                    /*
+                    if (ParticleEffectOnDestroy != "")
                     {
-                        var globalFrame = tmpGameEntity.GetGlobalFrame();
-                        /*
-                        if (ParticleEffectOnDestroy != "")
-                        {
-                            Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(ParticleEffectOnDestroy), globalFrame);
-                        }
-                        if (SoundEffectOnDestroy != "")
-                        {
-                            Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
-                        }
-                        */
-                        if (ApplyPhysicsOnDestruction)
-                        {
-                            tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), impactDirection * 3, Vec3.Zero, PhysicsMaterial.GetFromName(PhysicMaterial), false, 0);
-                        }
-                        else
-                        {
-                            tmpGameEntity.SetVisibilityExcludeParents(false);
-                        }
-
-                        destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
-                        destructed = true;
+                        Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(ParticleEffectOnDestroy), globalFrame);
                     }
+                    if (SoundEffectOnDestroy != "")
+                    {
+                        Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
+                    }
+                    */
+                    if (ApplyPhysicsOnDestruction)
+                    {
+                        tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), impactDirection * 3, Vec3.Zero, PhysicsMaterial.GetFromName(PhysicMaterial), false, 0);
+                    }
+                    else
+                    {
+                        tmpGameEntity.SetVisibilityExcludeParents(false);
+                    }
+
+                    destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
+                    destructed = true;
                 }
             }
             GameNetwork.BeginBroadcastModuleEvent();
@@ -231,7 +224,6 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                 }
 #endif
-
         }
 
         protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)

@@ -1,7 +1,6 @@
 ﻿using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System;
-using System.Diagnostics;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
@@ -225,7 +224,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
         internal void Remove(int reason)
         {
-            var myTrace = new StackTrace(0, true);
+            var myTrace = new System.Diagnostics.StackTrace(0, true);
 
             try
             {

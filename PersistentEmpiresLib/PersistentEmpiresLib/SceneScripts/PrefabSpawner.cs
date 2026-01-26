@@ -3,7 +3,6 @@ using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Xml;
 using TaleWorlds.Core;
@@ -227,7 +226,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private void DespawnSpawnedPrefab(WeakGameEntity spawnedPrefab)
         {
-            var myTrace = new StackTrace(0, true);
+            var myTrace = new System.Diagnostics.StackTrace(0, true);
 
             try
             {

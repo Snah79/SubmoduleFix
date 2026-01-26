@@ -93,22 +93,22 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             base.AfterStart();
 
-            this.InitializeTeleportDoors();
+            InitializeTeleportDoors();
         }
 
         private void SyncDestructibleWithItems(NetworkCommunicator peer)
         {
-            this.peerSyncDestructableWithItemsQueue.Enqueue(new SyncingTrack(peer, 0, false));
+            peerSyncDestructableWithItemsQueue.Enqueue(new SyncingTrack(peer, 0, false));
         }
 
         private void SyncDestructableHitPoints(NetworkCommunicator peer)
         {
-            this.peerSyncDestructableHitPointsQueue.Enqueue(new SyncingTrack(peer, 0, false));
+            peerSyncDestructableHitPointsQueue.Enqueue(new SyncingTrack(peer, 0, false));
         }
 
         private void SyncItemGatherings(NetworkCommunicator networkPeer)
         {
-            this.peerSyncItemGatheringQueue.Enqueue(new SyncingTrack(networkPeer, 0, false));
+            peerSyncItemGatheringQueue.Enqueue(new SyncingTrack(networkPeer, 0, false));
         }
 
         // private void SyncAttachableObjects()
@@ -123,7 +123,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             try
             {
-                foreach (var comp in syncDestructableWithItems[track.chunkIndex])
+                // sync only destructed as all are shown as not per default
+                foreach (var comp in syncDestructableWithItems[track.chunkIndex].Where(x => x.destructed))
                 {
                     GameNetwork.BeginModuleEventAsServer(track.peer);
                     GameNetwork.WriteMessage(new SyncObjectHitpointsForDestructibleWithItem(comp, Vec3.Zero, comp.HitPoint));
@@ -157,7 +158,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             try
             {
-                foreach (var itemGathering in syncItemGathering[track.chunkIndex])
+                // sync only destructed as all are shown as not per default
+                foreach (var itemGathering in syncItemGathering[track.chunkIndex].Where(x => x.IsDestroyed))
                 {
                     GameNetwork.BeginModuleEventAsServer(track.peer);
                     GameNetwork.WriteMessage(new UpdateItemGatheringDestroyed(itemGathering, itemGathering.IsDestroyed));
@@ -358,17 +360,19 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         protected override void HandleLateNewClientAfterSynchronized(NetworkCommunicator networkPeer)
         {
             base.HandleLateNewClientAfterSynchronized(networkPeer);
+            
             if (networkPeer.IsConnectionActive == false || networkPeer.IsNetworkActive == false) return;
-            this.SyncDestructableHitPoints(networkPeer);
-            this.SyncDestructibleWithItems(networkPeer);
-            this.SyncItemGatherings(networkPeer);
+            
+            SyncDestructableHitPoints(networkPeer);
+            SyncDestructibleWithItems(networkPeer);
+            SyncItemGatherings(networkPeer);
 
 
-            this.SyncUpgradeableBuilding(networkPeer);
-            this.SyncCarts(networkPeer);
-            this.SyncHorseMarkets(networkPeer);
-            this.SyncLadderBuilder(networkPeer);
-            this.SyncMoneyChests(networkPeer);
+            SyncUpgradeableBuilding(networkPeer);
+            SyncCarts(networkPeer);
+            SyncHorseMarkets(networkPeer);
+            SyncLadderBuilder(networkPeer);
+            SyncMoneyChests(networkPeer);
         }
 
         private void SyncLadderBuilder(NetworkCommunicator networkPeer)

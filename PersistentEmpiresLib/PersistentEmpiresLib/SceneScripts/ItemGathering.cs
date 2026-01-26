@@ -29,13 +29,13 @@ namespace PersistentEmpiresLib.SceneScripts
         public string LookPointTag = "lookpoint";
         public bool RandomizedRespawn = false;
         public int RandomRespawnOffset = 0;
-
         public bool IsDestroyed = false;
         private long DestroyedAt = 0;
         private long UseStartedAt = 0;
         private long UseWillEndAt = 0;
         private int CurrentCount = 0;
         private ItemObject DropsItemObject;
+        private WeakGameEntity _weakEntity;
 
         public override bool LockUserFrames
         {
@@ -56,12 +56,16 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             base.OnInit();
 
+            _weakEntity = GameEntity;
+#if CLIENT
             ActionMessage = new TextObject(Name);
             TextObject descriptionMessage = new TextObject("Press {KEY} To Gather");
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
             DescriptionMessage = descriptionMessage;
+#endif
+#if SERVER
             DropsItemObject = MBObjectManager.Instance.GetObject<ItemObject>(DropsItem);
-            CurrentCount = this.ItemCount;
+            CurrentCount = ItemCount;
             if (RandomizedRespawn)
             {
                 RespawnTime += MBRandom.RandomInt(RandomRespawnOffset);
@@ -70,8 +74,10 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 Debug.Print(DropsItem + " CANNOT BE FOUND ON PE_ITEMGATHERING", 0, Debug.DebugColor.Red);
             }
+#endif
         }
 
+#if SERVER
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
             return base.GetTickRequirement() | ScriptComponentBehavior.TickRequirement.TickOccasionally;
@@ -85,7 +91,6 @@ namespace PersistentEmpiresLib.SceneScripts
 
         protected void DoTick(float dt)
         {
-#if SERVER
             if (base.HasUser)
             {
                 if (base.HasUser)
@@ -97,27 +102,32 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                 }
             }
-#endif
             if (this.IsDestroyed && this.DestroyedAt + this.RespawnTime < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             {
                 this.UpdateIsDestroyed(false);
                 //GetTickRequirement();
             }
         }
+#endif
 
         public void UpdateIsDestroyed(bool isDestroyed)
         {
 #if SERVER
+            if (!_weakEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
             if (!isDestroyed)
             {
                 CurrentCount = this.ItemCount;
-                GameEntity.SetVisibilityExcludeParents(true);
+                tmpGameEntity.SetVisibilityExcludeParents(true);
                 IsDestroyed = false;
             }
             else
             {
                 IsDestroyed = true;
-                GameEntity.SetVisibilityExcludeParents(false);
+                tmpGameEntity.SetVisibilityExcludeParents(false);
                 DestroyedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             }
 
@@ -126,17 +136,18 @@ namespace PersistentEmpiresLib.SceneScripts
             GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
 #endif
 #if CLIENT
+            if (!_weakEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
             if (!isDestroyed)
             {
-                CurrentCount = this.ItemCount;
-                GameEntity.SetVisibilityExcludeParents(true);
-                IsDestroyed = false;
+                tmpGameEntity.SetVisibilityExcludeParents(true);
             }
             else
             {
-                IsDestroyed = true;
-                GameEntity.SetVisibilityExcludeParents(false);
-                DestroyedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                tmpGameEntity.SetVisibilityExcludeParents(false);
             }
 #endif
         }
@@ -147,101 +158,106 @@ namespace PersistentEmpiresLib.SceneScripts
             Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name);
 
             userAgent.SetActionChannel(0, ActionIndexCache.act_none, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, MBRandom.RandomFloatRanged(1f), false, -0.2f, 0, true);
+#if SERVER
             if (isSuccessful)
             {
-                if (GameNetwork.IsServer)
+                CurrentCount--;
+                
+                var  peer = userAgent.MissionPeer.GetNetworkPeer();
+                var  persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+                var playerInventory = persistentEmpireRepresentative.GetInventory();
+
+                playerInventory.AddCountedItemSynced(DropsItemObject, DropCount, ItemHelper.GetMaximumAmmo(DropsItemObject));
+                LoggerHelper.LogAnAction(peer, LogAction.PlayerItemGathers, null, new object[] { DropsItemObject });
+                if (CurrentCount == 0)
                 {
-                    this.CurrentCount--;
-                    NetworkCommunicator peer = userAgent.MissionPeer.GetNetworkPeer();
-                    PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
-                    Inventory playerInventory = persistentEmpireRepresentative.GetInventory();
-                    playerInventory.AddCountedItemSynced(this.DropsItemObject, this.DropCount, ItemHelper.GetMaximumAmmo(this.DropsItemObject));
-                    LoggerHelper.LogAnAction(peer, LogAction.PlayerItemGathers, null, new object[] { this.DropsItemObject });
-                    if (this.CurrentCount == 0)
-                    {
-                        this.UpdateIsDestroyed(true);
-                    }
+                    UpdateIsDestroyed(true);
                 }
             }
+#endif
+#if CLIENT
             if (userAgent.IsMine)
             {
                 PEInformationManager.StopCounter();
             }
+#endif
             userAgent.ClearTargetFrame();
         }
 
         public override void OnUse(Agent userAgent, sbyte agentBoneIndex)
         {
-            if (GameNetwork.IsServer)
-            {
-                Debug.Print("[USING LOG] AGENT USE " + this.GetType().Name);
+#if SERVER
+            Debug.Print("[USING LOG] AGENT USE " + GetType().Name);
 
-                if (base.HasUser)
+            if (HasUser)
+            {
+                userAgent.StopUsingGameObjectMT(false);
+                
+                return;
+            }
+            SkillObject requiredSkillObject = MBObjectManager.Instance.GetObject<SkillObject>(RequiredSkillId);
+            if (userAgent.Character.GetSkillValue(requiredSkillObject) < RequiredSkill)
+            {
+                InformationComponent.Instance.SendMessage(GameTexts.FindText("PE_Not_Qualified", null).ToString(), new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                userAgent.StopUsingGameObjectMT(false);
+                return;
+            }
+            EquipmentIndex wieldedItemIndex = userAgent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                                                                                     // MissionWeapon wieldedItem = userAgent.Equipment[wieldedItemIndex];
+            if (NeededItem == "" && wieldedItemIndex != EquipmentIndex.None)
+            {
+                InformationComponent.Instance.SendMessage(GameTexts.FindText("PE_Empty_Your_Hands", null).ToString(), new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                userAgent.StopUsingGameObjectMT(false);
+                return;
+            }
+            else if (NeededItem != "")
+            {
+                if (wieldedItemIndex == EquipmentIndex.None)
                 {
+                    ItemObject need = MBObjectManager.Instance.GetObject<ItemObject>(this.NeededItem);
+                    InformationComponent.Instance.SendMessage("You need a " + need.Name.ToString() + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
                     userAgent.StopUsingGameObjectMT(false);
                     return;
                 }
-                SkillObject requiredSkillObject = MBObjectManager.Instance.GetObject<SkillObject>(this.RequiredSkillId);
-                if (userAgent.Character.GetSkillValue(requiredSkillObject) < this.RequiredSkill)
+                else
                 {
-                    InformationComponent.Instance.SendMessage(GameTexts.FindText("PE_Not_Qualified", null).ToString(), new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
-                    userAgent.StopUsingGameObjectMT(false);
-                    return;
-                }
-                EquipmentIndex wieldedItemIndex = userAgent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
-                // MissionWeapon wieldedItem = userAgent.Equipment[wieldedItemIndex];
-                if (this.NeededItem == "" && wieldedItemIndex != EquipmentIndex.None)
-                {
-                    InformationComponent.Instance.SendMessage(GameTexts.FindText("PE_Empty_Your_Hands", null).ToString(), new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
-                    userAgent.StopUsingGameObjectMT(false);
-                    return;
-                }
-                else if (this.NeededItem != "")
-                {
-                    if (wieldedItemIndex == EquipmentIndex.None)
+                    MissionWeapon wieldedItem = userAgent.Equipment[wieldedItemIndex];
+                    if (wieldedItem.Item.StringId != this.NeededItem)
                     {
                         ItemObject need = MBObjectManager.Instance.GetObject<ItemObject>(this.NeededItem);
                         InformationComponent.Instance.SendMessage("You need a " + need.Name.ToString() + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
                         userAgent.StopUsingGameObjectMT(false);
                         return;
                     }
-                    else
-                    {
-                        MissionWeapon wieldedItem = userAgent.Equipment[wieldedItemIndex];
-                        if (wieldedItem.Item.StringId != this.NeededItem)
-                        {
-                            ItemObject need = MBObjectManager.Instance.GetObject<ItemObject>(this.NeededItem);
-                            InformationComponent.Instance.SendMessage("You need a " + need.Name.ToString() + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
-                            userAgent.StopUsingGameObjectMT(false);
-                            return;
-                        }
-                    }
-                }
-                if (this.IsDestroyed)
-                {
-                    InformationComponent.Instance.SendMessage("This object is disabled please try later.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
-                    userAgent.StopUsingGameObjectMT(false);
-                    return;
-                }
-
-                NetworkCommunicator peer = userAgent.MissionPeer.GetNetworkPeer();
-                PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
-                Inventory playerInventory = persistentEmpireRepresentative.GetInventory();
-                if (!playerInventory.HasEnoughRoomFor(this.DropsItemObject, this.DropCount))
-                {
-                    InformationComponent.Instance.SendMessage(GameTexts.FindText("PE_Not_Enough_Space", null).ToString(), new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
-                    userAgent.StopUsingGameObjectMT(false);
-                    return;
                 }
             }
-            ActionIndexCache actionIndexCache = ActionIndexCache.Create(this.Animation);
+            if (IsDestroyed)
+            {
+                InformationComponent.Instance.SendMessage("This object is disabled please try later.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                userAgent.StopUsingGameObjectMT(false);
+                return;
+            }
+
+            var peer = userAgent.MissionPeer.GetNetworkPeer();
+            var persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+            var playerInventory = persistentEmpireRepresentative.GetInventory();
+            
+            if (!playerInventory.HasEnoughRoomFor(DropsItemObject, DropCount))
+            {
+                InformationComponent.Instance.SendMessage(GameTexts.FindText("PE_Not_Enough_Space", null).ToString(), new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                userAgent.StopUsingGameObjectMT(false);
+                return;
+            }
+#endif
+            var actionIndexCache = ActionIndexCache.Create(Animation);
+            
             userAgent.SetActionChannel(0, actionIndexCache, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
             UseStartedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             UseWillEndAt = UseStartedAt + AnimationDurationInSeconds;
-            
+
             if (RotateWhenUsage)
             {
-                var entity = base.GameEntity.GetFirstChildEntityWithTag(this.LookPointTag);
+                var entity = base.GameEntity.GetFirstChildEntityWithTag(LookPointTag);
                 GameEntityWithWorldPosition gameEntityWithWorldPosition = new GameEntityWithWorldPosition(entity);
                 WorldFrame userFrameLook = gameEntityWithWorldPosition.WorldFrame;
                 WorldFrame userFrameForAgent = this.GetUserFrameForAgent(userAgent);
@@ -251,10 +267,12 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 userAgent.SetTargetPosition(userAgent.GetWorldFrame().Origin.AsVec2);
             }
+#if CLIENT
             if (userAgent.IsMine)
             {
-                PEInformationManager.StartCounter("Gathering " + this.DropsItemObject.Name.ToString() + "...", this.AnimationDurationInSeconds);
+                PEInformationManager.StartCounter("Gathering " + DropsItemObject.Name.ToString() + "...", this.AnimationDurationInSeconds);
             }
+#endif
             base.OnUse(userAgent, agentBoneIndex);
         }
 

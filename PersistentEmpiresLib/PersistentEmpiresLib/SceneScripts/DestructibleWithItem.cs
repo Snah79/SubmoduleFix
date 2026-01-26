@@ -224,38 +224,29 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 #endif
 #if CLIENT
-        public void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
+        public override void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
-            this.HitPoint = hitPoint;
-
-            if (HitPoint <= 0)
+            if (hitPoint <= 0)
+            {
+                if (_weakEntity.TryGetEntity(out var tmpGameEntity))
                 {
-                    if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                    var globalFrame = tmpGameEntity.GetGlobalFrame();
+                    if (ParticleEffectOnDestroy != "")
                     {
-                        var globalFrame = tmpGameEntity.GetGlobalFrame();
-                        if (ParticleEffectOnDestroy != "")
-                        {
-                            Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(ParticleEffectOnDestroy), globalFrame);
-                        }
-                        if (SoundEffectOnDestroy != "")
-                        {
-                            Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
-                        }
-
-                        if (ApplyPhysicsOnDestruction)
-                        {
-                            tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), impactDirection * 3, Vec3.Zero, PhysicsMaterial.GetFromName(PhysicMaterial), false, 0);
-                        }
-                        else
-                        {
-                            tmpGameEntity.SetVisibilityExcludeParents(false);
-                        }
-
-                        destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
-                        destructed = true;
+                        Mission.Current.Scene.CreateBurstParticle(ParticleSystemManager.GetRuntimeIdByName(ParticleEffectOnDestroy), globalFrame);
                     }
+                    if (SoundEffectOnDestroy != "")
+                    {
+                        Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
+                    }
+
+                    tmpGameEntity.SetVisibilityExcludeParents(false);
+
+                    destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
+                    destructed = true;
                 }
-                }
+            }
+        }
 #endif
     }
 }

@@ -29,15 +29,20 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnInit()
         {
             base.OnInit();
-            base.ActionMessage = new TextObject("Door");
+            ActionMessage = new TextObject("Door");
             TextObject descriptionMessage = new TextObject("Press {KEY} To Use");
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
-            base.DescriptionMessage = descriptionMessage;
+            DescriptionMessage = descriptionMessage;
 
-            this.closedFrame = base.GameEntity.GetFrame();
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            closedFrame = tmpGameEntity.GetFrame();
             MatrixFrame tempFrame = base.GameEntity.GetFrame();
             tempFrame.Rotate(MBMath.ToRadians(this.Angle), this.Axis);
-            this.openFrame = tempFrame;
+            openFrame = tempFrame;
         }
 
         public PE_CastleBanner GetCastleBanner()
@@ -87,7 +92,13 @@ namespace PersistentEmpiresLib.SceneScripts
                     {
                         Faction f = this.GetCastleBanner().GetOwnerFaction();
                         InformationComponent.Instance.SendMessage("This door is locked by " + f.name, 0x0606c2d9, player);
-                        Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/mission/movement/foley/door_close"), base.GameEntity.GetGlobalFrame().origin, false, true, -1, -1);
+                        
+                        if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+                        {
+                            return;
+                        }
+
+                        Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/mission/movement/foley/door_close"), tmpGameEntity.GetGlobalFrame().origin, false, true, -1, -1);
                     }
                 }
             }
@@ -108,15 +119,27 @@ namespace PersistentEmpiresLib.SceneScripts
         }
         public void OpenDoor()
         {
-            base.SetFrameSynchedOverTime(ref this.openFrame, this.Duration);
-            this.isOpen = true;
-            Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/mission/movement/foley/door_open"), base.GameEntity.GetGlobalFrame().origin, false, true, -1, -1);
+            SetFrameSynchedOverTime(ref openFrame, Duration);
+            isOpen = true;
+            
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/mission/movement/foley/door_open"), tmpGameEntity.GetGlobalFrame().origin, false, true, -1, -1);
         }
         public void CloseDoor()
         {
-            base.SetFrameSynchedOverTime(ref this.closedFrame, this.Duration);
-            this.isOpen = false;
-            Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/mission/movement/foley/door_close"), base.GameEntity.GetGlobalFrame().origin, false, true, -1, -1);
+            SetFrameSynchedOverTime(ref this.closedFrame, this.Duration);
+            isOpen = false;
+            
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/mission/movement/foley/door_close"), tmpGameEntity.GetGlobalFrame().origin, false, true, -1, -1);
 
         }
 

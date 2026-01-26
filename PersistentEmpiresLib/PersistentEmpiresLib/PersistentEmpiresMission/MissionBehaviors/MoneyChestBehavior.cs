@@ -1,4 +1,5 @@
-﻿using PersistentEmpiresLib.NetworkMessages.Client;
+﻿using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.SceneScripts;
 using System.Collections.Generic;
@@ -59,7 +60,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             PE_MoneyChest moneyChest = (PE_MoneyChest)message.MoneyChest;
             if (sender.ControlledAgent == null) return false;
-            if (sender.ControlledAgent.Position.Distance(moneyChest.GameEntity.GlobalPosition) > moneyChest.Distance) return false;
+            if (!moneyChest.GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return false;
+            }
+            if (sender.ControlledAgent.Position.Distance(tmpGameEntity.GlobalPosition) > moneyChest.Distance) return false;
 
             if (message.Withdraw)
             {

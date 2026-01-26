@@ -1,4 +1,5 @@
-﻿using TaleWorlds.Core;
+﻿using PersistentEmpiresLib.Helpers;
+using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Localization;
@@ -38,9 +39,15 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 (standingPoint as StandingPointWithWeaponRequirement).InitRequiredWeaponClasses(tmp);
             }
-            base.SetScriptComponentToTick(this.GetTickRequirement());
-            this.MakeVisibilityCheck = false;
-            this._isVisible = base.GameEntity.IsVisibleIncludeParents();
+            SetScriptComponentToTick(GetTickRequirement());
+            MakeVisibilityCheck = false;
+
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            _isVisible = tmpGameEntity.IsVisibleIncludeParents();
         }
 
         // Token: 0x06003045 RID: 12357 RVA: 0x000C6784 File Offset: 0x000C4984

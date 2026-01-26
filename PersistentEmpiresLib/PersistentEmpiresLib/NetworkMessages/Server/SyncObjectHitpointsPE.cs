@@ -60,9 +60,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
                 "Synchronize HitPoints: ",
                 this.Hitpoints,
                 " of MissionObject with Id: ",
-                this.MissionObject.Id,
-                " and name: ",
-                this.MissionObject.GameEntity.Name
+                this.MissionObject.Id
             });
         }
     }

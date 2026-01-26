@@ -54,13 +54,18 @@ namespace PersistentEmpiresLib.SceneScripts
 
         protected override void OnTick(float dt)
         {
-            if (this.AttachedTo == null) return;
-            if (!this.AttachedTo.IsActive())
+            if (AttachedTo == null) return;
+            if (!AttachedTo.IsActive())
             {
-                this.DetachFromAgentAux();
+                DetachFromAgentAux();
                 return;
             }
-            var parentEntity = base.GameEntity.Parent;
+
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+            var parentEntity = tmpGameEntity.Parent;
             var frame = parentEntity.GetGlobalFrame();
             
             frame.rotation = this.AttachedTo.Frame.rotation;
@@ -68,7 +73,7 @@ namespace PersistentEmpiresLib.SceneScripts
             parentEntity.SetGlobalFrame(frame);
 
             frame = parentEntity.GetGlobalFrame();
-            Vec3 pointPos = base.GameEntity.GetGlobalFrame().origin;
+            Vec3 pointPos = tmpGameEntity.GetGlobalFrame().origin;
             Vec3 agentPos = this.AttachedTo.Position;
 
             Vec3 moveVector = agentPos - pointPos;
@@ -102,19 +107,25 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnInit()
         {
             base.OnInit();
-            base.ActionMessage = new TextObject("Attach Object");
+            ActionMessage = new TextObject("Attach Object");
             TextObject descriptionMessage = new TextObject("Press {KEY} To Attach");
             descriptionMessage.SetTextVariable("KEY", HyperlinkTexts.GetKeyHyperlinkText(HotKeyManager.GetHotKeyId("CombatHotKeyCategory", 13)));
-            base.DescriptionMessage = descriptionMessage;
-            this.ResetStrayDuration();
-            var parentEntity = base.GameEntity.Parent;
+            DescriptionMessage = descriptionMessage;
+            ResetStrayDuration();
+
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            var parentEntity = tmpGameEntity.Parent;
             var synchObject = parentEntity.GetFirstScriptOfType<SynchedMissionObject>();
             var prop = typeof(SynchedMissionObject).GetField("_initialSynchFlags", BindingFlags.NonPublic | BindingFlags.Instance);
             SynchedMissionObject.SynchFlags syncFlags = (SynchedMissionObject.SynchFlags)prop.GetValue(synchObject);
             syncFlags |= SynchFlags.SynchTransform;
             prop.SetValue(synchObject, syncFlags);
-            base.IsInstantUse = true;
-            this.HitPoint = this.MaxHitPoint;
+            IsInstantUse = true;
+            HitPoint = MaxHitPoint;
         }
         public override bool IsDisabledForAgent(Agent agent)
         {
@@ -176,8 +187,14 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public void SetHitPoint(float hitPoint, Vec3 impactDirection)
         {
-            this.HitPoint = hitPoint;
-            MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
+            HitPoint = hitPoint;
+            
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            MatrixFrame globalFrame = tmpGameEntity.GetGlobalFrame();
             /*if (this.HitPoint > this.MaxHitPoint) this.HitPoint = this.MaxHitPoint;
             if (this.HitPoint < 0) this.HitPoint = 0;
 

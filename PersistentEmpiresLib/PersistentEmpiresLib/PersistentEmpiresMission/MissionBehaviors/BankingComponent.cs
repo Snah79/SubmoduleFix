@@ -58,7 +58,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (representative == null) return false;
 
             Vec3 playerPos = player.ControlledAgent.Position;
-            Vec3 bankPos = message.Bank.GameEntity.GetGlobalFrame().origin;
+
+            if (!message.Bank.GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return false;
+            }
+            
+            Vec3 bankPos = tmpGameEntity.GetGlobalFrame().origin;
 
             if (bankPos.Distance(playerPos) > 5) return false;
             if (BankingComponent.OnBankQuery == null) return false;

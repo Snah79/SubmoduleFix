@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Core;
+using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
@@ -74,7 +75,13 @@ namespace PersistentEmpiresServer.SpawnBehavior
                 frame = persistentEmpireRepresentative.GetNextSpawnFrame();
                 if (frame.GetCastleBanner() != null && frame.GetCastleBanner().FactionIndex != persistentEmpireRepresentative.GetFactionIndex()) frame = base.Mission.GetMissionBehavior<SpawnFrameSelectionBehavior>().DefaultSpawnFrames[0];
             }
-            return frame.GameEntity.GetGlobalFrame();
+            
+            if (!frame.GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return new MatrixFrame();
+            }
+
+            return tmpGameEntity.GetGlobalFrame();
         }
 
         public void OverridenOnTick(float dt)

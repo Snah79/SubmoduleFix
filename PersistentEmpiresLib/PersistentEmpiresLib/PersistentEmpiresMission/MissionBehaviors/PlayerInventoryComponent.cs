@@ -122,7 +122,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             foreach (var x in OpenedByPeerInventory)
             {
-                if (x.Value != null && x.Value.TiedEntity?.GameEntity.GetGlobalFrame().origin.Distance(x.Key.ControlledAgent.Position) > _distanceForAutoCloseInventory)
+                if (x.Value.TiedEntity == null || !x.Value.TiedEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    continue;
+                }
+
+                if (x.Value != null && tmpGameEntity.GetGlobalFrame().origin.Distance(x.Key.ControlledAgent.Position) > _distanceForAutoCloseInventory)
                 {
                     ClosedInventoryOnServer(x.Key, x.Value.InventoryId);
 
@@ -154,7 +159,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             foreach (var x in OpenedByPeerInventory)
             {
-                if (x.Value != null && x.Value.TiedEntity?.GameEntity.GetGlobalFrame().origin.Distance(x.Key.ControlledAgent.Position) > 2f)
+                if (x.Value.TiedEntity == null || !x.Value.TiedEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    continue;
+                }
+                if (x.Value != null && tmpGameEntity.GetGlobalFrame().origin.Distance(x.Key.ControlledAgent.Position) > 2f)
                 {
                     ClosedInventoryOnServer(x.Key, x.Value.InventoryId);
                 }
@@ -479,9 +488,14 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (droppedItem == null || droppedCount == 0) return false;
             // Find or create a loot entity
             PE_InventoryEntity droppedLoot = null;
-            foreach (PE_InventoryEntity entity in this.LootableObjects.Values.ToList())
+            foreach (PE_InventoryEntity entity in LootableObjects.Values.ToList())
             {
-                float distance = entity.GameEntity.GetGlobalFrame().origin.Distance(player.ControlledAgent.Position);
+                if (!entity.GameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    continue;
+                }
+
+                float distance = tmpGameEntity.GetGlobalFrame().origin.Distance(player.ControlledAgent.Position);
                 if (distance <= 5)
                 {
                     droppedLoot = entity;
@@ -651,20 +665,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 GameNetwork.BeginModuleEventAsServer(otherPlayer);
                 GameNetwork.WriteMessage(new ForceCloseInventory());
                 GameNetwork.EndModuleEventAsServer();
-                if (this.OpenedByPeerInventory.ContainsKey(otherPlayer))
+                if (OpenedByPeerInventory.ContainsKey(otherPlayer))
                 {
-                    this.OpenedByPeerInventory.Remove(otherPlayer);
+                    OpenedByPeerInventory.Remove(otherPlayer);
                 }
             }
             targetInventory.CurrentlyOpenedBy.Clear();
-            if (this.CustomInventories.ContainsKey(targetInventory.InventoryId)) this.CustomInventories.Remove(targetInventory.InventoryId);
-            if (this.LootableObjects.ContainsKey(targetInventory.InventoryId))
+            if (CustomInventories.ContainsKey(targetInventory.InventoryId)) CustomInventories.Remove(targetInventory.InventoryId);
+            if (LootableObjects.ContainsKey(targetInventory.InventoryId))
             {
-                if (this.LootableObjects[targetInventory.InventoryId].GameEntity != null)
-                {
-                    // this.LootableObjects[targetInventory.InventoryId].GameEntity.Remove(0);
-                }
-                this.LootableObjects.Remove(targetInventory.InventoryId);
+                //if (LootableObjects[targetInventory.InventoryId].GameEntity != null)
+                //{
+                //    // this.LootableObjects[targetInventory.InventoryId].GameEntity.Remove(0);
+                //}
+                LootableObjects.Remove(targetInventory.InventoryId);
             }
         }
 
@@ -860,7 +874,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (DroppedTag == DraggedTag) return false;
             if (player.ControlledAgent == null || player.ControlledAgent.IsActive() == false) return false;
 
-
             string[] draggedTag = DraggedTag.Split('_');
             string[] droppedTag = DroppedTag.Split('_');
             string draggedFromInventory = string.Join("_", draggedTag.Take(draggedTag.Length - 1));
@@ -875,7 +888,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (persistentEmpireRepresentative == null) return false;
             if (player.ControlledAgent == null) return false;
 
-            if (this.CustomInventories.ContainsKey(draggedFromInventory) && this.CustomInventories[draggedFromInventory].TiedEntity != null && this.CustomInventories[draggedFromInventory].TiedEntity.GameEntity != null && this.CustomInventories[draggedFromInventory].TiedEntity.GameEntity.GetGlobalFrame().origin.Distance(player.ControlledAgent.Position) > 10f)
+            if (!CustomInventories[draggedFromInventory].TiedEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return false;
+            }
+
+            if (CustomInventories.ContainsKey(draggedFromInventory) && CustomInventories[draggedFromInventory].TiedEntity != null && tmpGameEntity != null && tmpGameEntity.GetGlobalFrame().origin.Distance(player.ControlledAgent.Position) > 10f)
             {
                 return false;
             }

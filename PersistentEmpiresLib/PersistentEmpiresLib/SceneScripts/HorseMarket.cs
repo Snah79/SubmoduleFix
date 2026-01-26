@@ -154,7 +154,13 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                     ItemRosterElement itemRosterElement = new ItemRosterElement(this.HorseItem, 0, null);
                     ItemRosterElement harnessElement = this.HorseHarness == "" ? default(ItemRosterElement) : new ItemRosterElement(MBObjectManager.Instance.GetObject<ItemObject>(this.HorseHarness), 1);
-                    MatrixFrame matrixFrame = base.GameEntity.GetGlobalFrame();
+                    
+                    if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+                    {
+                        return;
+                    }
+
+                    MatrixFrame matrixFrame = tmpGameEntity.GetGlobalFrame();
                     Mission.Current.SpawnMonster(itemRosterElement, harnessElement, userAgent.Position, matrixFrame.rotation.f.AsVec2);
                     PE_TaxHandler taxHandler = this.GameEntity.GetFirstScriptOfType<PE_TaxHandler>();
                     if (taxHandler != null && taxHandler.CastleId != -1) taxHandler.AddTaxFeeToMoneyChest((this.BuyPrice() * taxHandler.TaxPercentage) / 100);

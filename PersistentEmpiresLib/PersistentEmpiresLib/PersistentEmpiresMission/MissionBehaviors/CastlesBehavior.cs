@@ -26,7 +26,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             base.AfterStart();
 
-
             List<GameEntity> gameEntities = new List<GameEntity>();
             base.Mission.Scene.GetAllEntitiesWithScriptComponent<PE_CastleBanner>(ref gameEntities);
             IEnumerable<DBCastle> dbCastles = SaveSystemBehavior.HandleGetCastles();

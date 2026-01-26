@@ -1,4 +1,5 @@
-﻿using PersistentEmpiresLib.NetworkMessages.Client;
+﻿using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
 using System.Reflection;
 using TaleWorlds.Library;
@@ -22,7 +23,12 @@ namespace PersistentEmpiresLib.SceneScripts.Extensions
         {
             if (GameNetwork.IsServer)
             {
-                MatrixFrame currentFrame = moveable.GetAttachedObject().GameEntity.GetFrame();
+                if (!moveable.GetAttachedObject().GameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    return ;
+                }
+
+                MatrixFrame currentFrame = tmpGameEntity.GetFrame();
                 moveable.GetAttachedObject().SetFrameSynched(ref currentFrame, GameNetwork.IsClient);
             }
         }
@@ -291,11 +297,19 @@ namespace PersistentEmpiresLib.SceneScripts.Extensions
         }
         public static bool CanGoThere(this IMoveable moveable, MatrixFrame frame)
         {
-            return !moveable.GetAttachedObject().GameEntity.CheckPointWithOrientedBoundingBox(frame.origin);
+            if (!moveable.GetAttachedObject().GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return false;
+            }
+            return !tmpGameEntity.CheckPointWithOrientedBoundingBox(frame.origin);
         }
         public static MatrixFrame MoveObjectTick(this IMoveable moveable, float dt)
         {
-            MatrixFrame currentFrame = moveable.GetAttachedObject().GameEntity.GetFrame();
+            if (!moveable.GetAttachedObject().GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return new MatrixFrame();
+            }
+            MatrixFrame currentFrame = tmpGameEntity.GetFrame();
 
             if (moveable.IsMovingForward && moveable.GetCanAdvance())
             {

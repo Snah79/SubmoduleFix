@@ -210,7 +210,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             PE_TaxHandler taxHandler = stockpileMarket.GameEntity.GetFirstScriptOfType<PE_TaxHandler>();
 
             if (peer.ControlledAgent == null || peer.ControlledAgent.IsActive() == false) return false;
-            if (peer.ControlledAgent.Position.Distance(stockpileMarket.GameEntity.GlobalPosition) > stockpileMarket.Distance) return false;
+            if (!stockpileMarket.GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return false;
+            }
+            if (peer.ControlledAgent.Position.Distance(tmpGameEntity.GlobalPosition) > stockpileMarket.Distance) return false;
 
             MarketItem marketItem = stockpileMarket.MarketItems[message.ItemIndex];
             if (marketItem.Stock == 0)
@@ -282,7 +286,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (persistentEmpireRepresentative == null) return false;
             PE_StockpileMarket stockpileMarket = (PE_StockpileMarket)message.StockpileMarket;
             if (peer.ControlledAgent == null || peer.ControlledAgent.IsActive() == false) return false;
-            if (peer.ControlledAgent.Position.Distance(stockpileMarket.GameEntity.GlobalPosition) > stockpileMarket.Distance) return false;
+            if (!stockpileMarket.GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return false;
+            }
+            if (peer.ControlledAgent.Position.Distance(tmpGameEntity.GlobalPosition) > stockpileMarket.Distance) return false;
             MarketItem marketItem = stockpileMarket.MarketItems[message.ItemIndex];
 
             if (!persistentEmpireRepresentative.GetInventory().IsInventoryIncludes(marketItem.Item, 1))

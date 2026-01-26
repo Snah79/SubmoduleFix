@@ -55,7 +55,7 @@ namespace PersistentEmpiresLib.SceneScripts
             { InputKey.LeftShift, null }
         };
 
-        public override ScriptComponentBehavior.TickRequirement GetTickRequirement() => !this.GameEntity.IsVisibleIncludeParents() ? base.GetTickRequirement() : ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel;
+        public override ScriptComponentBehavior.TickRequirement GetTickRequirement() => ScriptComponentBehavior.TickRequirement.Tick;
 
         private void ParseRepairReceipts()
         {
@@ -71,12 +71,17 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private void CheckIfLanded(MatrixFrame oldFrame)
         {
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
             if (!GameEntity.IsValid || GameEntity.GlobalPosition == null || oldFrame == null)
                 return;
 
             // Set a Default Value for Rays TODO
 
-            Vec3 startPosition = base.GameEntity.GlobalPosition;
+            Vec3 startPosition = tmpGameEntity.GlobalPosition;
             float frontRearRadius = 4.5f; // Adjust the front and rear radius as needed
             float sideRadius = 2f; // Adjust the side radius as needed
 
@@ -85,7 +90,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 return;
 
             float radius = frontRearRadius;
-            if (movementDirection == -base.GameEntity.GetGlobalFrame().rotation.s || movementDirection == base.GameEntity.GetGlobalFrame().rotation.s)
+            if (movementDirection == -tmpGameEntity.GetGlobalFrame().rotation.s || movementDirection == tmpGameEntity.GetGlobalFrame().rotation.s)
                 radius = sideRadius;
 
             Vec3 raycastPosition = startPosition;
@@ -93,7 +98,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
             if (Mission.Current.Scene.RayCastForClosestEntityOrTerrain(raycastPosition, raycastEndPosition, out _, out WeakGameEntity hitEntity))
             {
-                if (hitEntity != base.GameEntity)
+                if (hitEntity != tmpGameEntity.WeakEntity)
                 {
                     StopShip();
                     GameEntity.SetGlobalFrame(oldFrame);
@@ -104,7 +109,11 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private Vec3 GetMovementDirection()
         {
-            MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return Vec3.Zero;
+            }
+            MatrixFrame globalFrame = tmpGameEntity.GetGlobalFrame();
             switch (true)
             {
                 case var _ when base.IsMovingForward:
@@ -128,9 +137,14 @@ namespace PersistentEmpiresLib.SceneScripts
 
         protected override void OnTick(float dt)
         {
-            if (base.GameEntity == null) return;
+            if (GameEntity == null) return;
 
-            MatrixFrame oldFrame = base.GameEntity.GetFrame();
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            MatrixFrame oldFrame = tmpGameEntity.GetFrame();
             base.OnTick(dt);
 
             if (GameNetwork.IsServer)
@@ -174,7 +188,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
             if (destroyed)
             {
-                base.GameEntity.Remove(0);
+                tmpGameEntity.Remove(0);
             }
         }
 
@@ -188,15 +202,6 @@ namespace PersistentEmpiresLib.SceneScripts
             if (base.IsTurningRight) this.StopTurningRight();
         }
 
-
-        protected override void OnTickParallel(float dt)
-        {
-            base.OnTickParallel(dt);
-            if (!base.GameEntity.IsVisibleIncludeParents())
-            {
-                return;
-            }
-        }
         protected override void OnInit()
         {
             base.OnInit();
@@ -253,8 +258,12 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public override void SetHitPoint(float hitPoint, Vec3 impactDirection)
         {
-            this.HitPoint = hitPoint;
-            MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
+            HitPoint = hitPoint;
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+            MatrixFrame globalFrame = tmpGameEntity.GetGlobalFrame();
             if (this.HitPoint > this.MaxHitPoint) this.HitPoint = this.MaxHitPoint;
             if (this.HitPoint < 0) this.HitPoint = 0;
 

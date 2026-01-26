@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using PersistentEmpiresLib.Data;
+using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
@@ -236,20 +237,32 @@ namespace PersistentEmpiresLib.SceneScripts
         }
         public void UpgradeBuilding()
         {
-            var nextUpgrade = this.GetNextUpgrade();
+            var nextUpgrade = GetNextUpgrade();
             if (nextUpgrade == null) return;
-            this._currentTierState.Value.SetVisibilityExcludeParents(false);
-            this._currentTierState = nextUpgrade;
-            this._currentTierState.Value.SetVisibilityExcludeParents(true);
-            this.CurrentTier = this.CurrentTier + 1;
-            this.MaxHitPoint = this.GetNextMaxHit();
+            if (!_currentTierState.Value.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+            tmpGameEntity.SetVisibilityExcludeParents(false);
+            _currentTierState = nextUpgrade;
+            if (!_currentTierState.Value.TryGetEntity(out var tmpGameEntity2))
+            {
+                return;
+            }
+            tmpGameEntity2.SetVisibilityExcludeParents(true);
+            CurrentTier = CurrentTier + 1;
+            MaxHitPoint = GetNextMaxHit();
 
         }
 
         public override void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
             this.HitPoint = hitPoint;
-            MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+            MatrixFrame globalFrame = tmpGameEntity.GetGlobalFrame();
             if (this.HitPoint > this.MaxHitPoint) this.HitPoint = this.MaxHitPoint;
             if (this.HitPoint < 0) this.HitPoint = 0;
             if (GameNetwork.IsServer)

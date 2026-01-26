@@ -28,9 +28,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
             return string.Concat(new object[]
             {
                 "Reset Object: ",
-                this.MissionObject.Id,
-                " and name: ",
-                this.MissionObject.GameEntity.Name
+                this.MissionObject.Id
             });
         }
 

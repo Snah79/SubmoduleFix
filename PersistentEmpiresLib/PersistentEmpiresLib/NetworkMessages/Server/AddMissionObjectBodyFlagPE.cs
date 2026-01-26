@@ -51,8 +51,6 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
                 this.BodyFlags,
                 " to MissionObject with ID: ",
                 this.MissionObject.Id,
-                " and with name: ",
-                this.MissionObject.GameEntity.Name,
                 this.ApplyToChildren ? "" : " and to all of its children."
             });
         }

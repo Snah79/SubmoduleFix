@@ -1,5 +1,6 @@
 ﻿using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
+using TaleWorlds.Engine;
 using TaleWorlds.Library;
 
 namespace PersistentEmpiresLib.SceneScripts.Extensions
@@ -8,7 +9,12 @@ namespace PersistentEmpiresLib.SceneScripts.Extensions
     {
         public static string GetMissionObjectHash(this IMissionObjectHash missionObjectHash)
         {
-            MatrixFrame frame = missionObjectHash.GetMissionObject().GameEntity.GetGlobalFrame();
+            if (!missionObjectHash.GetMissionObject().GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return "";
+            }
+
+            MatrixFrame frame = tmpGameEntity.GetGlobalFrame();
             float x = frame.origin.X;
             float y = frame.origin.Y;
             float z = frame.origin.Z;

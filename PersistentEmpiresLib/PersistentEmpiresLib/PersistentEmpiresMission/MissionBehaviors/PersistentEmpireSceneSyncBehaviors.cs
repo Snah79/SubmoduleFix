@@ -1,4 +1,5 @@
-﻿using PersistentEmpiresLib.NetworkMessages.Client;
+﻿using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.SceneScripts;
 using PersistentEmpiresLib.SceneScripts.Extensions;
@@ -275,51 +276,51 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
 
-        private void SyncMoveableObject(NetworkCommunicator peer)
-        {
-            var gameEntities = Mission.GetActiveEntitiesWithScriptComponentOfType<PE_MoveableMachine>().ToList();
+        //private void SyncMoveableObject(NetworkCommunicator peer)
+        //{
+        //    var gameEntities = Mission.GetActiveEntitiesWithScriptComponentOfType<PE_MoveableMachine>().ToList();
             
-            foreach (var g in gameEntities)
-            {
-                PE_MoveableMachine moveableMachine = g.GetFirstScriptOfType<PE_MoveableMachine>();
-                if (moveableMachine.IsMovingBackward)
-                {
-                    GameNetwork.BeginModuleEventAsServer(peer);
-                    GameNetwork.WriteMessage(new StartMovingBackwardMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
-                    GameNetwork.EndModuleEventAsServer();
-                }
-                if (moveableMachine.IsMovingForward)
-                {
-                    GameNetwork.BeginModuleEventAsServer(peer);
-                    GameNetwork.WriteMessage(new StartMovingForwardMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
-                    GameNetwork.EndModuleEventAsServer();
-                }
-                if (moveableMachine.IsMovingDown)
-                {
-                    GameNetwork.BeginModuleEventAsServer(peer);
-                    GameNetwork.WriteMessage(new StartMovingDownMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
-                    GameNetwork.EndModuleEventAsServer();
-                }
-                if (moveableMachine.IsMovingUp)
-                {
-                    GameNetwork.BeginModuleEventAsServer(peer);
-                    GameNetwork.WriteMessage(new StartMovingUpMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
-                    GameNetwork.EndModuleEventAsServer();
-                }
-                if (moveableMachine.IsTurningLeft)
-                {
-                    GameNetwork.BeginModuleEventAsServer(peer);
-                    GameNetwork.WriteMessage(new StartTurningLeftMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
-                    GameNetwork.EndModuleEventAsServer();
-                }
-                if (moveableMachine.IsTurningRight)
-                {
-                    GameNetwork.BeginModuleEventAsServer(peer);
-                    GameNetwork.WriteMessage(new StartTurningRightMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
-                    GameNetwork.EndModuleEventAsServer();
-                }
-            }
-        }
+        //    foreach (var g in gameEntities)
+        //    {
+        //        PE_MoveableMachine moveableMachine = g.GetFirstScriptOfType<PE_MoveableMachine>();
+        //        if (moveableMachine.IsMovingBackward)
+        //        {
+        //            GameNetwork.BeginModuleEventAsServer(peer);
+        //            GameNetwork.WriteMessage(new StartMovingBackwardMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
+        //            GameNetwork.EndModuleEventAsServer();
+        //        }
+        //        if (moveableMachine.IsMovingForward)
+        //        {
+        //            GameNetwork.BeginModuleEventAsServer(peer);
+        //            GameNetwork.WriteMessage(new StartMovingForwardMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
+        //            GameNetwork.EndModuleEventAsServer();
+        //        }
+        //        if (moveableMachine.IsMovingDown)
+        //        {
+        //            GameNetwork.BeginModuleEventAsServer(peer);
+        //            GameNetwork.WriteMessage(new StartMovingDownMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
+        //            GameNetwork.EndModuleEventAsServer();
+        //        }
+        //        if (moveableMachine.IsMovingUp)
+        //        {
+        //            GameNetwork.BeginModuleEventAsServer(peer);
+        //            GameNetwork.WriteMessage(new StartMovingUpMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
+        //            GameNetwork.EndModuleEventAsServer();
+        //        }
+        //        if (moveableMachine.IsTurningLeft)
+        //        {
+        //            GameNetwork.BeginModuleEventAsServer(peer);
+        //            GameNetwork.WriteMessage(new StartTurningLeftMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
+        //            GameNetwork.EndModuleEventAsServer();
+        //        }
+        //        if (moveableMachine.IsTurningRight)
+        //        {
+        //            GameNetwork.BeginModuleEventAsServer(peer);
+        //            GameNetwork.WriteMessage(new StartTurningRightMoveableMachineServer(moveableMachine, moveableMachine.GameEntity.GetFrame()));
+        //            GameNetwork.EndModuleEventAsServer();
+        //        }
+        //    }
+        //}
 
         private void SyncUpgradeableBuilding(NetworkCommunicator peer)
         {
@@ -690,7 +691,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (message.MissionObject != null)
             {
                 var gameEntity = message.MissionObject.GameEntity;
-                gameEntity.AddPhysics(gameEntity.Mass, gameEntity.CenterOfMass, gameEntity.GetBodyShape(), message.InitialVelocity, message.AngularVelocity, PhysicsMaterial.GetFromName(message.PhysicsMaterial), false, 0);
+                if (!gameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    return;
+                }
+                tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), message.InitialVelocity, message.AngularVelocity, PhysicsMaterial.GetFromName(message.PhysicsMaterial), false, 0);
             }
         }
 

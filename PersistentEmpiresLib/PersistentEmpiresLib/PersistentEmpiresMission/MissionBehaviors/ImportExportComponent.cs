@@ -43,7 +43,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (persistentEmpireRepresentative == null) return false;
             PE_ImportExport exportEntity = (PE_ImportExport)message.ImportExportEntity;
             if (player.ControlledAgent == null || player.ControlledAgent.IsActive() == false) return false;
-            if (player.ControlledAgent.Position.Distance(exportEntity.GameEntity.GlobalPosition) > exportEntity.Distance) return false;
+            if (!exportEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return false;
+            }
+            if (player.ControlledAgent.Position.Distance(tmpGameEntity.GlobalPosition) > exportEntity.Distance) return false;
             GoodItem good = exportEntity.GetGoodItems().FirstOrDefault(g => g.ItemObj.StringId == message.Item.StringId);
             if (good.ItemObj == null) return false;
 
@@ -74,7 +78,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (good.ItemObj == null) return false;
             PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
             if (player.ControlledAgent == null || player.ControlledAgent.IsActive() == false) return false;
-            if (player.ControlledAgent.Position.Distance(exportEntity.GameEntity.GlobalPosition) > exportEntity.Distance) return false;
+            if (!exportEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return false;
+            }
+            if (player.ControlledAgent.Position.Distance(tmpGameEntity.GlobalPosition) > exportEntity.Distance) return false;
             if (persistentEmpireRepresentative == null) return false;
             bool itemExists = persistentEmpireRepresentative.GetInventory().IsInventoryIncludes(message.Item, 1);
             if (!itemExists)

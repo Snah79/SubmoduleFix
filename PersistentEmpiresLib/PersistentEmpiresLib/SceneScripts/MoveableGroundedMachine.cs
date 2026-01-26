@@ -45,7 +45,7 @@ namespace PersistentEmpiresLib.SceneScripts
         private List<RepairReceipt> receipt = new List<RepairReceipt>();
         private WeakGameEntity _weakGameEntity;
 
-        public override ScriptComponentBehavior.TickRequirement GetTickRequirement() => !this.GameEntity.IsVisibleIncludeParents() ? base.GetTickRequirement() : ScriptComponentBehavior.TickRequirement.Tick | ScriptComponentBehavior.TickRequirement.TickParallel;
+        public override ScriptComponentBehavior.TickRequirement GetTickRequirement() => ScriptComponentBehavior.TickRequirement.Tick;
 
         private void ParseRepairReceipts()
         {
@@ -129,7 +129,13 @@ namespace PersistentEmpiresLib.SceneScripts
         public override void SetHitPoint(float hitPoint, Vec3 impactDirection)
         {
             HitPoint = hitPoint;
-            var globalFrame = GameEntity.GetGlobalFrame();
+            
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            var globalFrame = tmpGameEntity.GetGlobalFrame();
 
             if (HitPoint > MaxHitPoint) HitPoint = MaxHitPoint;
             if (HitPoint < 0) HitPoint = 0;
@@ -289,15 +295,6 @@ namespace PersistentEmpiresLib.SceneScripts
                 return;
             }
             base.OnParallelFixedTick(fixedDt);
-        }
-
-        protected override void OnTickOccasionally(float currentFrameDeltaTime)
-        {
-            if (!initCompleted)
-            {
-                return;
-            }
-            base.OnTickOccasionally(currentFrameDeltaTime);
         }
 
         protected override void OnTickParallel2(float dt)

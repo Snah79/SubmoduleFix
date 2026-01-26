@@ -154,7 +154,11 @@ namespace PersistentEmpiresLib.SceneScripts
                     {
                         playerInventory.RemoveCountedItem(r.Item, r.NeededCount);
                     }
-                    MatrixFrame globalFrame = this.GameEntity.GetGlobalFrame();
+                    if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+                    {
+                        return;
+                    }
+                    MatrixFrame globalFrame = tmpGameEntity.GetGlobalFrame();
                     ItemRosterElement itemRosterElement = new ItemRosterElement(Game.Current.ObjectManager.GetObject<ItemObject>(this.AnimalId), 0, null);
                     globalFrame.rotation.OrthonormalizeAccordingToForwardAndKeepUpAsZAxis();
                     Mission mission = Mission.Current;
@@ -163,7 +167,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     Vec2 asVec = globalFrame.rotation.f.AsVec2;
                     Agent agent = mission.SpawnMonster(rosterElement, harnessRosterElement, globalFrame.origin, asVec, -1);
                     //AnimalSpawnSettings.CheckAndSetAnimalAgentFlags(this.GameEntity, agent);
-                    CheckAndSetAnimalAgentFlags(this.GameEntity, agent);
+                    CheckAndSetAnimalAgentFlags(GameEntity, agent);
                     SpawnedAnimals.Add(agent);
                     AnimalButcheringBehavior.Instance.AgentToAnimalSpawner[agent] = this;
                 }

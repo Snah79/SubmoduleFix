@@ -1,4 +1,5 @@
-﻿using PersistentEmpiresLib.NetworkMessages.Server;
+﻿using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System;
 using System.Collections.Generic;
@@ -112,7 +113,11 @@ namespace PersistentEmpiresLib.SceneScripts
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnRepair), base.GameEntity.GetGlobalFrame().origin, false, true, -1, -1);
                 }
 #endif
-                this.siegeTower.GameEntity.SetVisibilityExcludeParents(true);
+                if (!siegeTower.GameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    return;
+                }
+                tmpGameEntity.SetVisibilityExcludeParents(true);
                 siegeTowerBuilt = true;
             }
             if (GameNetwork.IsServer)

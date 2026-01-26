@@ -1,4 +1,6 @@
-﻿using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
+﻿using PersistentEmpiresLib.Database.DBEntities;
+using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Engine;
@@ -39,7 +41,12 @@ namespace PersistentEmpiresLib.SceneScripts
 #if CLIENT
             var component = Mission.Current.GetMissionBehavior<AdminClientBehavior>();
 
-            component?.Register(new AdminTp(Id, GameEntity.GlobalPosition, Description));
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return ;
+            }
+
+            component?.Register(new AdminTp(Id, tmpGameEntity.GlobalPosition, Description));
 #endif
         }
 

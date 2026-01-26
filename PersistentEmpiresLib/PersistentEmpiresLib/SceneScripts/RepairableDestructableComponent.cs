@@ -126,7 +126,11 @@ namespace PersistentEmpiresLib.SceneScripts
         public override void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
             this.HitPoint = hitPoint;
-            MatrixFrame globalFrame = base.GameEntity.GetGlobalFrame();
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+            MatrixFrame globalFrame = tmpGameEntity.GetGlobalFrame();
             if (this.HitPoint > this.MaxHitPoint) this.HitPoint = this.MaxHitPoint;
             if (this.HitPoint < 0) this.HitPoint = 0;
 
@@ -144,15 +148,23 @@ namespace PersistentEmpiresLib.SceneScripts
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
                 }
 #endif
-                if (this._brokenState != null)
+                if (_brokenState != null)
                 {
-                    this._brokenState.SetVisibilityExcludeParents(true);
-                    this._healthyState.SetVisibilityExcludeParents(false);
+                    if (!_brokenState.TryGetEntity(out var tmpGameEntity2))
+                    {
+                        return;
+                    }
+                    tmpGameEntity2.SetVisibilityExcludeParents(true);
+                    if (!_healthyState.TryGetEntity(out var tmpGameEntity3))
+                    {
+                        return;
+                    }
+                    tmpGameEntity3.SetVisibilityExcludeParents(false);
                 }
-                this.IsBroken = true;
-                if (this.OnDestroyed != null) this.OnDestroyed(attackerScriptComponentBehavior);
+                IsBroken = true;
+                if (OnDestroyed != null) OnDestroyed(attackerScriptComponentBehavior);
             }
-            if (this.HitPoint == this.MaxHitPoint)
+            if (HitPoint == MaxHitPoint)
             {
 #if CLIENT
                 if (this.ParticleEffectOnRepair != "")
@@ -164,13 +176,22 @@ namespace PersistentEmpiresLib.SceneScripts
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnRepair), globalFrame.origin, false, true, -1, -1);
                 }
 #endif
-                if (this._brokenState != null)
+                if (_brokenState != null)
                 {
-                    this._brokenState.SetVisibilityExcludeParents(false);
-                    this._healthyState.SetVisibilityExcludeParents(true);
+                    if (!_brokenState.TryGetEntity(out var tmpGameEntity2))
+                    {
+                        return;
+                    }
+                    tmpGameEntity2.SetVisibilityExcludeParents(false);
+                    if (!_healthyState.TryGetEntity(out var tmpGameEntity3))
+                    {
+                        return;
+                    }
+                    tmpGameEntity3.SetVisibilityExcludeParents(true);
                 }
-                if (this.OnRepaired != null) this.OnRepaired();
-                this.IsBroken = false;
+
+                if (OnRepaired != null) OnRepaired();
+                IsBroken = false;
             }
             if (GameNetwork.IsServer)
             {

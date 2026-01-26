@@ -1,4 +1,5 @@
-﻿using PersistentEmpiresLib.NetworkMessages.Server;
+﻿using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.NetworkMessages.Server;
 using System.Reflection;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -10,7 +11,12 @@ namespace PersistentEmpiresLib.SceneScripts
     {
         public void AddBodyFlagsSynchedPE(BodyFlags flags, bool applyToChildren = true)
         {
-            if ((GameEntity.BodyFlag & flags) != flags)
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            if ((tmpGameEntity.BodyFlag & flags) != flags)
             {
                 if (GameNetwork.IsServerOrRecorder)
                 {
@@ -18,7 +24,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     GameNetwork.WriteMessage(new AddMissionObjectBodyFlagPE(this, flags, applyToChildren));
                     GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
                 }
-                GameEntity.AddBodyFlags(flags, applyToChildren);
+                tmpGameEntity.AddBodyFlags(flags, applyToChildren);
                 // this._initialSynchFlags |= SynchedMissionObject.SynchFlags.SynchBodyFlags;
                 FieldInfo synchField = typeof(PE_InventoryEntity).BaseType.BaseType.GetField("_initialSynchFlags", BindingFlags.Instance | BindingFlags.NonPublic);
                 SynchedMissionObject.SynchFlags synchFlags = (SynchedMissionObject.SynchFlags)synchField.GetValue(this);
@@ -28,8 +34,13 @@ namespace PersistentEmpiresLib.SceneScripts
         }
         public void AddPhysicsSynchedPE(Vec3 initialVelocity, Vec3 angularVelocity, string physicsMaterial)
         {
-            var gameEntity = GameEntity;
-            gameEntity.AddPhysics(gameEntity.Mass, gameEntity.CenterOfMass, gameEntity.GetBodyShape(), initialVelocity, angularVelocity, PhysicsMaterial.GetFromName(physicsMaterial), false, 0);
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), initialVelocity, angularVelocity, PhysicsMaterial.GetFromName(physicsMaterial), false, 0);
+            
             if (GameNetwork.IsServerOrRecorder)
             {
                 GameNetwork.BeginBroadcastModuleEvent();

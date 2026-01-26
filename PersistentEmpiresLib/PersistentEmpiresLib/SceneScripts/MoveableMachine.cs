@@ -1,4 +1,5 @@
-﻿using PersistentEmpiresLib.SceneScripts.Extensions;
+﻿using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.SceneScripts.Extensions;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -96,12 +97,19 @@ namespace PersistentEmpiresLib.SceneScripts
 
         protected bool CanGoThere(MatrixFrame frame)
         {
-            return !base.GameEntity.CheckPointWithOrientedBoundingBox(frame.origin);
+            if (!GameEntity.TryGetEntity(out var tmpGameEntity))
+            {
+                return false;
+            }
+
+            return !tmpGameEntity.CheckPointWithOrientedBoundingBox(frame.origin);
         }
         protected override void OnTick(float dt)
         {
-            if (base.GameEntity == null) return;
+            if (GameEntity == null) return;
+
             base.OnTick(dt);
+            
             if (GameNetwork.IsServer)
             {
                 MatrixFrame frame = this.MoveObjectTick(dt);

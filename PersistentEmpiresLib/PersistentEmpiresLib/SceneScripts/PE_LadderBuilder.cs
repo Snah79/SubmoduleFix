@@ -1,4 +1,5 @@
-﻿using PersistentEmpiresLib.NetworkMessages.Server;
+﻿using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System;
 using System.Collections.Generic;
@@ -100,7 +101,11 @@ namespace PersistentEmpiresLib.SceneScripts
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), base.GameEntity.GetGlobalFrame().origin, false, true, -1, -1);
                 }
 #endif
-                this.siegeLadder.GameEntity.SetVisibilityExcludeParents(false);
+                if (!siegeLadder.GameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    return;
+                }
+                tmpGameEntity.SetVisibilityExcludeParents(false);
                 ladderBuilt = false;
             }
             else if (this.ladderBuilt == false && this.HitPoint >= this.MaxHitPoint)
@@ -115,7 +120,11 @@ namespace PersistentEmpiresLib.SceneScripts
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnRepair), base.GameEntity.GetGlobalFrame().origin, false, true, -1, -1);
                 }
 #endif
-                this.siegeLadder.GameEntity.SetVisibilityExcludeParents(true);
+                if (!siegeLadder.GameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    return;
+                }
+                tmpGameEntity.SetVisibilityExcludeParents(true);
                 ladderBuilt = true;
             }
             if (GameNetwork.IsServer)

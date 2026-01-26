@@ -78,8 +78,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             //List<GameEntity> gameEntity = new List<GameEntity>();
             this.syncDestructableHitPoints = ChunkList<PE_RepairableDestructableComponent>(chunkSize, Mission.Current.MissionObjects
                .Where(o => o is PE_RepairableDestructableComponent)
-               .Select(r => (PE_RepairableDestructableComponent)r)
-               );
+               .Select(r => (PE_RepairableDestructableComponent)r));
             this.syncItemGathering = ChunkList<PE_ItemGathering>(chunkSize, Mission.Current.MissionObjects
                .Where(o => o is PE_ItemGathering)
                .Select(r => (PE_ItemGathering)r)

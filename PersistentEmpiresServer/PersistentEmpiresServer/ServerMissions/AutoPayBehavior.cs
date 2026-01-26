@@ -34,14 +34,14 @@ namespace PersistentEmpiresServer.ServerMissions
                 if (_timer >= AutoPayTimeInSeconds)
                 {
                     _timer = 0f;
-                    // Safe logic here, runs every 5 seconds
+                    DoAutopay();
                 }
             }
         }
 
-        private static void OnTimedEvent(Object source, ElapsedEventArgs e)
+        private void DoAutopay()
         {
-            var activePlayers = GameNetwork.NetworkPeers.ToList().Where(x => x.ControlledAgent?.IsPlayerControlled == true);
+            var activePlayers = GameNetwork.NetworkPeers.ToList().Where(x => x.IsConnectionActive && x.ControlledAgent != null && x.ControlledAgent.IsPlayerControlled == true && x.ControlledAgent.IsActive());
 
             foreach (NetworkCommunicator peer in activePlayers)
             {

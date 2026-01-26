@@ -3,6 +3,7 @@ using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Xml;
 using TaleWorlds.Core;
@@ -232,7 +233,8 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 if (spawnedPrefab.TryGetEntity(out var tmpGameEntity))
                 {
-                    tmpGameEntity.Remove(80);
+                    Mission.Current.Scene.RemoveEntity(tmpGameEntity, 80);
+                    //tmpGameEntity.Remove(80);
                 }
 
                 SpawnedPrefabs.Remove(spawnedPrefab);

@@ -3,6 +3,7 @@ using PersistentEmpiresLib.SceneScripts.Extensions;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -992,7 +993,8 @@ namespace PersistentEmpiresLib.SceneScripts
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
                 }
 #endif
-                tmpGameEntity.Remove(0);
+                Mission.Current.Scene.RemoveEntity(tmpGameEntity, 0);
+                //tmpGameEntity.Remove(0);
             }
         }
 
@@ -1024,11 +1026,12 @@ namespace PersistentEmpiresLib.SceneScripts
             return false;
         }
 
-        internal void Remove(int code)
+        internal void Remove(int reason)
         {
             if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
             {
-                tmpGameEntity.Remove(code);
+                Mission.Current.Scene.RemoveEntity(tmpGameEntity, reason);
+                //tmpGameEntity.Remove(code);
             }
         }
     }

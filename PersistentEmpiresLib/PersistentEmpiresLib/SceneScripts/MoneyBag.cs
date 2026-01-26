@@ -230,7 +230,8 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
                 {
-                    tmpGameEntity.Remove(80);
+                    Mission.Current.Scene.RemoveEntity(tmpGameEntity, reason);
+                    //tmpGameEntity.Remove(80);
                 }
             }
             catch (Exception ex)

@@ -316,7 +316,7 @@ namespace PersistentEmpiresLib.SceneScripts
             }
         }
 
-        internal void Remove(int v)
+        internal void Remove(int removeReason)
         {
             var myTrace = new System.Diagnostics.StackTrace(0, true);
 
@@ -324,7 +324,8 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
                 {
-                    tmpGameEntity.Remove(80);
+                    Mission.Current.Scene.RemoveEntity(tmpGameEntity, removeReason);
+                    //tmpGameEntity.Remove(removeReason);
                 }
             }
             catch (Exception ex)

@@ -26,8 +26,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public Queue<SyncingTrack> peerSyncItemGatheringQueue = new Queue<SyncingTrack>();
         public Queue<SyncingTrack> peerSyncDestructableWithItemsQueue = new Queue<SyncingTrack>();
 
-        public static object _synclock = new object();
-
         public class SyncingTrack
         {
             public NetworkCommunicator peer;
@@ -126,16 +124,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             try
             {
-                lock(_synclock)
+                foreach (var comp in syncDestructableWithItems[track.chunkIndex])
                 {
-                    foreach (var comp in syncDestructableWithItems[track.chunkIndex])
-                    {
-                        GameNetwork.BeginModuleEventAsServer(track.peer);
-                        GameNetwork.WriteMessage(new SyncObjectHitpointsForDestructibleWithItem(comp, Vec3.Zero, comp.HitPoint));
-                        GameNetwork.EndModuleEventAsServer();
-                    }
-                    track.chunkIndex = track.chunkIndex + 1;
+                    GameNetwork.BeginModuleEventAsServer(track.peer);
+                    GameNetwork.WriteMessage(new SyncObjectHitpointsForDestructibleWithItem(comp, Vec3.Zero, comp.HitPoint));
+                    GameNetwork.EndModuleEventAsServer();
                 }
+                track.chunkIndex = track.chunkIndex + 1;
             }
             catch(Exception ex)
             {
@@ -163,16 +158,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             try
             {
-                lock (_synclock)
+                foreach (var itemGathering in syncItemGathering[track.chunkIndex])
                 {
-                    foreach (var itemGathering in syncItemGathering[track.chunkIndex])
-                    {
-                        GameNetwork.BeginModuleEventAsServer(track.peer);
-                        GameNetwork.WriteMessage(new UpdateItemGatheringDestroyed(itemGathering, itemGathering.IsDestroyed));
-                        GameNetwork.EndModuleEventAsServer();
-                    }
-                    track.chunkIndex = track.chunkIndex + 1;
+                    GameNetwork.BeginModuleEventAsServer(track.peer);
+                    GameNetwork.WriteMessage(new UpdateItemGatheringDestroyed(itemGathering, itemGathering.IsDestroyed));
+                    GameNetwork.EndModuleEventAsServer();
                 }
+                track.chunkIndex = track.chunkIndex + 1;
             }
             catch (Exception ex)
             {
@@ -200,16 +192,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             try
             {
-                lock (_synclock)
+                foreach (var comp in syncDestructableHitPoints[track.chunkIndex])
                 {
-                    foreach (var comp in syncDestructableHitPoints[track.chunkIndex])
-                    {
-                        GameNetwork.BeginModuleEventAsServer(track.peer);
-                        GameNetwork.WriteMessage(new SyncObjectHitpointsPE(comp, Vec3.Zero, comp.HitPoint));
-                        GameNetwork.EndModuleEventAsServer();
-                    }
-                    track.chunkIndex = track.chunkIndex + 1;
+                    GameNetwork.BeginModuleEventAsServer(track.peer);
+                    GameNetwork.WriteMessage(new SyncObjectHitpointsPE(comp, Vec3.Zero, comp.HitPoint));
+                    GameNetwork.EndModuleEventAsServer();
                 }
+                track.chunkIndex = track.chunkIndex + 1;
             }
             catch (Exception ex)
             {

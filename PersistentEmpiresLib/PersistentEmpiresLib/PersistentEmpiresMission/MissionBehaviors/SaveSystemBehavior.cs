@@ -639,7 +639,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                         sw.Write(message);
                     }
                 }
-#if Server
+#if SERVER
                 DiscordBehavior.NotifyException(exception);
 #endif
             }

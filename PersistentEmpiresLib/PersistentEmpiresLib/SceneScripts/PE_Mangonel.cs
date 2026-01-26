@@ -993,7 +993,13 @@ namespace PersistentEmpiresLib.SceneScripts
                     Mission.Current.MakeSound(SoundEvent.GetEventIdFromString(this.SoundEffectOnDestroy), globalFrame.origin, false, true, -1, -1);
                 }
 #endif
-                Mission.Current.Scene.RemoveEntity(tmpGameEntity, 0);
+                try
+                {
+                    Mission.Current.Scene.RemoveEntity(tmpGameEntity, 0);
+                }
+                catch
+                {
+                }
                 //tmpGameEntity.Remove(0);
             }
         }
@@ -1028,10 +1034,16 @@ namespace PersistentEmpiresLib.SceneScripts
 
         internal void Remove(int reason)
         {
-            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            try
             {
-                Mission.Current.Scene.RemoveEntity(tmpGameEntity, reason);
-                //tmpGameEntity.Remove(code);
+                if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    Mission.Current.Scene.RemoveEntity(tmpGameEntity, reason);
+                    //tmpGameEntity.Remove(code);
+                }
+            }
+            catch(Exception ex)
+            {
             }
         }
     }

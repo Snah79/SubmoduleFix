@@ -201,8 +201,14 @@ namespace PersistentEmpiresLib.SceneScripts
             base.OnRemoved(removeReason);
             if (_animatedEntity != null && _animatedEntity.Scene == GameEntity.Scene)
             {
-                _animatedEntity.Remove(removeReason);
-                _animatedEntity = null;
+                try
+                {
+                    _animatedEntity.Remove(removeReason);
+                    _animatedEntity = null;
+                }
+                catch
+                {
+                }
             }
         }
 
@@ -243,7 +249,13 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 if (_animatedEntity != null)
                 {
-                    _animatedEntity.Remove(91);
+                    try
+                    {
+                        _animatedEntity.Remove(91);
+                    }
+                    catch
+                    {
+                    }
                 }
                 SetActionCodes();
                 CreateVisualizer();

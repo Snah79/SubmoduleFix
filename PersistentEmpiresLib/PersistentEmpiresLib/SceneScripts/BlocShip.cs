@@ -188,8 +188,15 @@ namespace PersistentEmpiresLib.SceneScripts
 
             if (destroyed)
             {
-                tmpGameEntity.Remove(0);
-            }
+                try
+                {
+                    tmpGameEntity.Remove(0);
+                }
+                catch(Exception ex)
+                {
+                    // ignored
+                }
+            }   
         }
 
         private void StopShip()

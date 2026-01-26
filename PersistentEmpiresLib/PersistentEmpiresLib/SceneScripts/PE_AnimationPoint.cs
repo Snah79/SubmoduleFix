@@ -199,10 +199,10 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnRemoved(int removeReason)
         {
             base.OnRemoved(removeReason);
-            if (this._animatedEntity != null && this._animatedEntity.Scene == base.GameEntity.Scene)
+            if (_animatedEntity != null && _animatedEntity.Scene == GameEntity.Scene)
             {
-                this._animatedEntity.Remove(removeReason);
-                this._animatedEntity = null;
+                _animatedEntity.Remove(removeReason);
+                _animatedEntity = null;
             }
         }
 
@@ -239,14 +239,14 @@ namespace PersistentEmpiresLib.SceneScripts
         // Token: 0x0600022F RID: 559 RVA: 0x0000EB3E File Offset: 0x0000CD3E
         protected override void OnEditorVariableChanged(string variableName)
         {
-            if (this.ShouldUpdateOnEditorVariableChanged(variableName))
+            if (ShouldUpdateOnEditorVariableChanged(variableName))
             {
-                if (this._animatedEntity != null)
+                if (_animatedEntity != null)
                 {
-                    this._animatedEntity.Remove(91);
+                    _animatedEntity.Remove(91);
                 }
-                this.SetActionCodes();
-                this.CreateVisualizer();
+                SetActionCodes();
+                CreateVisualizer();
             }
         }
 

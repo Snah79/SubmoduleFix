@@ -3,6 +3,7 @@ using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Xml;
 using TaleWorlds.Core;
@@ -54,18 +55,18 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             base.OnTick(dt);
             if (!GameNetwork.IsServer) return;
-            foreach (WeakGameEntity spawnedEntity in this.StrayEntity.Keys.ToList())
+            foreach (WeakGameEntity spawnedEntity in StrayEntity.Keys.ToList())
             {
                 if (spawnedEntity == null)
                 {
-                    this.StrayEntity.Remove(spawnedEntity);
-                    this.SpawnedPrefabs.Remove(spawnedEntity);
+                    StrayEntity.Remove(spawnedEntity);
+                    SpawnedPrefabs.Remove(spawnedEntity);
                     continue;
                 }
 
-                if (this.StrayEntity[spawnedEntity].IsStray())
+                if (StrayEntity[spawnedEntity].IsStray())
                 {
-                    this.DespawnSpawnedPrefab(spawnedEntity);
+                    DespawnSpawnedPrefab(spawnedEntity);
                 }
             }
         }
@@ -226,9 +227,22 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private void DespawnSpawnedPrefab(WeakGameEntity spawnedPrefab)
         {
-            spawnedPrefab.Remove(80);
-            this.SpawnedPrefabs.Remove(spawnedPrefab);
-            if (this.StrayEntity.ContainsKey(spawnedPrefab)) this.StrayEntity.Remove(spawnedPrefab);
+            var myTrace = new StackTrace(0, true);
+
+            try
+            {
+                if (spawnedPrefab.TryGetEntity(out var tmpGameEntity))
+                {
+                    tmpGameEntity.Remove(80);
+                }
+
+                SpawnedPrefabs.Remove(spawnedPrefab);
+                if (StrayEntity.ContainsKey(spawnedPrefab)) StrayEntity.Remove(spawnedPrefab);
+            }
+            catch (Exception ex)
+            {
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
+            }
         }
 
         private void DespawnNearest(Agent userAgent)

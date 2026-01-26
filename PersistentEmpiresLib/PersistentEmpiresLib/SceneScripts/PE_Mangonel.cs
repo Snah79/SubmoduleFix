@@ -919,8 +919,8 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public void SetFrameAfterTick(MatrixFrame frame)
         {
-            this._setFrameAfterTick = frame;
-            this._frameSetFlag = true;
+            _setFrameAfterTick = frame;
+            _frameSetFlag = true;
         }
 
         public float GetAdvanceSpeed()
@@ -977,9 +977,9 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 for (int i = 0; i < base.StandingPoints.Count; i++)
                 {
-                    if (this.StandingPoints[i].HasUser)
+                    if (StandingPoints[i].HasUser)
                     {
-                        this.StandingPoints[i].UserAgent.StopUsingGameObjectMT(false);
+                        StandingPoints[i].UserAgent.StopUsingGameObjectMT(false);
                     }
                 }
 #if CLIENT
@@ -1024,11 +1024,11 @@ namespace PersistentEmpiresLib.SceneScripts
             return false;
         }
 
-        internal void Remove(int v)
+        internal void Remove(int code)
         {
             if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
             {
-                tmpGameEntity.Remove(80);
+                tmpGameEntity.Remove(code);
             }
         }
     }

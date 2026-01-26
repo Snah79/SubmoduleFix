@@ -1,5 +1,7 @@
 ﻿using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System;
+using System.Diagnostics;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
@@ -82,7 +84,7 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             return new TextObject("Money Bag");
         }
-        
+
         public override ScriptComponentBehavior.TickRequirement GetTickRequirement()
         {
             //if (GameNetwork.IsServer && base.HasUser)
@@ -128,7 +130,7 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             _amount = amount;
         }
-        
+
         public int GetAmount()
         {
             return _amount;
@@ -140,7 +142,7 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 return;
             }
-            
+
             base.OnUse(userAgent, agentBoneIndex);
 
             // userAgent.StopUsingGameObjectMT(true, true, false);
@@ -223,9 +225,18 @@ namespace PersistentEmpiresLib.SceneScripts
 
         internal void Remove(int reason)
         {
-            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            var myTrace = new StackTrace(0, true);
+
+            try
             {
-                tmpGameEntity.Remove(80);
+                if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    tmpGameEntity.Remove(80);
+                }
+            }
+            catch (Exception ex)
+            {
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
             }
         }
     }

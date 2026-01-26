@@ -5,6 +5,7 @@ using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -318,9 +319,18 @@ namespace PersistentEmpiresLib.SceneScripts
 
         internal void Remove(int v)
         {
-            if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+            var myTrace = new StackTrace(0, true);
+
+            try
             {
-                tmpGameEntity.Remove(80);
+                if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    tmpGameEntity.Remove(80);
+                }
+            }
+            catch (Exception ex)
+            {
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
             }
         }
     }

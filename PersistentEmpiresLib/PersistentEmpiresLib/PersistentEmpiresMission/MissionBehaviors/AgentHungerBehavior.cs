@@ -73,7 +73,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             if (this.LastHungerCheckedAt + this.HungerInterval < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             {
-                foreach (NetworkCommunicator peer in GameNetwork.NetworkPeers)
+                foreach (NetworkCommunicator peer in GameNetwork.NetworkPeers.ToList())
                 {
                     if (!peer.IsConnectionActive) continue;
                     if (peer.ControlledAgent == null) continue;
@@ -101,7 +101,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             if (this.LastStarvingCheckedAt + this.StarvingInternal < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             {
-                foreach (NetworkCommunicator peer in GameNetwork.NetworkPeers)
+                foreach (NetworkCommunicator peer in GameNetwork.NetworkPeers.ToList())
                 {
                     if (!peer.IsConnectionActive) continue;
                     if (peer.ControlledAgent == null) continue;
@@ -119,11 +119,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         
         private void EatingActionLoop()
         {
-            foreach (Agent agent in this.AgentsEating.Keys.ToList())
+            foreach (Agent agent in AgentsEating.Keys.ToList())
             {
                 if (!agent.IsActive())
                 {
-                    this.AgentsEating.Remove(agent);
+                    AgentsEating.Remove(agent);
                     continue;
                 }
                 EatingAction action = this.AgentsEating[agent];
@@ -155,7 +155,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     {
                         OnAgentConsumedEatable(peer, action.Food);
                     }
-                    this.AgentsEating.Remove(agent);
+                    AgentsEating.Remove(agent);
                 }
             }
         }

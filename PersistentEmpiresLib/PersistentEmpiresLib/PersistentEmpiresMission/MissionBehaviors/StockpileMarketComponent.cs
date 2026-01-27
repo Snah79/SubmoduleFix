@@ -132,8 +132,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (!_running && DateTimeOffset.Now.ToUnixTimeSeconds() > this.LastSaveAt + this.SaveDuration)
             {
                 _running = true;
-                Task.Run(() =>
-                    {
+                //Task.Run(() =>
+                 //   {
                         try
                         {
                             AutoSaveAllMarkets();
@@ -148,7 +148,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                         {
                             _running = false;
                         }
-                    });
+                    //}
+            //);
             }
         }
 

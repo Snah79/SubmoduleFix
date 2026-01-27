@@ -1,6 +1,7 @@
 ﻿using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using System.Collections.Generic;
+using System.Linq;
 using TaleWorlds.MountAndBlade;
 
 namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
@@ -67,7 +68,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (speakerAgent == null || speakerAgent.IsActive() == false) return true;
             if (message.BufferLens[0] > 0 && component != null && component.Team != null)
             {
-                foreach (NetworkCommunicator networkCommunicator in GameNetwork.NetworkPeers)
+                foreach (NetworkCommunicator networkCommunicator in GameNetwork.NetworkPeers.ToList())
                 {
                     if (networkCommunicator == peer) continue;
                     MissionPeer component2 = networkCommunicator.GetComponent<MissionPeer>();

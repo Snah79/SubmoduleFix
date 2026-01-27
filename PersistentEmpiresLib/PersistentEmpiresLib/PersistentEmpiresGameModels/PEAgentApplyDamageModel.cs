@@ -57,7 +57,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
             if (weapon.Item != null && weapon.Item.WeaponComponent != null && weapon.Item.WeaponComponent.PrimaryWeapon.WeaponClass == WeaponClass.Boulder && attackInformation.IsAttackerAgentNull == false)
             {
                 bool isThrownBySiegeWeapon = false;
-                foreach (var missile in Mission.Current.MissilesList)
+                foreach (var missile in Mission.Current.MissilesList.ToList())
                 {
                     if (missile.Index == collisionData.AffectorWeaponSlotOrMissileIndex && missile.MissionObjectToIgnore != null)
                     {

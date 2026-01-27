@@ -60,7 +60,7 @@ namespace PersistentEmpiresHarmony.Patches
                     GameNetwork.EndModuleEventAsServer();
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 StackTrace myTrace = new StackTrace(0, true);
                 PersistentEmpiresHarmonySubModule.RglExceptionThrown(myTrace, ex);
@@ -238,7 +238,7 @@ namespace PersistentEmpiresHarmony.Patches
                 MethodInfo dynMethod = __instance.GetType().GetMethod(function, BindingFlags.NonPublic | BindingFlags.Instance);
                 dynMethod.Invoke(__instance, parameters);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 StackTrace myTrace = new StackTrace(0, true);
                 PersistentEmpiresHarmonySubModule.RglExceptionThrown(myTrace, ex);
@@ -292,58 +292,149 @@ namespace PersistentEmpiresHarmony.Patches
 
         private static void SyncupRuntimeObjects(NetworkCommunicator networkPeer)
         {
-            foreach (Mission.DynamicallyCreatedEntity createdEntity in Mission.Current.AddedEntitiesInfo)
+            if (Mission.Current == null || networkPeer == null)
+                return;
+
+            // SNAPSHOT 1: AddedEntitiesInfo
+            List<Mission.DynamicallyCreatedEntity> addedEntitiesSnapshot;
+
+            try
             {
-                MissionObject missionObject = Mission.Current.MissionObjects.FirstOrDefault((MissionObject mo) => mo.Id == createdEntity.ObjectId);
-                SynchedMissionObject synchedMissionObject = missionObject as SynchedMissionObject;
-                if (synchedMissionObject != null)
+                addedEntitiesSnapshot = Mission.Current.AddedEntitiesInfo.ToList();
+            }
+            catch
+            {
+                return;
+            }
+
+            if (addedEntitiesSnapshot == null || addedEntitiesSnapshot.Any())
+                return;
+
+            // SNAPSHOT 2: MissionObjects (MissionObjectId doğru tipi!)
+            Dictionary<MissionObjectId, MissionObject> missionObjectLookup;
+
+            try
+            {
+                missionObjectLookup = Mission.Current.MissionObjects
+                    .Where(mo => mo != null)
+                    .GroupBy(mo => mo.Id)
+                    .ToDictionary(g => g.Key, g => g.First());
+            }
+            catch
+            {
+                return;
+            }
+
+            foreach (var createdEntity in addedEntitiesSnapshot)
+            {
+                if (!missionObjectLookup.TryGetValue(createdEntity.ObjectId, out MissionObject missionObject))
+                    continue;
+
+                if (missionObject is not SynchedMissionObject synchedMissionObject)
+                    continue;
+
+                try
                 {
                     GameNetwork.BeginModuleEventAsServer(networkPeer);
                     GameNetwork.WriteMessage(new SynchronizeMissionObject(synchedMissionObject));
                     GameNetwork.EndModuleEventAsServer();
                 }
+                catch
+                {
+                    return;
+                }
             }
         }
 
+
+        private static readonly object _peerQueueLock = new object();
+        private static readonly object _chunkedObjectsLock = new object();
+
+
         public static void OnTick()
         {
-            if (!peerSyncingQueue.Any() || !chunkedMissionObjects.Any()) return;
+            SyncingTrack syncingTrack = null;
 
-            SyncingTrack syncingTrack = peerSyncingQueue.Peek();
-            
-            if (syncingTrack.peer.IsConnectionActive == false)
+            // --- Queue snapshot ---
+            lock (_peerQueueLock)
             {
-                peerSyncingQueue.Dequeue();
+                if (peerSyncingQueue.Count == 0)
+                    return;
+
+                syncingTrack = peerSyncingQueue.Peek();
+            }
+
+            if (syncingTrack == null)
+                return;
+
+            if (!syncingTrack.peer.IsConnectionActive)
+            {
+                lock (_peerQueueLock)
+                {
+                    if (peerSyncingQueue.Count > 0)
+                        peerSyncingQueue.Dequeue();
+                }
                 return;
             }
 
-            var toBeSend = chunkedMissionObjects[syncingTrack.chunkIndex].ToList();
+            // --- Chunk snapshot ---
+            List<MissionObject> toBeSend;
+
+            lock (_chunkedObjectsLock)
+            {
+                if (chunkedMissionObjects.Count == 0)
+                    return;
+
+                if (syncingTrack.chunkIndex >= chunkedMissionObjects.Count)
+                    return;
+
+                // 🔥 CRASH FIX: full snapshot
+                toBeSend = chunkedMissionObjects[syncingTrack.chunkIndex]
+                    .ToList();
+            }
 
             try
             {
                 SynchronizeMissionObjectsToPeer(syncingTrack.peer, toBeSend);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 StackTrace myTrace = new StackTrace(0, true);
                 PersistentEmpiresHarmonySubModule.RglExceptionThrown(myTrace, ex);
-                // do nothing, will try again next tick
-                return;
+                return; // next tick retry
             }
 
-            syncingTrack.chunkIndex = syncingTrack.chunkIndex + 1;
-            
-            if (syncingTrack.chunkIndex >= chunkedMissionObjects.Count)
+            syncingTrack.chunkIndex++;
+
+            bool finished = false;
+
+            lock (_chunkedObjectsLock)
             {
-                peerSyncingQueue.Dequeue();
-                SyncupRuntimeObjects(syncingTrack.peer);
-                syncingTrack.peer.SendExistingObjects(Mission.Current);
-                GameNetwork.BeginModuleEventAsServer(syncingTrack.peer);
-                GameNetwork.WriteMessage(new ExistingObjectsEnd());
-                GameNetwork.EndModuleEventAsServer();
-                syncingTrack.synced = true;
+                finished = syncingTrack.chunkIndex >= chunkedMissionObjects.Count;
             }
+
+            if (!finished)
+                return;
+
+            // --- FINISH SYNC ---
+            lock (_peerQueueLock)
+            {
+                if (peerSyncingQueue.Count > 0)
+                    peerSyncingQueue.Dequeue();
+            }
+
+            // ⚠️ enumerate bittikten sonra çağırılıyor
+            SyncupRuntimeObjects(syncingTrack.peer);
+
+            syncingTrack.peer.SendExistingObjects(Mission.Current);
+
+            GameNetwork.BeginModuleEventAsServer(syncingTrack.peer);
+            GameNetwork.WriteMessage(new ExistingObjectsEnd());
+            GameNetwork.EndModuleEventAsServer();
+
+            syncingTrack.synced = true;
         }
+
 
         public static bool BetterSendExistingObjectsToPeer(MissionNetwork __instance, NetworkCommunicator networkPeer)
         {

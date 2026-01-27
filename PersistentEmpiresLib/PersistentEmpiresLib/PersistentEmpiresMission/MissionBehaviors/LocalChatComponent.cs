@@ -4,6 +4,7 @@ using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -45,9 +46,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             Vec3 position = player.ControlledAgent.Position;
             List<AffectedPlayer> affectedPlayers = new List<AffectedPlayer>();
-            foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers)
+            foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers.ToList())
             {
-                if (otherPlayer.ControlledAgent == null) continue;
+                if (otherPlayer.ControlledAgent == null || !otherPlayer.ControlledAgent.IsActive()) continue;
                 Vec3 otherPlayerPosition = otherPlayer.ControlledAgent.Position;
                 float d = position.Distance(otherPlayerPosition);
                 if (d < 30)
@@ -79,9 +80,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             List<AffectedPlayer> affectedPlayers = new List<AffectedPlayer>();
 
-            foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers)
+            foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers.ToList())
             {
-                if (otherPlayer.ControlledAgent == null) continue;
+                if (otherPlayer.ControlledAgent == null || !otherPlayer.ControlledAgent.IsActive()) continue;
                 Vec3 otherPlayerPosition = otherPlayer.ControlledAgent.Position;
                 float d = position.Distance(otherPlayerPosition);
                 if (d < 50)

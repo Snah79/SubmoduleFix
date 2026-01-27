@@ -306,7 +306,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     GameNetwork.WriteMessage(new SyncCastleBanner(castleBanner, castleBanner.FactionIndex));
                     GameNetwork.EndModuleEventAsServer();
                 }
-                foreach (NetworkCommunicator player in GameNetwork.NetworkPeers)
+                foreach (NetworkCommunicator player in GameNetwork.NetworkPeers.ToList())
                 {
                     PersistentEmpireRepresentative persistentEmpireRepresentative1 = player.GetComponent<PersistentEmpireRepresentative>();
                     if (persistentEmpireRepresentative1 != null)

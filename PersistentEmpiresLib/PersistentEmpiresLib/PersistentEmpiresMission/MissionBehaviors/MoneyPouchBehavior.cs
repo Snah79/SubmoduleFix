@@ -76,9 +76,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 return false;
             }
             LastReveal[player] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers)
+            foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers.ToList())
             {
-                if (otherPlayer.ControlledAgent == null) continue;
+                if (otherPlayer.ControlledAgent == null || !otherPlayer.ControlledAgent.IsActive()) continue;
                 Vec3 otherPlayerPosition = otherPlayer.ControlledAgent.Position;
                 float d = position.Distance(otherPlayerPosition);
                 if (d < 30)

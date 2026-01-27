@@ -32,15 +32,18 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
         public override void OnMissionTick(float dt)
         {
-            foreach (NetworkCommunicator player in this.CombatLogTimer.Keys.ToList())
+            foreach (NetworkCommunicator player in CombatLogTimer.Keys.ToList())
             {
-                if (!this.IsPlayerInCombatState(player))
+                if (!player.IsConnectionActive) continue;
+                if (player.ControlledAgent == null) continue;
+
+                if (!IsPlayerInCombatState(player))
                 {
                     if (player.IsConnectionActive)
                     {
                         InformationComponent.Instance.SendMessage(GameTexts.FindText("CombatlogBehavior1", null).ToString(), new Color(0f, 1f, 0f).ToUnsignedInteger(), player);
                     }
-                    this.CombatLogTimer.Remove(player);
+                    CombatLogTimer.Remove(player);
                 }
             }
         }

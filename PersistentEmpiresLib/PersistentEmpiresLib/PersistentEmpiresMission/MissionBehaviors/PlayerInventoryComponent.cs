@@ -478,7 +478,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
                 foreach (NetworkCommunicator otherPlayer in sourceInventory.CurrentlyOpenedBy)
                 {
-                    if (otherPlayer.IsConnectionActive == false) continue;
+                    if (otherPlayer.IsConnectionActive == false || !otherPlayer.ControlledAgent.IsActive()) continue;
                     GameNetwork.BeginModuleEventAsServer(otherPlayer);
                     GameNetwork.WriteMessage(new UpdateInventorySlot(sourceInventory.InventoryId + "_" + draggedIndex, slot.Item, slot.Count));
                     GameNetwork.EndModuleEventAsServer();
@@ -554,9 +554,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
 
 
-            foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers)
+            foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers.ToList())
             {
-                if (otherPlayer.ControlledAgent == null) continue;
+                if (otherPlayer.ControlledAgent == null || !otherPlayer.ControlledAgent.IsActive()) continue;
                 Vec3 otherPlayerPosition = otherPlayer.ControlledAgent.Position;
                 float d = position.Distance(otherPlayerPosition);
                 if (d < 30)
@@ -660,7 +660,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (targetInventory == null) return;
             foreach (NetworkCommunicator otherPlayer in targetInventory.CurrentlyOpenedBy)
             {
-                if (otherPlayer.IsConnectionActive == false) continue;
+                if (otherPlayer.IsConnectionActive == false || !otherPlayer.ControlledAgent.IsActive()) continue;
                 GameNetwork.BeginModuleEventAsServer(otherPlayer);
                 GameNetwork.WriteMessage(new ForceCloseInventory());
                 GameNetwork.EndModuleEventAsServer();
@@ -748,7 +748,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                         {
                             foreach (NetworkCommunicator otherPlayer in sourceInventory.CurrentlyOpenedBy)
                             {
-                                if (otherPlayer.IsConnectionActive == false) continue;
+                                if (otherPlayer.IsConnectionActive == false || !otherPlayer.ControlledAgent.IsActive()) continue;
                                 GameNetwork.BeginModuleEventAsServer(otherPlayer);
                                 GameNetwork.WriteMessage(new UpdateInventorySlot(sourceInventory.InventoryId + "_" + i, inventorySlot.Item, inventorySlot.Count));
                                 GameNetwork.EndModuleEventAsServer();
@@ -764,7 +764,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
                 foreach (NetworkCommunicator otherPlayer in sourceInventory.CurrentlyOpenedBy)
                 {
-                    if (otherPlayer.IsConnectionActive == false) continue;
+                    if (otherPlayer.IsConnectionActive == false || !otherPlayer.ControlledAgent.IsActive()) continue;
                     GameNetwork.BeginModuleEventAsServer(otherPlayer);
                     GameNetwork.WriteMessage(new UpdateInventorySlot(sourceInventory.InventoryId + "_" + slot, sourceInventory.Slots[slot].Item, sourceInventory.Slots[slot].Count));
                     GameNetwork.EndModuleEventAsServer();
@@ -1164,7 +1164,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
                 foreach (NetworkCommunicator otherPlayer in targetInventory.CurrentlyOpenedBy)
                 {
-                    if (otherPlayer.IsConnectionActive == false) continue;
+                    if (otherPlayer.IsConnectionActive == false || !otherPlayer.ControlledAgent.IsActive()) continue;
                     if (otherPlayer == player) continue;
                     GameNetwork.BeginModuleEventAsServer(otherPlayer);
                     GameNetwork.WriteMessage(new UpdateInventorySlot(DroppedTag, targetInventory.Slots[droppedIndex].Item, targetInventory.Slots[droppedIndex].Count));
@@ -1185,7 +1185,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
                 foreach (NetworkCommunicator otherPlayer in targetInventory.CurrentlyOpenedBy)
                 {
-                    if (otherPlayer == player || otherPlayer.IsConnectionActive == false) continue;
+                    if (otherPlayer == player || otherPlayer.IsConnectionActive == false || !otherPlayer.ControlledAgent.IsActive()) continue;
                     GameNetwork.BeginModuleEventAsServer(otherPlayer);
                     GameNetwork.WriteMessage(new UpdateInventorySlot(DraggedTag, targetInventory.Slots[draggedIndex].Item, targetInventory.Slots[draggedIndex].Count));
                     GameNetwork.EndModuleEventAsServer();

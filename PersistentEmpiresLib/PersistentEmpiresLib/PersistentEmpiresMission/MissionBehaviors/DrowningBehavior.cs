@@ -85,7 +85,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
                 LastCheckedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-                foreach (Agent agent in base.Mission.Agents)
+                foreach (Agent agent in Mission.Agents.ToList())
                 {
                     if (IsInWater(agent))
                     //if (agent.IsActive() && !agent.IsHuman)

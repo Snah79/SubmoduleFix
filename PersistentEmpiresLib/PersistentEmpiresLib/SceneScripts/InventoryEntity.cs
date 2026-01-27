@@ -204,7 +204,7 @@ namespace PersistentEmpiresLib.SceneScripts
             if (_weakGameEntity.TryGetEntity(out var tmpGameEntity))
             {
                 Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/mission/movement/foley/door_open"), tmpGameEntity.GetGlobalFrame().origin, false, true, -1, -1);
-                this.playerInventoryComponent.OpenInventoryForPeer(userAgent.MissionPeer.GetNetworkPeer(), this.InventoryId);
+                playerInventoryComponent.OpenInventoryForPeer(userAgent.MissionPeer.GetNetworkPeer(), this.InventoryId);
                 // userAgent.StopUsingGameObjectMT(true);            
             }
         }        

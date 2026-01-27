@@ -656,6 +656,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 $"InnerException: {ex.InnerException}{Environment.NewLine}" +
                 $"Data: {ex.Data}{Environment.NewLine}" +
                 $"Source: {ex.Source}{Environment.NewLine}" +
+                $"Help info: {ex.HelpLink}{Environment.NewLine}" +
                 $"CustomStackTrace: {stackTrace}";
 
             return message;

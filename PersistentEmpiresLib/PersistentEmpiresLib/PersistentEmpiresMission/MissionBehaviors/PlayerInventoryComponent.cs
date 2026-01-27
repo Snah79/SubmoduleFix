@@ -148,13 +148,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 persistentEmpireRepresentative.GetInventory().EmptyInventory();
             }
 
-            if (this.OpenedByPeerInventory.ContainsKey(player))
+            if (OpenedByPeerInventory.ContainsKey(player))
             {
-                if (this.OpenedByPeerInventory[player] != null)
+                if (OpenedByPeerInventory[player] != null)
                 {
-                    this.OpenedByPeerInventory[player].RemoveOpenedBy(player);
+                    OpenedByPeerInventory[player].RemoveOpenedBy(player);
                 }
-                this.OpenedByPeerInventory.Remove(player);
+                OpenedByPeerInventory.Remove(player);
             }
 
             foreach (var x in OpenedByPeerInventory)    
@@ -204,14 +204,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     SaveSystemBehavior.HandleCreateOrSavePlayerInventory(player);
                 }
 
-                if (this.OpenedByPeerInventory.ContainsKey(player))
+                if (OpenedByPeerInventory.ContainsKey(player))
                 {
-                    if (this.OpenedByPeerInventory[player] != null)
+                    if (OpenedByPeerInventory[player] != null)
                     {
-
-                        this.OpenedByPeerInventory[player].RemoveOpenedBy(player);
+                        OpenedByPeerInventory[player].RemoveOpenedBy(player);
                     }
-                    this.OpenedByPeerInventory.Remove(player);
+                    OpenedByPeerInventory.Remove(player);
                 }
                 GameNetwork.BeginModuleEventAsServer(player);
                 GameNetwork.WriteMessage(new ForceCloseInventory());
@@ -317,14 +316,14 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 droppedLoot.AddPhysicsSynchedPE(new Vec3(0, 0, 1), Vec3.Zero, "wood");
 
 
-                if (this.OpenedByPeerInventory.ContainsKey(player))
+                if (OpenedByPeerInventory.ContainsKey(player))
                 {
-                    if (this.OpenedByPeerInventory[player] != null)
+                    if (OpenedByPeerInventory[player] != null)
                     {
                         // LoggerHelper.LogAnAction(player, LogAction.PlayerClosesChest, null, new object[] { this.OpenedByPeerInventory[player] });
-                        this.OpenedByPeerInventory[player].RemoveOpenedBy(player);
+                        OpenedByPeerInventory[player].RemoveOpenedBy(player);
                     }
-                    this.OpenedByPeerInventory.Remove(player);
+                    OpenedByPeerInventory.Remove(player);
                 }
 
                 if (player.ControlledAgent != null && persistentEmpireRepresentative.IsFirstAgentSpawned)
@@ -388,12 +387,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 #if SERVER
         private bool HandleRequestInventoryTransferFromClient(NetworkCommunicator player, RequestInventoryTransfer message)
         {
-            return this.TransferInventoryItem(player, message.DroppedTag, message.DraggedTag);
+            return TransferInventoryItem(player, message.DroppedTag, message.DraggedTag);
         }
 
         private bool HandleRequestOpenInventoryFromClient(NetworkCommunicator player, RequestOpenInventory message)
         {
-            this.OpenInventoryForPeer(player, message.InventoryId);
+            OpenInventoryForPeer(player, message.InventoryId);
             return true;
         }
 
@@ -618,11 +617,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private bool ClosedInventoryOnServer(NetworkCommunicator player, string inventoryId)
         {
             Inventory targetInventory;
-            if (this.OpenedByPeerInventory.ContainsKey(player))
+            if (OpenedByPeerInventory.ContainsKey(player))
             {
-                this.OpenedByPeerInventory.Remove(player);
+                OpenedByPeerInventory.Remove(player);
             }
-            if (!this.CustomInventories.TryGetValue(inventoryId, out targetInventory)) return false;
+            if (!CustomInventories.TryGetValue(inventoryId, out targetInventory)) return false;
             if (targetInventory == null) return false;
             targetInventory.RemoveOpenedBy(player);
             // LoggerHelper.LogAnAction(player, LogAction.PlayerClosesChest, null, new object[] { targetInventory });
@@ -640,7 +639,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 requestedInventory = this.CustomInventories[inventoryId];
                 requestedInventory.CurrentlyOpenedBy.Add(player);
             }
-            this.OpenedByPeerInventory[player] = requestedInventory;
+            OpenedByPeerInventory[player] = requestedInventory;
 
             GameNetwork.BeginModuleEventAsServer(player);
             GameNetwork.WriteMessage(new OpenInventory(inventoryId, playerInventory, requestedInventory));
@@ -777,94 +776,106 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleRequestInventoryHotkey(NetworkCommunicator player, InventoryHotkey message)
         {
-            PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
-            if (persistentEmpireRepresentative == null) return false;
+            var myTrace = new System.Diagnostics.StackTrace(0, true);
 
-            string[] inventoryTag = message.ClickedTag.Split('_');
-            string inventory = string.Join("_", inventoryTag.Take(inventoryTag.Length - 1));
-            int slot = int.Parse(inventoryTag.Last());
-            // If clicked in Equipment Inventory
-            if (inventory == "Equipment")
+            try
             {
-                if (player.ControlledAgent == null) return false;
-                Equipment agentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
-                Inventory targetInventory = persistentEmpireRepresentative.GetInventory();
-                ItemObject item = agentEquipment[slot].IsEmpty ? null : agentEquipment[slot].Item;
-                int itemCount = agentEquipment[slot].IsEmpty ? 0 : 1;
-                if (item == null || itemCount == 0) return false;
+                PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
+                if (persistentEmpireRepresentative == null) return false;
 
-                for (int i = 0; i < targetInventory.Slots.Count; i++)
+                string[] inventoryTag = message.ClickedTag.Split('_');
+                string inventory = string.Join("_", inventoryTag.Take(inventoryTag.Length - 1));
+                int slot = int.Parse(inventoryTag.Last());
+                // If clicked in Equipment Inventory
+                if (inventory == "Equipment")
                 {
-                    InventorySlot inventorySlot = targetInventory.Slots[i];
-                    if (inventorySlot.Item == null && inventorySlot.Count + 1 <= inventorySlot.MaxStackCount)
+                    if (player.ControlledAgent == null) return false;
+                    Equipment agentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
+                    Inventory targetInventory = persistentEmpireRepresentative.GetInventory();
+                    ItemObject item = agentEquipment[slot].IsEmpty ? null : agentEquipment[slot].Item;
+                    int itemCount = agentEquipment[slot].IsEmpty ? 0 : 1;
+                    if (item == null || itemCount == 0) return false;
+
+                    for (int i = 0; i < targetInventory.Slots.Count; i++)
                     {
-                        return this.TransferInventoryItem(player, "PlayerInventory_" + i, message.ClickedTag);
+                        InventorySlot inventorySlot = targetInventory.Slots[i];
+                        if (inventorySlot.Item == null && inventorySlot.Count + 1 <= inventorySlot.MaxStackCount)
+                        {
+                            return this.TransferInventoryItem(player, "PlayerInventory_" + i, message.ClickedTag);
+                        }
+                        else if (inventorySlot.Item.StringId == item.StringId && inventorySlot.Count + 1 <= inventorySlot.MaxStackCount)
+                        {
+                            return this.TransferInventoryItem(player, "PlayerInventory_" + i, message.ClickedTag);
+                        }
                     }
-                    else if (inventorySlot.Item.StringId == item.StringId && inventorySlot.Count + 1 <= inventorySlot.MaxStackCount)
+                }
+                else if (inventory == "PlayerInventory")
+                {
+                    if (!OpenedByPeerInventory.ContainsKey(player) || OpenedByPeerInventory[player] == null) return false;
+                    Inventory targetInventory = OpenedByPeerInventory[player];
+                    Inventory sourceInventory = persistentEmpireRepresentative.GetInventory();
+                    ItemObject item = sourceInventory.Slots[slot].Item;
+                    int itemCount = sourceInventory.Slots[slot].Count;
+                    if (item == null || itemCount == 0) return false;
+                    for (int i = 0; i < targetInventory.Slots.Count; i++)
                     {
-                        return this.TransferInventoryItem(player, "PlayerInventory_" + i, message.ClickedTag);
+                        InventorySlot inventorySlot = targetInventory.Slots[i];
+                        if (inventorySlot.Item == null)
+                        {
+                            int maxAddableQuantity = inventorySlot.MaxStackCount - inventorySlot.Count;
+                            int addableQuantity = Math.Min(maxAddableQuantity, itemCount);
+                            this.TransferInventoryItem(player, targetInventory.InventoryId + "_" + i, message.ClickedTag);
+                            itemCount -= addableQuantity;
+                            if (itemCount == 0) break;
+                        }
+                        else if (inventorySlot.Item.StringId == item.StringId)
+                        {
+                            int maxAddableQuantity = inventorySlot.MaxStackCount - inventorySlot.Count;
+                            int addableQuantity = Math.Min(maxAddableQuantity, itemCount);
+                            this.TransferInventoryItem(player, targetInventory.InventoryId + "_" + i, message.ClickedTag);
+                            itemCount -= addableQuantity;
+                            if (itemCount == 0) break;
+                        }
                     }
+                    return true;
+                }
+                else if (this.CustomInventories.ContainsKey(inventory))
+                {
+                    if (!this.OpenedByPeerInventory.ContainsKey(player)) return false;
+                    Inventory targetInventory = persistentEmpireRepresentative.GetInventory();
+                    Inventory sourceInventory = this.CustomInventories[inventory];
+                    ItemObject item = sourceInventory.Slots[slot].Item;
+                    int itemCount = sourceInventory.Slots[slot].Count;
+                    if (item == null || itemCount == 0) return false;
+                    for (int i = 0; i < targetInventory.Slots.Count; i++)
+                    {
+                        InventorySlot inventorySlot = targetInventory.Slots[i];
+                        if (inventorySlot.Item == null)
+                        {
+                            int maxAddableQuantity = inventorySlot.MaxStackCount - inventorySlot.Count;
+                            int addableQuantity = Math.Min(maxAddableQuantity, itemCount);
+                            this.TransferInventoryItem(player, targetInventory.InventoryId + "_" + i, message.ClickedTag);
+                            itemCount -= addableQuantity;
+                            if (itemCount == 0) break;
+                        }
+                        else if (inventorySlot.Item.StringId == item.StringId)
+                        {
+                            int maxAddableQuantity = inventorySlot.MaxStackCount - inventorySlot.Count;
+                            int addableQuantity = Math.Min(maxAddableQuantity, itemCount);
+                            this.TransferInventoryItem(player, targetInventory.InventoryId + "_" + i, message.ClickedTag);
+                            itemCount -= addableQuantity;
+                            if (itemCount == 0) break;
+                        }
+                    }
+                    return true;
                 }
             }
-            else if (inventory == "PlayerInventory")
+            catch(Exception ex)
             {
-                if (!this.OpenedByPeerInventory.ContainsKey(player)) return false;
-                Inventory targetInventory = this.OpenedByPeerInventory[player];
-                Inventory sourceInventory = persistentEmpireRepresentative.GetInventory();
-                ItemObject item = sourceInventory.Slots[slot].Item;
-                int itemCount = sourceInventory.Slots[slot].Count;
-                if (item == null || itemCount == 0) return false;
-                for (int i = 0; i < targetInventory.Slots.Count; i++)
-                {
-                    InventorySlot inventorySlot = targetInventory.Slots[i];
-                    if (inventorySlot.Item == null)
-                    {
-                        int maxAddableQuantity = inventorySlot.MaxStackCount - inventorySlot.Count;
-                        int addableQuantity = Math.Min(maxAddableQuantity, itemCount);
-                        this.TransferInventoryItem(player, targetInventory.InventoryId + "_" + i, message.ClickedTag);
-                        itemCount -= addableQuantity;
-                        if (itemCount == 0) break;
-                    }
-                    else if (inventorySlot.Item.StringId == item.StringId)
-                    {
-                        int maxAddableQuantity = inventorySlot.MaxStackCount - inventorySlot.Count;
-                        int addableQuantity = Math.Min(maxAddableQuantity, itemCount);
-                        this.TransferInventoryItem(player, targetInventory.InventoryId + "_" + i, message.ClickedTag);
-                        itemCount -= addableQuantity;
-                        if (itemCount == 0) break;
-                    }
-                }
-                return true;
-            }
-            else if (this.CustomInventories.ContainsKey(inventory))
-            {
-                if (!this.OpenedByPeerInventory.ContainsKey(player)) return false;
-                Inventory targetInventory = persistentEmpireRepresentative.GetInventory();
-                Inventory sourceInventory = this.CustomInventories[inventory];
-                ItemObject item = sourceInventory.Slots[slot].Item;
-                int itemCount = sourceInventory.Slots[slot].Count;
-                if (item == null || itemCount == 0) return false;
-                for (int i = 0; i < targetInventory.Slots.Count; i++)
-                {
-                    InventorySlot inventorySlot = targetInventory.Slots[i];
-                    if (inventorySlot.Item == null)
-                    {
-                        int maxAddableQuantity = inventorySlot.MaxStackCount - inventorySlot.Count;
-                        int addableQuantity = Math.Min(maxAddableQuantity, itemCount);
-                        this.TransferInventoryItem(player, targetInventory.InventoryId + "_" + i, message.ClickedTag);
-                        itemCount -= addableQuantity;
-                        if (itemCount == 0) break;
-                    }
-                    else if (inventorySlot.Item.StringId == item.StringId)
-                    {
-                        int maxAddableQuantity = inventorySlot.MaxStackCount - inventorySlot.Count;
-                        int addableQuantity = Math.Min(maxAddableQuantity, itemCount);
-                        this.TransferInventoryItem(player, targetInventory.InventoryId + "_" + i, message.ClickedTag);
-                        itemCount -= addableQuantity;
-                        if (itemCount == 0) break;
-                    }
-                }
-                return true;
+                var tmp= $"Exception was thrown in HandleRequestInventoryHotkey. Player {player.UserName}. Message {message.ClickedTag}";
+                InformationComponent.Instance.SendMessage(tmp, new Color(1f, 0f, 0f).ToUnsignedInteger(), player);
+                ex.HelpLink = tmp;
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
             }
             return true;
         }

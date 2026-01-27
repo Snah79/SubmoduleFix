@@ -116,14 +116,15 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private void SendDestructibleWithItemsInQueue(SyncingTrack track, Queue<SyncingTrack> q)
         {
             var myTrace = new StackTrace(0, true);
-
-            if (track.chunkIndex >= this.syncDestructableWithItems.Count)
-            {
-                q.Dequeue();
-                return;
-            }
             try
             {
+
+                if (track.chunkIndex >= this.syncDestructableWithItems.Count)
+                {
+                    q.Dequeue();
+                    return;
+                }
+            
                 // sync only destructed as all are shown as not per default
                 foreach (var comp in syncDestructableWithItems[track.chunkIndex].Where(x => x.destructed))
                 {

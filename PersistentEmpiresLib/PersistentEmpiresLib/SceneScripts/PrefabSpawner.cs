@@ -196,7 +196,8 @@ namespace PersistentEmpiresLib.SceneScripts
             }
             catch (Exception ex)
             {
-                InformationComponent.Instance.SendMessage($"Exception was thrown. Can't spawn prefab.", new Color(1f, 0f, 0f).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                InformationComponent.Instance.SendMessage($"Exception was thrown. Can't spawn prefab {spawnableItem.PrefabName}.", new Color(1f, 0f, 0f).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                ex.HelpLink = $"Exception was thrown. Can't spawn prefab {spawnableItem.PrefabName}.";
                 SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
             }
         }

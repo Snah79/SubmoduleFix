@@ -56,7 +56,9 @@ namespace PersistentEmpiresServer.ServerMissions
 
         private bool PatchGlobalChat_OnClientEventPlayerMessageAll(NetworkCommunicator networkPeer, PlayerMessageAll message)
         {
-            PersistentEmpireRepresentative persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
+            var myTrace = new System.Diagnostics.StackTrace(0, true);
+            try { 
+            var persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
 
             if (persistentEmpireRepresentative != null && persistentEmpireRepresentative.IsAdmin)
             {
@@ -83,7 +85,14 @@ namespace PersistentEmpiresServer.ServerMissions
                 InformationComponent.Instance.SendMessage("You are muted.", Colors.Red.ToUnsignedInteger(), networkPeer);
                 return false;
             }
-
+            }
+            catch (Exception ex)
+            {
+                var tmp = $"Exception was thrown in PatchGlobalChat_OnClientEventPlayerMessageAll. Player {networkPeer.UserName}. Message {message.Message}";
+                InformationComponent.Instance.SendMessage(tmp, new Color(1f, 0f, 0f).ToUnsignedInteger(), networkPeer);
+                ex.HelpLink = tmp;
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
+            }
             return true;
         }
 

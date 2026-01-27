@@ -20,7 +20,7 @@
     "NEPE": {
       "commandName": "Executable",
       "executablePath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Mount & Blade II Bannerlord\\bin\\Win64_Shipping_Client\\Bannerlord.exe",
-      "commandLineArgs": "/multiplayer _MODULES_*Native*Multiplayer*PW*_MODULES_ /no_watchdog",
+      "commandLineArgs": "/multiplayer _MODULES_*Native*Multiplayer*PersistentEmpires*_MODULES_ /no_watchdog",
       "workingDirectory": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Mount & Blade II Bannerlord\\bin\\Win64_Shipping_Client"
     }
   }

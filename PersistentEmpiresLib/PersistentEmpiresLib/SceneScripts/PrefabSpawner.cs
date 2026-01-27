@@ -12,7 +12,9 @@ using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.ModuleManager;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.MountAndBlade.DedicatedCustomServer;
 using TaleWorlds.ObjectSystem;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
 
 namespace PersistentEmpiresLib.SceneScripts
 {
@@ -149,50 +151,59 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private void SpawnSpawnableItem(Agent userAgent, SpawnableItem spawnableItem)
         {
-            EquipmentIndex equipmentIndex = userAgent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
-            userAgent.RemoveEquippedWeapon(equipmentIndex);
+            var myTrace = new System.Diagnostics.StackTrace(0, true);
+            try
+            {
+                EquipmentIndex equipmentIndex = userAgent.GetPrimaryWieldedItemIndex();//.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                userAgent.RemoveEquippedWeapon(equipmentIndex);
 
-            MatrixFrame spawnFrame = this.SpawningPoint.GetGlobalFrame();
-            Vec3 vecspawnFrame = new Vec3(spawnFrame.origin.X + spawnableItem.AdjustPositionX, spawnFrame.origin.Y + spawnableItem.AdjustPositionY, spawnFrame.origin.Z + spawnableItem.AdjustPositionZ);
+                MatrixFrame spawnFrame = this.SpawningPoint.GetGlobalFrame();
+                Vec3 vecspawnFrame = new Vec3(spawnFrame.origin.X + spawnableItem.AdjustPositionX, spawnFrame.origin.Y + spawnableItem.AdjustPositionY, spawnFrame.origin.Z + spawnableItem.AdjustPositionZ);
 
-            MatrixFrame adjSpawnFrame = new MatrixFrame(spawnFrame.rotation, vecspawnFrame);
+                MatrixFrame adjSpawnFrame = new MatrixFrame(spawnFrame.rotation, vecspawnFrame);
 
-            MissionObject mObject = Mission.Current.CreateMissionObjectFromPrefab(spawnableItem.PrefabName, adjSpawnFrame, DefaultAction);
-            //TaleWorlds.Engine.GameEntity.Instantiate(Mission.Current.Scene, spawnableItem.PrefabName, bool callScriptCallbacks, bool createPhysics = true, string scriptInclusingTag = "")
-            this.SpawnedPrefabs.Add(mObject.GameEntity);
+                MissionObject mObject = Mission.Current.CreateMissionObjectFromPrefab(spawnableItem.PrefabName, adjSpawnFrame, DefaultAction);
+                //TaleWorlds.Engine.GameEntity.Instantiate(Mission.Current.Scene, spawnableItem.PrefabName, bool callScriptCallbacks, bool createPhysics = true, string scriptInclusingTag = "")
+                this.SpawnedPrefabs.Add(mObject.GameEntity);
 
-            LoggerHelper.LogAnAction(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerSpawnedPrefab, null, new object[] {
+                LoggerHelper.LogAnAction(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerSpawnedPrefab, null, new object[] {
                 spawnableItem
             });
 
-            // Initiate all mObject childrens
-            var childrens = new List<WeakGameEntity>();
+                // Initiate all mObject childrens
+                var childrens = new List<WeakGameEntity>();
 
-            ScriptComponentBehavior[] spawnablesRoot = mObject.GameEntity.GetScriptComponents().Where(s => s is ISpawnable).ToArray();
-            foreach (ISpawnable spawnable in spawnablesRoot) spawnable.OnSpawnedByPrefab(this);
+                ScriptComponentBehavior[] spawnablesRoot = mObject.GameEntity.GetScriptComponents().Where(s => s is ISpawnable).ToArray();
+                foreach (ISpawnable spawnable in spawnablesRoot) spawnable.OnSpawnedByPrefab(this);
 
-            mObject.GameEntity.GetChildrenRecursive(ref childrens);
-            foreach (var child in childrens)
-            {
-                ScriptComponentBehavior[] spawnables = child.GetScriptComponents().Where(s => s is ISpawnable).ToArray();
-                foreach (ISpawnable spawnable in spawnables) spawnable.OnSpawnedByPrefab(this);
+                mObject.GameEntity.GetChildrenRecursive(ref childrens);
+                foreach (var child in childrens)
+                {
+                    ScriptComponentBehavior[] spawnables = child.GetScriptComponents().Where(s => s is ISpawnable).ToArray();
+                    foreach (ISpawnable spawnable in spawnables) spawnable.OnSpawnedByPrefab(this);
 
-                ScriptComponentBehavior[] strayScripts = child.GetScriptComponents().Where(s => s is IStray).ToArray();
-                foreach (IStray stray in strayScripts)
+                    ScriptComponentBehavior[] strayScripts = child.GetScriptComponents().Where(s => s is IStray).ToArray();
+                    foreach (IStray stray in strayScripts)
+                    {
+                        this.StrayEntity[mObject.GameEntity] = (IStray)stray;
+                    }
+                }
+                ScriptComponentBehavior[] strayScripts2 = mObject.GameEntity.GetScriptComponents().Where(s => s is IStray).ToArray();
+                foreach (IStray stray in strayScripts2)
                 {
                     this.StrayEntity[mObject.GameEntity] = (IStray)stray;
                 }
             }
-            ScriptComponentBehavior[] strayScripts2 = mObject.GameEntity.GetScriptComponents().Where(s => s is IStray).ToArray();
-            foreach (IStray stray in strayScripts2)
+            catch (Exception ex)
             {
-                this.StrayEntity[mObject.GameEntity] = (IStray)stray;
+                InformationComponent.Instance.SendMessage($"Exception was thrown. Can't spawn prefab.", new Color(1f, 0f, 0f).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
             }
         }
 
         private void DefaultAction(GameEntity entity)
         {
-            if(entity.Name == "pe_mangoneltest1" || entity.Name == "pe_mangoneltest3")
+            if(entity != null && (entity.Name == "pe_mangoneltest1" || entity.Name == "pe_mangoneltest3"))
             {
                 var childs = new List<GameEntity>();
                 entity.Root.GetChildrenRecursive(ref childs);

@@ -52,7 +52,7 @@ namespace PersistentEmpiresServer.ServerMissions
         private static void SendSendGoldToPeer(NetworkCommunicator networkPeer)
         {
             var representative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
-            var message = $"Autopay message: Amount of {AutoPayGold} have been added to your purse. Next payment in {AutoPayTimeInSeconds} minutes.";
+            var message = $"Autopay message: Amount of {AutoPayGold} have been added to your purse. Next payment in {AutoPayTimeInSeconds/60} minutes.";
             
             representative.GoldGain(AutoPayGold);
             InformationComponent.Instance.SendMessage(message, Colors.Yellow.ToUnsignedInteger(), networkPeer);

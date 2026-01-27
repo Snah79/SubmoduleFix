@@ -13,7 +13,7 @@ using static PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors.Save
 namespace PersistentEmpiresLib.Helpers
 {
     public static class LogAction
-    {
+    {   
         public static readonly string Wounds = "Wounds";// Done
         public static readonly string TeleportToPosition = "TeleportToPosition";// Done
         public static readonly string DiceCommand = "DiceCommand";// Done

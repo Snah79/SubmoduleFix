@@ -122,7 +122,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             foreach (var x in OpenedByPeerInventory)
             {
-                if (x.Value.TiedEntity == null || !x.Value.TiedEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
+                if (x.Value == null || x.Value.TiedEntity == null || !x.Value.TiedEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
                 {
                     continue;
                 }
@@ -157,9 +157,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 this.OpenedByPeerInventory.Remove(player);
             }
 
-            foreach (var x in OpenedByPeerInventory)
+            foreach (var x in OpenedByPeerInventory)    
             {
-                if (x.Value.TiedEntity == null || !x.Value.TiedEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
+                if (x.Value == null || x.Value?.TiedEntity == null || !x.Value.TiedEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
                 {
                     continue;
                 }
@@ -888,14 +888,17 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (persistentEmpireRepresentative == null) return false;
             if (player.ControlledAgent == null) return false;
 
-            if (!CustomInventories[draggedFromInventory].TiedEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
+            if (CustomInventories.ContainsKey(draggedFromInventory) && CustomInventories[draggedFromInventory].TiedEntity != null)
             {
-                return false;
-            }
+                if (!CustomInventories[draggedFromInventory].TiedEntity.GameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    return false;
+                }
 
-            if (CustomInventories.ContainsKey(draggedFromInventory) && CustomInventories[draggedFromInventory].TiedEntity != null && tmpGameEntity != null && tmpGameEntity.GetGlobalFrame().origin.Distance(player.ControlledAgent.Position) > 10f)
-            {
-                return false;
+                if (tmpGameEntity != null && tmpGameEntity.GetGlobalFrame().origin.Distance(player.ControlledAgent.Position) > 10f)
+                {
+                    return false;
+                }
             }
 
             if (draggedFromInventory == "Equipment")

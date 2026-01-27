@@ -291,6 +291,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 return false;
             }
             if (peer.ControlledAgent.Position.Distance(tmpGameEntity.GlobalPosition) > stockpileMarket.Distance) return false;
+
+            if (message.ItemIndex >= stockpileMarket.MarketItems.Count())
+            {
+                InformationComponent.Instance.SendMessage($"Wrong index for Selling! {message.ItemIndex}", new Color(1f, 0, 0).ToUnsignedInteger(), peer);
+                return false;
+            }
             MarketItem marketItem = stockpileMarket.MarketItems[message.ItemIndex];
 
             if (!persistentEmpireRepresentative.GetInventory().IsInventoryIncludes(marketItem.Item, 1))

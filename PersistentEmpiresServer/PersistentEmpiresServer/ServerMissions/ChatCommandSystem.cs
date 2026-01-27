@@ -76,7 +76,7 @@ namespace PersistentEmpiresServer.ServerMissions
                 this.Execute(networkPeer, command, args);
                 return false;
             }
-            if (persistentEmpireRepresentative.IsAdmin || this.patreonRegistry.IsPlayerPatreon(networkPeer)) return true;
+            if (persistentEmpireRepresentative != null || persistentEmpireRepresentative.IsAdmin || this.patreonRegistry.IsPlayerPatreon(networkPeer)) return true;
             
             if (this.Muted.ContainsKey(networkPeer))
             {

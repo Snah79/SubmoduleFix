@@ -34,7 +34,8 @@
       "commandName": "Executable",
       "executablePath": "C:\\Users\\Snah\\Desktop\\FTP\\Mount & Blade II Dedicated Server\\bin\\Win64_Shipping_Server\\DedicatedCustomServer.Starter.exe",
       "commandLineArgs": "_MODULES_*Native*Multiplayer*PersistentEmpires*_MODULES_ /dedicatedcustomserverconfigfile persistent_empires2.txt /port 7233 /no_watchdog /tickrate 120",
-      "workingDirectory": "C:\\Users\\Snah\\Desktop\\FTP\\Mount & Blade II Dedicated Server\\bin\\Win64_Shipping_Server\\"
+      "workingDirectory": "C:\\Users\\Snah\\Desktop\\FTP\\Mount & Blade II Dedicated Server\\bin\\Win64_Shipping_Server\\",
+      "nativeDebugging": true
     },
     "Server Hunting": {
       "commandName": "Executable",

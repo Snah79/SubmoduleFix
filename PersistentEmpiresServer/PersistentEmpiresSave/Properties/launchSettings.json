@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PersistentEmpiresSave": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

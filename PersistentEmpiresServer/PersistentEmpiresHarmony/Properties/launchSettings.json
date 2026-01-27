@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PersistentEmpiresHarmony": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

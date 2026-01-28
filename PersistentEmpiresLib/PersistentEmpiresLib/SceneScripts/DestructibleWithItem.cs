@@ -48,15 +48,11 @@ namespace PersistentEmpiresLib.SceneScripts
         internal bool destructed = false;
         private long destructedAt = 0;
 
-        private WeakGameEntity _weakEntity;
-
         protected override void OnInit()
         {
             base.OnInit();
 
-            _weakEntity = GameEntity;
-
-            if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+            if (GameEntity.TryGetEntity(out var tmpGameEntity))
             {
                 initialFrame = tmpGameEntity.GetGlobalFrame();
             }
@@ -99,7 +95,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
         private void SpawnItem(Agent agent, ItemObject item)
         {
-            if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+            if (GameEntity.TryGetEntity(out var tmpGameEntity))
             {
                 var spawnWeapon = new MissionWeapon(item, null, null);
                 var frame = tmpGameEntity.GetGlobalFrame();
@@ -120,7 +116,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 var myTrace = new System.Diagnostics.StackTrace(0, true);
                 try
                 {
-                    if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                    if (GameEntity.TryGetEntity(out var tmpGameEntity))
                     {
                         tmpGameEntity.SetVisibilityExcludeParents(true);
                         tmpGameEntity.SetGlobalFrame(initialFrame);
@@ -159,7 +155,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
                 if (HitPoint <= 0 && !destructed)
                 {
-                    if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                    if (GameEntity.TryGetEntity(out var tmpGameEntity))
                     {
                         var globalFrame = tmpGameEntity.GetGlobalFrame();
 
@@ -177,7 +173,7 @@ namespace PersistentEmpiresLib.SceneScripts
             }
             catch (Exception ex)
             {
-                var tmp = $"Exception was thrown in PE_DestructibleWithItem         public override void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)\r\n.";
+                var tmp = $"Exception was thrown in PE_DestructibleWithItem SetHitPoint";
                 ex.HelpLink = tmp;
                 SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
             }

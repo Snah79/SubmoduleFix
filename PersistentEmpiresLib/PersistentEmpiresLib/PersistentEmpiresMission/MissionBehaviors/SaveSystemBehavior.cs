@@ -672,8 +672,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (!_running && DateTimeOffset.Now.ToUnixTimeSeconds() > LastSaveAt + SaveDuration)
             {
                 _running = true;
-                Task.Run(() =>
-                {
+                //Task.Run(() =>
+                //{
                     // Create a Job
                     try
                     {
@@ -690,7 +690,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     {
                         _running = false;
                     }
-                });
+                //});
             }
         }        
     }

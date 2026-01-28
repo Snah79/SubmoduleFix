@@ -58,9 +58,16 @@ namespace PersistentEmpiresServer.ServerMissions
                 InformationComponent.Instance.SendMessage("You are banned from the server. Please refer to discord server for information", Color.ConvertStringToColor("#d32f2fff").ToUnsignedInteger(), networkPeer);
                 Task.Delay(3000).ContinueWith(_ =>
                 {
-                    if (networkPeer != null && networkPeer.IsConnectionActive)
+                    try
                     {
-                        DedicatedCustomServerSubModule.Instance.DedicatedCustomGameServer.KickPlayer(networkPeer.VirtualPlayer.Id, false);
+                        if (networkPeer != null && networkPeer.IsConnectionActive)
+                        {
+                            DedicatedCustomServerSubModule.Instance.DedicatedCustomGameServer.KickPlayer(networkPeer.VirtualPlayer.Id, false);
+                        }
+                    }
+                    catch(Exception)
+                    {
+
                     }
                 });
             }

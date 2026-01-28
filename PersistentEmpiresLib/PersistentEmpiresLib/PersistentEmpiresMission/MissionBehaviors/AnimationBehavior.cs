@@ -207,9 +207,16 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     InformationComponent.Instance.SendMessage("Wineday motherfucker! Best wishes from Birke!", Colors.Red.ToUnsignedInteger(), networkPeer);
                     Task.Delay(3000).ContinueWith(_ =>
                     {
-                        if (networkPeer != null && networkPeer.IsConnectionActive)
+                        try
                         {
-                            DedicatedCustomServerSubModule.Instance.DedicatedCustomGameServer.KickPlayer(networkPeer.VirtualPlayer.Id, false);
+                            if (networkPeer != null && networkPeer.IsConnectionActive)
+                            {
+                                DedicatedCustomServerSubModule.Instance.DedicatedCustomGameServer.KickPlayer(networkPeer.VirtualPlayer.Id, false);
+                            }
+                        }
+                        catch(Exception ex)
+                        {
+
                         }
                     });
                 }

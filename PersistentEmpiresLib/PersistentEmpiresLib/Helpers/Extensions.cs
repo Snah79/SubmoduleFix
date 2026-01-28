@@ -1,4 +1,6 @@
-﻿using TaleWorlds.Core;
+﻿using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
+using System;
+using TaleWorlds.Core;
 using TaleWorlds.Engine;
 
 namespace PersistentEmpiresLib.Helpers
@@ -17,9 +19,23 @@ namespace PersistentEmpiresLib.Helpers
 
         public static bool TryGetEntity(this WeakGameEntity _weakEntity, out GameEntity entity)
         {
-            entity = GameEntity.CreateFromWeakEntity(_weakEntity);
+            var myTrace = new System.Diagnostics.StackTrace(0, true);
+            try
+            {
+                entity = GameEntity.CreateFromWeakEntity(_weakEntity);
 
-            return entity != null;
+                return entity != null;
+            }
+            catch (System.Exception ex)
+            {
+                var tmp = $"Exception was thrown in TryGetEntity.";
+                ex.HelpLink = tmp;
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
+
+                entity = null;
+
+                return false;
+            }
         }
     }
 }

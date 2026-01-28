@@ -91,7 +91,7 @@ namespace PersistentEmpiresLib.SceneScripts
         protected override void OnTickOccasionally(float currentFrameDeltaTime)
         {
             base.OnTickOccasionally(currentFrameDeltaTime);
-            if (destructed && destructedAt + RespawnAsSeconds < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+            if (destructed && (destructedAt + RespawnAsSeconds < DateTimeOffset.UtcNow.ToUnixTimeSeconds()))
             {
                 ResetObject();
             }
@@ -114,121 +114,155 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public void ResetObject()
         {
-#if SERVER
-            if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+            if (destructed)
             {
-                tmpGameEntity.SetVisibilityExcludeParents(true);
-                tmpGameEntity.SetGlobalFrame(initialFrame);
-                HitPoint = MaxHitPoint;
-                destructed = false;
-            }
+#if SERVER
+                var myTrace = new System.Diagnostics.StackTrace(0, true);
+                try
+                {
+                    if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                    {
+                        tmpGameEntity.SetVisibilityExcludeParents(true);
+                        tmpGameEntity.SetGlobalFrame(initialFrame);
+                        HitPoint = MaxHitPoint;
+                        destructed = false;
+                    }
 
-            GameNetwork.BeginBroadcastModuleEvent();
-            GameNetwork.WriteMessage(new ResetDestructableItem(this));
-            GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
+                    GameNetwork.BeginBroadcastModuleEvent();
+                    GameNetwork.WriteMessage(new ResetDestructableItem(this));
+                    GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
+                }
+                catch (Exception ex)
+                {
+                    var tmp = $"Exception was thrown in PE_DestructibleWithItem ResetObject.";
+                    ex.HelpLink = tmp;
+                    SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
+                }
 #endif
 #if CLIENT
-            if (_weakEntity.TryGetEntity(out var tmpGameEntity))
-            {
-                tmpGameEntity.SetVisibilityExcludeParents(true);
-                tmpGameEntity.SetGlobalFrame(initialFrame);
-            }
+                if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    tmpGameEntity.SetVisibilityExcludeParents(true);
+                    tmpGameEntity.SetGlobalFrame(initialFrame);
+                }
 #endif
+            }
         }
 
 #if SERVER
         public override void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
-            HitPoint = hitPoint;
-
-            if (HitPoint <= 0 && !destructed)
+            var myTrace = new System.Diagnostics.StackTrace(0, true);
+            try
             {
-                if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                HitPoint = hitPoint;
+
+                if (HitPoint <= 0 && !destructed)
                 {
-                    var globalFrame = tmpGameEntity.GetGlobalFrame();
-                    
-                    tmpGameEntity.SetVisibilityExcludeParents(false);
+                    if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                    {
+                        var globalFrame = tmpGameEntity.GetGlobalFrame();
 
-                    destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
-                    destructed = true;
+                        tmpGameEntity.SetVisibilityExcludeParents(false);
+
+                        destructedAt = DateTimeOffset.Now.ToUnixTimeSeconds();
+                        destructed = true;
+                    }
+
+                    // update clients only when they need to be destroyed
+                    GameNetwork.BeginBroadcastModuleEvent();
+                    GameNetwork.WriteMessage(new SyncObjectHitpointsPE(this, impactDirection, HitPoint));
+                    GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
                 }
-
-                // update clients only when they need to be destroyed
-                GameNetwork.BeginBroadcastModuleEvent();
-                GameNetwork.WriteMessage(new SyncObjectHitpointsPE(this, impactDirection, HitPoint));
-                GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord, null);
+            }
+            catch (Exception ex)
+            {
+                var tmp = $"Exception was thrown in PE_DestructibleWithItem         public override void SetHitPoint(float hitPoint, Vec3 impactDirection, ScriptComponentBehavior attackerScriptComponentBehavior)\r\n.";
+                ex.HelpLink = tmp;
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
             }
         }
 
         protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
         {
+            var myTrace = new System.Diagnostics.StackTrace(0, true);
+            
             reportDamage = false;
+            finalDamage = 0;
 
-            var missionWeapon = weapon;
-            var currentUsageItem = missionWeapon.CurrentUsageItem;
+            try
+            {
+                var missionWeapon = weapon;
+                var currentUsageItem = missionWeapon.CurrentUsageItem;
 
-            if (weapon.Item == null || weapon.Item.StringId != this.RequiredItemId || this.destructed)
-            {
-                reportDamage = false;
-                finalDamage = 0;
-                damage = 0;
-                return false;
-            }
-
-            var requiredSkillObject = MBObjectManager.Instance.GetObject<SkillObject>(this.RequiredSkillId);
-            
-            if (attackerAgent.Character.GetSkillValue(requiredSkillObject) < this.RequiredSkillLevel)
-            {
-                reportDamage = false;
-                finalDamage = 0;
-                damage = 0;
-                return false;
-            }
-            
-            if (attackerAgent == null)
-            {
-                reportDamage = false;
-                finalDamage = 0;
-                damage = 0;
-                return false;
-            }
-
-            foreach (DropItem dropItem in this.DropItems)
-            {
-                if (dropItem.DropChance >= MBRandom.RandomInt(100))
+                if (weapon.Item == null || weapon.Item.StringId != this.RequiredItemId || this.destructed)
                 {
-                    var item = MBObjectManager.Instance.GetObject<ItemObject>(dropItem.DropItemId);
-                    var persistentEmpireRepresentative = attackerAgent.MissionPeer.GetNetworkPeer().GetComponent<PersistentEmpireRepresentative>();
-                    var inventory = persistentEmpireRepresentative.GetInventory();
-                    
-                    InformationComponent.Instance.SendMessage("You gathered " + dropItem.DropAmount + "*" + item.Name.ToString(), Colors.Green.ToUnsignedInteger(), attackerAgent.MissionPeer.GetNetworkPeer());
-                    
-                    if (inventory.HasEnoughRoomFor(item, dropItem.DropAmount) == false)
+                    reportDamage = false;
+                    finalDamage = 0;
+                    damage = 0;
+                    return false;
+                }
+
+                var requiredSkillObject = MBObjectManager.Instance.GetObject<SkillObject>(this.RequiredSkillId);
+
+                if (attackerAgent.Character.GetSkillValue(requiredSkillObject) < this.RequiredSkillLevel)
+                {
+                    reportDamage = false;
+                    finalDamage = 0;
+                    damage = 0;
+                    return false;
+                }
+
+                if (attackerAgent == null)
+                {
+                    reportDamage = false;
+                    finalDamage = 0;
+                    damage = 0;
+                    return false;
+                }
+
+                foreach (DropItem dropItem in this.DropItems)
+                {
+                    if (dropItem.DropChance >= MBRandom.RandomInt(100))
                     {
-                        InformationComponent.Instance.SendMessage(GameTexts.FindText("PE_Not_Enough_Space_Drop", null).ToString(), Colors.Red.ToUnsignedInteger(), attackerAgent.MissionPeer.GetNetworkPeer());
-                    }
-                    for (int i = 0; i < dropItem.DropAmount; i++)
-                    {
-                        if (persistentEmpireRepresentative != null)
+                        var item = MBObjectManager.Instance.GetObject<ItemObject>(dropItem.DropItemId);
+                        var persistentEmpireRepresentative = attackerAgent.MissionPeer.GetNetworkPeer().GetComponent<PersistentEmpireRepresentative>();
+                        var inventory = persistentEmpireRepresentative.GetInventory();
+
+                        InformationComponent.Instance.SendMessage("You gathered " + dropItem.DropAmount + "*" + item.Name.ToString(), Colors.Green.ToUnsignedInteger(), attackerAgent.MissionPeer.GetNetworkPeer());
+
+                        if (inventory.HasEnoughRoomFor(item, dropItem.DropAmount) == false)
                         {
-                            if (inventory.HasEnoughRoomFor(item, 1))
+                            InformationComponent.Instance.SendMessage(GameTexts.FindText("PE_Not_Enough_Space_Drop", null).ToString(), Colors.Red.ToUnsignedInteger(), attackerAgent.MissionPeer.GetNetworkPeer());
+                        }
+                        for (int i = 0; i < dropItem.DropAmount; i++)
+                        {
+                            if (persistentEmpireRepresentative != null)
                             {
-                                inventory.AddCountedItemSynced(item, 1, ItemHelper.GetMaximumAmmo(item));
-                            }
-                            else
-                            {
-                                SpawnItem(attackerAgent, item);
+                                if (inventory.HasEnoughRoomFor(item, 1))
+                                {
+                                    inventory.AddCountedItemSynced(item, 1, ItemHelper.GetMaximumAmmo(item));
+                                }
+                                else
+                                {
+                                    SpawnItem(attackerAgent, item);
+                                }
                             }
                         }
                     }
                 }
+
+                damage = 10;
+                finalDamage = damage;
+
+                SetHitPoint(HitPoint - damage, impactDirection, attackerScriptComponentBehavior);
             }
-            
-            damage = 10;
-            finalDamage = damage;
-
-            SetHitPoint(HitPoint - damage, impactDirection, attackerScriptComponentBehavior);
-
+            catch (Exception ex)
+            {
+                var tmp = $"Exception was thrown in PE_DestructibleWithItem  OnHit";
+                ex.HelpLink = tmp;
+                SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
+            }
             return false;
         }
 #endif

@@ -136,7 +136,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 }
 #endif
 #if CLIENT
-                if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                if (GameEntity.TryGetEntity(out var tmpGameEntity))
                 {
                     tmpGameEntity.SetVisibilityExcludeParents(true);
                     tmpGameEntity.SetGlobalFrame(initialFrame);
@@ -269,7 +269,7 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             if (hitPoint <= 0)
             {
-                if (_weakEntity.TryGetEntity(out var tmpGameEntity))
+                if (GameEntity.TryGetEntity(out var tmpGameEntity))
                 {
                     var globalFrame = tmpGameEntity.GetGlobalFrame();
                     if (ParticleEffectOnDestroy != "")

@@ -39,13 +39,16 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private bool HandleLocalMessageFromClient(NetworkCommunicator player, LocalMessage message)
         {
 
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+            
             if (this.OnPrefixHandleLocalChatFromClient != null)
             {
                 if (!this.OnPrefixHandleLocalChatFromClient(player, message.Text, false)) return true;
             }
-            Vec3 position = player.ControlledAgent.Position;
-            List<AffectedPlayer> affectedPlayers = new List<AffectedPlayer>();
+            
+            var position = player.ControlledAgent.Position;
+            var affectedPlayers = new List<AffectedPlayer>();
+
             foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers.ToList())
             {
                 if (otherPlayer.ControlledAgent == null || !otherPlayer.ControlledAgent.IsActive()) continue;
@@ -71,10 +74,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleShoutMessageFromClient(NetworkCommunicator player, ShoutMessage message)
         {
-            if (player.ControlledAgent == null) return false;
-            if (this.OnPrefixHandleLocalChatFromClient != null)
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
+            if (OnPrefixHandleLocalChatFromClient != null)
             {
-                if (!this.OnPrefixHandleLocalChatFromClient(player, message.Text, true)) return true;
+                if (!OnPrefixHandleLocalChatFromClient(player, message.Text, true)) return true;
             }
             Vec3 position = player.ControlledAgent.Position;
 

@@ -36,11 +36,11 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public override bool IsDisabledForAgent(Agent agent)
         {
-            if (this.ForMount == false)
+            if (ForMount == false)
             {
-                return this.IsDeactivated || agent.MountAgent != null || (this.IsDisabledForPlayers && !agent.IsAIControlled) || !agent.IsOnLand();
+                return IsDeactivated || agent.MountAgent != null || (this.IsDisabledForPlayers && !agent.IsAIControlled) || !agent.IsOnLand();
             }
-            return this.IsDeactivated || agent.MountAgent == null || (this.IsDisabledForPlayers && !agent.IsAIControlled) || !agent.IsOnLand();
+            return IsDeactivated || agent.MountAgent == null || (this.IsDisabledForPlayers && !agent.IsAIControlled) || !agent.IsOnLand();
         }
 
         protected override void OnInit()

@@ -37,7 +37,7 @@ namespace PersistentEmpiresServer.ChatCommands.Commands
 
         public bool Execute(NetworkCommunicator player, string[] args)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
 
             var rnd = new Random();
             var random = rnd.Next(1, 7);

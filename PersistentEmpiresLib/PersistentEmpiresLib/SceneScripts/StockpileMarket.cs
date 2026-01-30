@@ -215,9 +215,12 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             reportDamage = false;
             finalDamage = 0;
-            if (attackerAgent == null) return false;
-            NetworkCommunicator player = attackerAgent.MissionPeer.GetNetworkPeer();
-            bool isAdmin = Main.IsPlayerAdmin(player);
+            
+            if (attackerAgent == null || !attackerAgent.IsActive()) return false;
+
+            var player = attackerAgent.MissionPeer.GetNetworkPeer();
+            var isAdmin = Main.IsPlayerAdmin(player);
+
             if (isAdmin && weapon.Item != null)
             {
                 if (weapon.Item.StringId == "pe_adminstockfiller_t1")

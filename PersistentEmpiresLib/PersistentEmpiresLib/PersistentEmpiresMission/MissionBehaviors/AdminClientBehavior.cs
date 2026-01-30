@@ -114,6 +114,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private void HandleToggleVisibilityForAgent(ToggleVisibilityForAgent message)
         {
+            if (!message.Agent.IsActive())
+            {
+                return;
+            }
+
             message.Agent.AgentVisuals.SetVisible(message.Visible);
             message.Agent.AgentVisuals.LazyUpdateAgentRendererData();
         }
@@ -122,7 +127,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             var peer = GameNetwork.NetworkPeers.Where(x => x.VirtualPlayer.Id.ToString() == message.PlayerUserId).FirstOrDefault();
 
-            if(peer != null && peer.ControlledAgent != null)
+            if(peer != null && peer.ControlledAgent != null && peer.ControlledAgent.IsActive())
             {
                 peer.ControlledAgent.SetClothingColor1(BannerManager.GetColor(message.PrimaryColor));
                 peer.ControlledAgent.SetClothingColor2(BannerManager.GetColor(message.SecondaryColor));

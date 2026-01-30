@@ -17,7 +17,7 @@ namespace PersistentEmpiresServer.ChatCommands
 
             foreach (NetworkCommunicator otherPlayer in GameNetwork.NetworkPeers)
             {
-                if (otherPlayer.ControlledAgent == null) continue;
+                if (otherPlayer.ControlledAgent == null || !otherPlayer.ControlledAgent.IsActive()) continue;
 
                 var otherPlayerPosition = otherPlayer.ControlledAgent.Position;
                 var d = position.Distance(otherPlayerPosition);
@@ -52,7 +52,7 @@ namespace PersistentEmpiresServer.ChatCommands
             var position = player.ControlledAgent.Position;
             var affectedPlayers = new List<AffectedPlayer>();
 
-            if (player.ControlledAgent == null) return;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return;
 
             InformationComponent.Instance.SendMessage(message, color, player);
 

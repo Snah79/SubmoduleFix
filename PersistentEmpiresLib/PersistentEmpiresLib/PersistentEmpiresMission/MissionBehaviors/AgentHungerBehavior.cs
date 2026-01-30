@@ -76,8 +76,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 foreach (NetworkCommunicator peer in GameNetwork.NetworkPeers.ToList())
                 {
                     if (!peer.IsConnectionActive) continue;
-                    if (peer.ControlledAgent == null) continue;
-                    PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+
+                    if (peer.ControlledAgent == null || !peer.ControlledAgent.IsActive()) continue;
+                    
+                    var persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+                    
                     if (persistentEmpireRepresentative == null) continue;
 
                     if (peer.ControlledAgent.Health < (peer.ControlledAgent.Health) * HungerStartHealingUnderHealthPct)
@@ -104,10 +107,15 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 foreach (NetworkCommunicator peer in GameNetwork.NetworkPeers.ToList())
                 {
                     if (!peer.IsConnectionActive) continue;
-                    if (peer.ControlledAgent == null) continue;
-                    PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+                    
+                    if (peer.ControlledAgent == null || !peer.ControlledAgent.IsActive()) continue;
+
+                    var persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+
                     if (persistentEmpireRepresentative == null) continue;
+                    
                     if (persistentEmpireRepresentative.GetHunger() > 0) continue;
+                    
                     if (peer.ControlledAgent.Health <= 10) continue;
                     //float reduceAmount = peer.ControlledAgent.Health - 10 > 10 ? 10 : 10 - peer.ControlledAgent.Health;
                     float reduceAmount = peer.ControlledAgent.Health > 10 ? 2 : 0;
@@ -251,7 +259,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public bool RequestStartEat()
         {
             Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
-            if (myAgent == null) return false;
+            if (myAgent == null || !myAgent.IsActive()) return false;
 
             EquipmentIndex wieldedIndex = myAgent.GetPrimaryWieldedItemIndex();
             if (wieldedIndex == EquipmentIndex.None) return false;
@@ -278,7 +286,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public void RequestStopEat()
         {
             Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
-            if (myAgent == null) return;
+            if (myAgent == null || !myAgent.IsActive()) return;
 
             GameNetwork.BeginModuleEventAsClient();
             GameNetwork.WriteMessage(new RequestStopEat());
@@ -288,7 +296,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
         private bool HandleRequestStartEatFromClient(NetworkCommunicator peer, RequestStartEat message)
         {
-            if (peer.ControlledAgent == null) return false;
+            if (peer.ControlledAgent == null || !peer.ControlledAgent.IsActive()) return false;
             PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
             if (persistentEmpireRepresentative == null) return false;
 
@@ -307,7 +315,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleRequestStopEatFromClient(NetworkCommunicator peer, RequestStopEat message)
         {
-            if (peer.ControlledAgent == null) return false;
+            if (peer.ControlledAgent == null || !peer.ControlledAgent.IsActive()) return false;
             if (this.AgentsEating.ContainsKey(peer.ControlledAgent))
             {
                 peer.ControlledAgent.SetActionChannel(0, ActionIndexCache.act_none, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);

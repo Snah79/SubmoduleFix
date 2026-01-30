@@ -605,85 +605,109 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleFromClientStopTurningRightMoveableMachine(NetworkCommunicator player, StopTurningRightMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StopTurningRight();
+
             return true;
         }
 
         private bool HandleFromClientStopTurningLeftMoveableMachine(NetworkCommunicator player, StopTurningLeftMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StopTurningLeft();
+            
             return true;
         }
 
         private bool HandleFromClientStopMovingBackwardMoveableMachine(NetworkCommunicator player, StopMovingBackwardMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StopMovingBackward();
+            
             return true;
         }
 
         private bool HandleFromClientStopMovingForwardMoveableMachine(NetworkCommunicator player, StopMovingForwardMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StopMovingForward();
+            
             return true;
         }
 
         private bool HandleFromClientStopMovingDownMoveableMachine(NetworkCommunicator player, StopMovingDownMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StopMovingDown();
+
             return true;
         }
 
         private bool HandleFromClientStopMovingUpMoveableMachine(NetworkCommunicator player, StopMovingUpMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StopMovingUp();
+
             return true;
         }
 
         private bool HandleFromClientStartTurningRightMoveableMachine(NetworkCommunicator player, StartTurningRightMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StartTurningRight();
+
             return true;
         }
 
         private bool HandleFromClientStartTurningLeftMoveableMachine(NetworkCommunicator player, StartTurningLeftMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StartTurningLeft();
+
             return true;
         }
 
         private bool HandleFromClientStartMovingBackwardMoveableMachine(NetworkCommunicator player, StartMovingBackwardMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StartMovingBackward();
+
             return true;
         }
 
         private bool HandleFromClientStartMovingForwardMoveableMachine(NetworkCommunicator player, StartMovingForwardMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StartMovingForward();
+
             return true;
         }
 
         private bool HandleFromClientStartMovingDownMoveableMachine(NetworkCommunicator player, StartMovingDownMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StartMovingDown();
+
             return true;
         }
 
         private bool HandleFromClientStartMovingUpMoveableMachine(NetworkCommunicator player, StartMovingUpMoveableMachine message)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
             ((IMoveable)message.Object).StartMovingUp();
+
             return true;
         }
 
@@ -692,10 +716,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (message.MissionObject != null)
             {
                 var gameEntity = message.MissionObject.GameEntity;
+                
                 if (!gameEntity.TryGetEntity(out var tmpGameEntity))
                 {
                     return;
                 }
+                
                 tmpGameEntity.AddPhysics(tmpGameEntity.Mass, tmpGameEntity.CenterOfMass, tmpGameEntity.GetBodyShape(), message.InitialVelocity, message.AngularVelocity, PhysicsMaterial.GetFromName(message.PhysicsMaterial), false, 0);
             }
         }

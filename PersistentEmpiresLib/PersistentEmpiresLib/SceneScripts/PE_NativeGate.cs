@@ -763,12 +763,12 @@ namespace PersistentEmpiresLib.SceneScripts
             if (gameEntity4 == null || gameEntity5 == null)
             {
                 var agentColliderLeft = this._agentColliderLeft;
-                if (agentColliderLeft != null)
+                if (agentColliderLeft != null && agentColliderLeft.IsValid)
                 {
                     agentColliderLeft.SetVisibilityExcludeParents(false);
                 }
                 var agentColliderRight = this._agentColliderRight;
-                if (agentColliderRight != null)
+                if (agentColliderRight != null && agentColliderRight.IsValid)
                 {
                     agentColliderRight.SetVisibilityExcludeParents(false);
                 }
@@ -841,13 +841,13 @@ namespace PersistentEmpiresLib.SceneScripts
         // Token: 0x06002BE8 RID: 11240 RVA: 0x000AB3C4 File Offset: 0x000A95C4
         private void InitializeExtraColliderPositions()
         {
-            if (this._extraColliderLeft != null)
+            if (this._extraColliderLeft != null && _extraColliderLeft.IsValid)
             {
                 MatrixFrame boneEntitialFrameWithName = this._doorSkeleton.GetBoneEntitialFrameWithName(this.LeftDoorBoneName);
                 this._extraColliderLeft.SetFrame(ref boneEntitialFrameWithName);
                 this._extraColliderLeft.SetVisibilityExcludeParents(true);
             }
-            if (this._extraColliderRight != null)
+            if (this._extraColliderRight != null && _extraColliderRight.IsValid)
             {
                 MatrixFrame boneEntitialFrameWithName2 = this._doorSkeleton.GetBoneEntitialFrameWithName(this.RightDoorBoneName);
                 this._extraColliderRight.SetFrame(ref boneEntitialFrameWithName2);
@@ -856,13 +856,17 @@ namespace PersistentEmpiresLib.SceneScripts
             this.UpdateDoorBodies(true);
             foreach (var gameEntity in this._attackOnlyDoorColliders)
             {
-                gameEntity.SetVisibilityExcludeParents(true);
+                if (!gameEntity.TryGetEntity(out var tmpGameEntity))
+                {
+                    return;
+                }
+                tmpGameEntity.SetVisibilityExcludeParents(true);
             }
-            if (this._agentColliderLeft != null)
+            if (this._agentColliderLeft != null && _agentColliderLeft.IsValid)
             {
                 this._agentColliderLeft.SetVisibilityExcludeParents(true);
             }
-            if (this._agentColliderRight != null)
+            if (this._agentColliderRight != null && _agentColliderRight.IsValid)
             {
                 this._agentColliderRight.SetVisibilityExcludeParents(true);
             }
@@ -905,7 +909,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
             foreach (var entity in base.GameEntity.GetChildren().ToList())
             {
-                if (entity != comp.BrokenState()) entity.SetVisibilityExcludeParents(false);
+                if (entity != comp.BrokenState() && entity.IsValid) entity.SetVisibilityExcludeParents(false);
             }
 
         }

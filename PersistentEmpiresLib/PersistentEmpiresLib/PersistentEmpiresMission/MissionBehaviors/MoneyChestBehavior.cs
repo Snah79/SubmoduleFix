@@ -58,8 +58,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
         private bool HandleWithdrawDepositMoneychestFromClient(NetworkCommunicator sender, WithdrawDepositMoneychest message)
         {
-            PE_MoneyChest moneyChest = (PE_MoneyChest)message.MoneyChest;
-            if (sender.ControlledAgent == null) return false;
+            var moneyChest = (PE_MoneyChest)message.MoneyChest;
+            
+            if (sender.ControlledAgent == null || !sender.ControlledAgent.IsActive()) return false;
+            
             if (!moneyChest.GameEntity.TryGetEntity(out var tmpGameEntity))
             {
                 return false;

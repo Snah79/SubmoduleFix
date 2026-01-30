@@ -537,8 +537,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleRequestRevealItemBag(NetworkCommunicator player, RequestRevealItemBag message)
         {
-            if (player.ControlledAgent == null) return true;
-            PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return true;
+
+            var persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
+            
             if (persistentEmpireRepresentative == null) return true;
 
             if (LastRevealed.ContainsKey(player) && LastRevealed[player] + 3 > DateTimeOffset.UtcNow.ToUnixTimeSeconds())
@@ -789,11 +791,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 // If clicked in Equipment Inventory
                 if (inventory == "Equipment")
                 {
-                    if (player.ControlledAgent == null) return false;
-                    Equipment agentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
-                    Inventory targetInventory = persistentEmpireRepresentative.GetInventory();
-                    ItemObject item = agentEquipment[slot].IsEmpty ? null : agentEquipment[slot].Item;
+                    if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
+                    var agentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
+                    var targetInventory = persistentEmpireRepresentative.GetInventory();
+                    var item = agentEquipment[slot].IsEmpty ? null : agentEquipment[slot].Item;
                     int itemCount = agentEquipment[slot].IsEmpty ? 0 : 1;
+
                     if (item == null || itemCount == 0) return false;
 
                     for (int i = 0; i < targetInventory.Slots.Count; i++)
@@ -895,9 +899,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             InventorySlot itemAddedFrom = null;
             int draggedAmmo = 0;
             int draggedCount = 0;
-            PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
+            var persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
+            
             if (persistentEmpireRepresentative == null) return false;
-            if (player.ControlledAgent == null) return false;
+            
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
 
             if (CustomInventories.ContainsKey(draggedFromInventory) && CustomInventories[draggedFromInventory].TiedEntity != null)
             {
@@ -914,8 +920,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             if (draggedFromInventory == "Equipment")
             {
-                if (player.ControlledAgent == null) return false;
-                Equipment agentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
+                if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+                
+                var agentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
+
                 draggedItem = agentEquipment[draggedIndex].IsEmpty ? null : agentEquipment[draggedIndex].Item;
                 if (draggedItem.ItemType == ItemObject.ItemTypeEnum.Arrows ||
                     draggedItem.ItemType == ItemObject.ItemTypeEnum.Bolts ||

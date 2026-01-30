@@ -3,6 +3,7 @@ using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -14,6 +15,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
     {
         public float GetEffectiveArmorEncumbrance(Agent agent)
         {
+            if(!agent.IsActive())
+            {
+                return 0;
+            }
             // float num4 = agent.Character.GetSkillValue(DefaultSkills.Athletics) > 0 ? agent.Character.GetSkillValue(DefaultSkills.Athletics) : 10;
             float effectiveWeight = 0f;
             float skill = agent.Character.GetSkillValue(PersistentEmpireSkills.Endurance) < 10 ? 10 : agent.Character.GetSkillValue(PersistentEmpireSkills.Endurance);
@@ -40,6 +45,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
         }
         public override bool CanAgentRideMount(Agent agent, Agent targetMount)
         {
+            if (!agent.IsActive())
+            {
+                return false;
+            }
             return agent.CheckSkillForMounting(targetMount);
         }
 
@@ -50,6 +59,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
 
         public override float GetDismountResistance(Agent agent)
         {
+            if (!agent.IsActive())
+            {
+                return 0;
+            }
+
             BasicCharacterObject characterObject = agent.Character;
             if (characterObject != null)
             {
@@ -67,6 +81,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
 
         public override float GetKnockDownResistance(Agent agent, StrikeType strikeType = StrikeType.Invalid)
         {
+            if (!agent.IsActive())
+            {
+                return 0.5f;
+            }
+
             float num = 0.5f;
             if (agent.HasMount)
             {
@@ -81,6 +100,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
 
         private static void InitializeHorseAgentStats(Agent agent, Equipment spawnEquipment, AgentDrivenProperties agentDrivenProperties)
         {
+            if (!agent.IsActive())
+            {
+                return;
+            }
+
             agentDrivenProperties.AiSpeciesIndex = agent.Monster.FamilyType;
             float num = 0.8f;
             EquipmentElement equipmentElement = spawnEquipment[EquipmentIndex.HorseHarness];
@@ -106,6 +130,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
         }
         public override void InitializeAgentStats(Agent agent, Equipment spawnEquipment, AgentDrivenProperties agentDrivenProperties, AgentBuildData agentBuildData)
         {
+            if (!agent.IsActive())
+            {
+                return;
+            }
+
             agentDrivenProperties.ArmorEncumbrance = spawnEquipment.GetTotalWeightOfArmor(agent.IsHuman);
             if (!agent.IsHuman)
             {
@@ -116,6 +145,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
         }
         public override float GetEffectiveMaxHealth(Agent agent)
         {
+            if (!agent.IsActive())
+            {
+                return 100f;
+            }
+
             MultiplayerClassDivisions.MPHeroClass mpheroClassForCharacter = MultiplayerClassDivisions.GetMPHeroClassForCharacter(agent.Character);
             if (mpheroClassForCharacter != null)
             {
@@ -125,6 +159,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
         }
         private AgentDrivenProperties InitializeAgentHumanStats(Agent agent, Equipment spawnEquipment, AgentDrivenProperties agentDrivenProperties, AgentBuildData agentBuildData)
         {
+            if (!agent.IsActive())
+            {
+                return null;
+            }
+
             var isAgentWounded = WoundingBehavior.Instance.IsAgentWounded(agent);
             if (isAgentWounded)
             {
@@ -146,10 +185,17 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
             float managedParameter2 = ManagedParameters.Instance.GetManagedParameter(ManagedParametersEnum.BipedalCombatSpeedMaxMultiplier);
             float num = heroClass.IsTroopCharacter(agent.Character) ? heroClass.TroopCombatMovementSpeedMultiplier : heroClass.HeroCombatMovementSpeedMultiplier;
             agentDrivenProperties.CombatMaxSpeedMultiplier = managedParameter + (managedParameter2 - managedParameter) * num;
+
             return agentDrivenProperties;
         }
+        
         private void FillAgentStatsFromData(ref AgentDrivenProperties agentDrivenProperties, Agent agent, MultiplayerClassDivisions.MPHeroClass heroClass, MissionPeer missionPeer, MissionPeer owningMissionPeer)
         {
+            if (!agent.IsActive())
+            {
+                return;
+            }
+
             MissionPeer missionPeer2 = missionPeer ?? owningMissionPeer;
             if (missionPeer2 != null)
             {
@@ -178,6 +224,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
         }
         public override void UpdateAgentStats(Agent agent, AgentDrivenProperties agentDrivenProperties)
         {
+            if (!agent.IsActive())
+            {
+                return;
+            }
+
             if (agent.IsHuman)
             {
                 this.UpdateHumanAgentStats(agent, agentDrivenProperties);
@@ -190,6 +241,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
         }
         private void UpdateMountAgentStats(Agent agent, AgentDrivenProperties agentDrivenProperties)
         {
+            if(!agent.IsActive())
+            {
+                return;
+            }
+
             var isAgentWounded = WoundingBehavior.Instance.IsAgentWounded(agent);
 
             // 0 Set Wounded flags
@@ -247,6 +303,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
         }
         private bool IsAgentWearingAboveItsSkill(Agent agent)
         {
+            if (!agent.IsActive())
+            {
+                return false;
+            }
+
             float num4 = agent.Character.GetSkillValue(PersistentEmpireSkills.Endurance) > 0 ? agent.Character.GetSkillValue(PersistentEmpireSkills.Endurance) : 10;
 
             for (EquipmentIndex equipmentIndex = agent.IsHuman ? EquipmentIndex.NumAllWeaponSlots : EquipmentIndex.HorseHarness; equipmentIndex < (agent.IsHuman ? EquipmentIndex.ArmorItemEndSlot : EquipmentIndex.NumEquipmentSetSlots); equipmentIndex++)
@@ -264,6 +325,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
 
         private void UpdateHumanAgentStats(Agent agent, AgentDrivenProperties agentDrivenProperties)
         {
+            if(!agent.IsActive())
+            {
+                return;
+            }
+
             var isAgentWounded = WoundingBehavior.Instance.IsAgentWounded(agent);
             
             // 0 Set Wounded flags
@@ -482,6 +548,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
 
         private static void ApplyWoundedAgentProperties(Agent agent, AgentDrivenProperties agentDrivenProperties)
         {
+            if (!agent.IsActive())
+            {
+                return;
+            }
+
             agentDrivenProperties.TopSpeedReachDuration = 0.1f;
             agentDrivenProperties.MaxSpeedMultiplier = 0.2f; // 0.01f
             agentDrivenProperties.CrouchedSpeedMultiplier = 0.2f;

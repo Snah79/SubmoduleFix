@@ -96,8 +96,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleRequestTradingPricesFromClient(NetworkCommunicator peer, RequestTradingPrices message)
         {
-            if (peer.ControlledAgent == null) return false;
+            if (peer.ControlledAgent == null || !peer.ControlledAgent.IsActive()) return false;
+
             int skill = peer.ControlledAgent.Character.GetSkillValue(DefaultSkills.Trade);
+            
             if (skill < 10)
             {
                 InformationComponent.Instance.SendMessage(GameTexts.FindText("PE_Not_Qualified", null).ToString(), Color.ConvertStringToColor("#FF0000FF").ToUnsignedInteger(), peer);

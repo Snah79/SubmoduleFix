@@ -66,11 +66,14 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleRequestRevealMoneyPouch(NetworkCommunicator player, RequestRevealMoneyPouch message)
         {
-            if (player.ControlledAgent == null) return false;
-            PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+
+            var persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
             if (persistentEmpireRepresentative == null) return false;
-            Vec3 position = player.ControlledAgent.Position;
-            List<AffectedPlayer> affectedPlayers = new List<AffectedPlayer>();
+
+            var position = player.ControlledAgent.Position;
+            var affectedPlayers = new List<AffectedPlayer>();
+
             if (LastReveal.ContainsKey(player) && LastReveal[player] + 3 > DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             {
                 return false;
@@ -165,23 +168,29 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
         public bool HandleRequestDropMoney(NetworkCommunicator peer, RequestDropMoney message)
         {
-            PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+            var persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
             if (persistentEmpireRepresentative == null) return false;
+            
             if (message.Amount <= 0) return false;
+            
             if (this.LastDroppedMoney.ContainsKey(peer) && this.LastDroppedMoney[peer] + 1 > DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             {
                 return false;
             }
+            
             if (!persistentEmpireRepresentative.ReduceIfHaveEnoughGold(message.Amount))
             {
                 return false;
             }
-            if (peer.ControlledAgent == null) return false;
+            
+            if (peer.ControlledAgent == null || !peer.ControlledAgent.IsActive()) return false;
 
-            MatrixFrame frame = peer.ControlledAgent.Frame;
-            this.DropMoney(frame, message.Amount);
-            this.LastDroppedMoney[peer] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var frame = peer.ControlledAgent.Frame;
+            
+            DropMoney(frame, message.Amount);
+            LastDroppedMoney[peer] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             LoggerHelper.LogAnAction(peer, LogAction.PlayerDroppedGold, null, new object[] { message.Amount });
+            
             return true;
         }
     }

@@ -229,11 +229,23 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             if (tier > 3) return;
             var tierEntity = this.GetEntityFromTier(tier);
-            this._currentTierState.Value.SetVisibilityExcludeParents(false);
-            this._currentTierState = tierEntity;
-            this._currentTierState.Value.SetVisibilityExcludeParents(true);
-            this.CurrentTier = tier;
-            this.MaxHitPoint = this.GetNextMaxHit();
+
+            if (_currentTierState == null || _currentTierState.Value.TryGetEntity(out var tmpGameEntity))
+            {
+                return;
+            }
+
+            tmpGameEntity.SetVisibilityExcludeParents(false);
+            _currentTierState = tierEntity;
+
+            if (_currentTierState == null || _currentTierState.Value.TryGetEntity(out var tmpGameEntity2))
+            {
+                return;
+            }
+
+            tmpGameEntity2.SetVisibilityExcludeParents(true);
+            CurrentTier = tier;
+            MaxHitPoint = this.GetNextMaxHit();
         }
         public void UpgradeBuilding()
         {
@@ -301,9 +313,12 @@ namespace PersistentEmpiresLib.SceneScripts
             finalDamage = 0;
             MissionWeapon missionWeapon = weapon;
             WeaponComponentData currentUsageItem = missionWeapon.CurrentUsageItem;
-            if (attackerAgent == null) return false;
-            NetworkCommunicator player = attackerAgent.MissionPeer.GetNetworkPeer();
-            bool isAdmin = Main.IsPlayerAdmin(player);
+            
+            if (attackerAgent == null || !attackerAgent.IsActive()) return false;
+
+            var player = attackerAgent.MissionPeer.GetNetworkPeer();
+            var isAdmin = Main.IsPlayerAdmin(player);
+
             if (isAdmin && missionWeapon.Item != null && missionWeapon.Item.StringId == "pe_adminhammer")
             {
                 if (this.CurrentTier < this.MaxTier)

@@ -25,7 +25,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresGameModels
         #if SERVER
         public override bool DecideAgentDismountedByBlow(Agent attackerAgent, Agent victimAgent, in AttackCollisionData collisionData, WeaponComponentData attackerWeapon, in Blow blow)
         {
-            if (attackerAgent == null || attackerWeapon == null || victimAgent == null)
+            if (attackerAgent == null || !attackerAgent.IsActive() || attackerWeapon == null || victimAgent == null)
             {
                 return base.CanWeaponDismount(attackerAgent, attackerWeapon, blow, collisionData);
             }

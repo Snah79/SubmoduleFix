@@ -38,7 +38,7 @@ namespace PersistentEmpiresServer.ChatCommands.Commands
 
         public bool Execute(NetworkCommunicator player, string[] args)
         {
-            if (player.ControlledAgent == null) return false;
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
 
             var minInt = 0;
             var maxInt = 100;

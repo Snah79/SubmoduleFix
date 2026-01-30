@@ -20,8 +20,14 @@ namespace PersistentEmpiresLib.Helpers
         public static bool TryGetEntity(this WeakGameEntity _weakEntity, out GameEntity entity)
         {
             var myTrace = new System.Diagnostics.StackTrace(0, true);
+            entity = null;
             try
             {
+                if(!_weakEntity.IsValid)
+                {
+                    return false;
+                }
+                
                 entity = GameEntity.CreateFromWeakEntity(_weakEntity);
 
                 return entity != null;

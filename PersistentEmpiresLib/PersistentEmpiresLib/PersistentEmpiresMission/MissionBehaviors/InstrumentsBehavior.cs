@@ -146,7 +146,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleRequestStartPlayingFromClient(NetworkCommunicator peer, RequestStartPlaying message)
         {
-            if (peer.ControlledAgent == null) return false;
+            if (peer.ControlledAgent == null || !peer.ControlledAgent.IsActive()) return false;
 
             PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
 
@@ -199,7 +199,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public bool CanPlay()
         {
             Agent myAgent = GameNetwork.MyPeer.ControlledAgent;
-            if (myAgent == null) return false;
+            if (myAgent == null || !myAgent.IsActive()) return false;
 
             EquipmentIndex wieldedIndex = myAgent.GetOffhandWieldedItemIndex();
             if (wieldedIndex == EquipmentIndex.None) return false;
@@ -225,7 +225,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             var myAgent = GameNetwork.MyPeer.ControlledAgent;
 
-            if (myAgent == null) return;
+            if (myAgent == null || !myAgent.IsActive()) return;
 
             GameNetwork.BeginModuleEventAsClient();
             GameNetwork.WriteMessage(new RequestStopPlaying());

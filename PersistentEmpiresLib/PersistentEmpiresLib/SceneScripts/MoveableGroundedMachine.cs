@@ -268,7 +268,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                 }
             }
-            if (PilotAgent == null)
+            if (PilotAgent == null || !PilotAgent.IsActive())
             {
                 if (base.IsMovingBackward) this.StopMovingBackward();
                 if (base.IsMovingDown) this.StopMovingDown();

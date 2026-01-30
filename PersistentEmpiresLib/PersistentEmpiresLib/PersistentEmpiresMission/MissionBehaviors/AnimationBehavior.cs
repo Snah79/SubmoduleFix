@@ -112,7 +112,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public void PlayAnimation(Agent agent, string animationId)
         {
-            if (agent.IsOnLand() == false) return;
+            if (agent.IsOnLand() == false || !agent.IsActive()) return;
 
             ActionIndexCache actionIndexCache = ActionIndexCache.Create(animationId);
             
@@ -157,8 +157,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleRequestAnimationFromClient(NetworkCommunicator player, RequestAnimation message)
         {
-            if (player.ControlledAgent == null) return false;
-            if (this.isActive == false)
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+            if (isActive == false)
             {
                 InformationComponent.Instance.SendMessage("This feature is disabled", Color.ConvertStringToColor("#FF0000FF").ToUnsignedInteger(), player);
                 return true;

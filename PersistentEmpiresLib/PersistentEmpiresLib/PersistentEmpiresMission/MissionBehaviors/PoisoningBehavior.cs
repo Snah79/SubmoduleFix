@@ -29,15 +29,15 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             base.OnMissionTick(dt);
 
-            if (this.LastCheckedAt + this.DamageIntervalSeconds < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+            if (LastCheckedAt + DamageIntervalSeconds < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             {
-                this.LastCheckedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                LastCheckedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-                foreach (NetworkCommunicator player in this.Poisioned.Keys.ToList())
+                foreach (NetworkCommunicator player in Poisioned.Keys.ToList())
                 {
-                    if (player.ControlledAgent == null && this.Poisioned.ContainsKey(player))
+                    if (player.ControlledAgent == null && Poisioned.ContainsKey(player))
                     {
-                        this.Poisioned.Remove(player);
+                        Poisioned.Remove(player);
                     }
                     else
                     {

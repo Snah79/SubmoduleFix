@@ -296,7 +296,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             foreach (NetworkCommunicator member in this.Factions[factionIndex].members)
             {
-                if (member.ControlledAgent == null) continue;
+                if (member.ControlledAgent == null || !member.ControlledAgent.IsActive()) continue;
+
                 member.ControlledAgent.SetClothingColor1(this.Factions[factionIndex].banner.GetPrimaryColor());
                 member.ControlledAgent.SetClothingColor2(this.Factions[factionIndex].banner.GetFirstIconColor());
             }
@@ -931,7 +932,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 cb.ReloadCastleBanner(factionIndex);
                 foreach (NetworkCommunicator member in this.Factions[factionIndex].members)
                 {
-                    if (member.ControlledAgent == null) continue;
+                    if (member.ControlledAgent == null || !member.ControlledAgent.IsActive()) continue;
+
                     member.ControlledAgent.SetClothingColor1(this.Factions[factionIndex].banner.GetPrimaryColor());
                     member.ControlledAgent.SetClothingColor2(this.Factions[factionIndex].banner.GetFirstIconColor());
                     AgentHelpers.ResetAgentMesh(member.ControlledAgent);

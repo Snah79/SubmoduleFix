@@ -201,19 +201,21 @@ namespace PersistentEmpiresLib.SceneScripts
 
                 var requiredSkillObject = MBObjectManager.Instance.GetObject<SkillObject>(this.RequiredSkillId);
 
-                if (attackerAgent.Character.GetSkillValue(requiredSkillObject) < this.RequiredSkillLevel)
-                {
-                    reportDamage = false;
-                    finalDamage = 0;
-                    damage = 0;
-                    return false;
-                }
-
                 if (attackerAgent == null)
                 {
                     reportDamage = false;
                     finalDamage = 0;
                     damage = 0;
+
+                    return false;
+                }
+
+                if (attackerAgent.Character.GetSkillValue(requiredSkillObject) < this.RequiredSkillLevel)
+                {
+                    reportDamage = false;
+                    finalDamage = 0;
+                    damage = 0;
+                
                     return false;
                 }
 

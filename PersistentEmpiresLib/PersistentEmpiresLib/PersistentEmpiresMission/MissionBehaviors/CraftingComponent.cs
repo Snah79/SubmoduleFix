@@ -199,9 +199,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleRequestExecuteCraftFromClient(NetworkCommunicator peer, RequestExecuteCraft message)
         {
-            if (peer.ControlledAgent == null) return false;
-            PE_CraftingStation craftingStation = (PE_CraftingStation)message.CraftingStation;
-            Craftable requestedCraft = craftingStation.Craftables[message.CraftIndex];
+            if (peer.ControlledAgent == null || !peer.ControlledAgent.IsActive()) return false;
+
+            var craftingStation = (PE_CraftingStation)message.CraftingStation;
+            var requestedCraft = craftingStation.Craftables[message.CraftIndex];
             /* if(this.craftings.Values.ToList().Any(c => c != null && c.craftingStation.Id == craftingStation.Id))
             {
                 InformationComponent.Instance.SendMessage("This station is being used.", new Color(1f, 0, 0).ToUnsignedInteger(), peer);

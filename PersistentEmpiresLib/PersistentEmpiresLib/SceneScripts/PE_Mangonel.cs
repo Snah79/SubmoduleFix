@@ -749,7 +749,11 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                     else
                     {
-                        Projectile.GameEntity.SetVisibilityExcludeParents(visible: false);
+                        if (!Projectile.GameEntity.TryGetEntity(out var tmpGameEntity))
+                        {
+                            return;
+                        }
+                        tmpGameEntity.SetVisibilityExcludeParents(visible: false);
                     }
 
                     break;
@@ -760,7 +764,11 @@ namespace PersistentEmpiresLib.SceneScripts
                     }
                     else
                     {
-                        Projectile.GameEntity.SetVisibilityExcludeParents(visible: true);
+                        if (!Projectile.GameEntity.TryGetEntity(out var tmpGameEntity))
+                        {
+                            return;
+                        }
+                        tmpGameEntity.SetVisibilityExcludeParents(visible: true);
                     }
 
                     break;

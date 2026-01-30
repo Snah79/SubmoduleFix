@@ -53,8 +53,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private bool HandleRequestBankActionClient(NetworkCommunicator player, RequestBankAction message)
         {
-            if (player.ControlledAgent == null) return false;
-            PersistentEmpireRepresentative representative = player.GetComponent<PersistentEmpireRepresentative>();
+            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+            
+            var  representative = player.GetComponent<PersistentEmpireRepresentative>();
+            
             if (representative == null) return false;
 
             Vec3 playerPos = player.ControlledAgent.Position;

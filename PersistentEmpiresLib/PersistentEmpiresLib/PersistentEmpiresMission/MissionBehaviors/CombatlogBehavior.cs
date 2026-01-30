@@ -35,7 +35,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             foreach (NetworkCommunicator player in CombatLogTimer.Keys.ToList())
             {
                 if (!player.IsConnectionActive) continue;
-                if (player.ControlledAgent == null) continue;
+
+                if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) continue;
 
                 if (!IsPlayerInCombatState(player))
                 {

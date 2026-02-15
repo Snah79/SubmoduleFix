@@ -101,21 +101,29 @@ namespace PersistentEmpiresLib.SceneScripts
 
         public WeakGameEntity HealthyState()
         {
-            return this._healthyState;
+            return _healthyState;
         }
 
         protected override void OnInit()
         {
             base.OnInit();
-            this.HitPoint = this.MaxHitPoint;
-            this._healthyState = string.IsNullOrEmpty(this.ReferenceEntityTag) ? base.GameEntity : base.GameEntity.GetChildren().FirstOrDefault((WeakGameEntity x) => x.HasTag(this.ReferenceEntityTag));
-            this._originalStatePrefab = this._healthyState.GetPrefabName();
-            if (this.DestructionState != "")
+            HitPoint = MaxHitPoint;
+            _healthyState = string.IsNullOrEmpty(ReferenceEntityTag) ? base.GameEntity : base.GameEntity.GetChildren().FirstOrDefault((WeakGameEntity x) => x.HasTag(ReferenceEntityTag));
+            _originalStatePrefab = _healthyState.GetPrefabName();
+            if (DestructionState != "")
             {
                 var newEntity = TaleWorlds.Engine.GameEntity.Instantiate(Mission.Current.Scene, this.DestructionState, this._healthyState.GetGlobalFrame());
-                this._brokenState = newEntity.WeakEntity;
-                base.GameEntity.AddChild(this._brokenState, true);
-                this._brokenState.SetVisibilityExcludeParents(false);
+                if (newEntity != null)
+                {
+
+                    this._brokenState = newEntity.WeakEntity;
+                    base.GameEntity.AddChild(this._brokenState, true);
+                    this._brokenState.SetVisibilityExcludeParents(false);
+                }
+                else
+                {
+                    DestructionState = "";
+                }
             }
             this.ParseRepairReceipts();
             if (GameNetwork.IsServer)

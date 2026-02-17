@@ -28,6 +28,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public override MultiplayerGameType GameType => MultiplayerGameType.Duel;// ????
         private FactionsBehavior _factionsBehavior;
         private CastlesBehavior _castlesBehavior;
+
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();

@@ -46,6 +46,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         // public static string ServerSignature = "";
         private static string _defaultClass = "pe_peasant";
         public static string DefaultClass { get { return _defaultClass; } }
+#if SERVER
+        public static bool CanUseSuicide = true;
+        public static bool CanUseChangeColor = true;
+#endif
         public static PersistentEmpireBehavior Instanse = null;
 
         public static void SetDefaultClass(string defaultClass)
@@ -55,6 +59,15 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             _defaultClass = defaultClass;
         }
 
+#if SERVER
+        public override void OnBehaviorInitialize()
+        {
+            base.OnBehaviorInitialize();
+
+            CanUseSuicide = ConfigManager.GetBoolConfig("CanUseSuicide", true);
+            CanUseChangeColor = ConfigManager.GetBoolConfig("CanUseChangeColor", true);
+        }
+#endif
         public override void OnAgentMount(Agent agent)
         {
             base.OnAgentMount(agent);
@@ -314,7 +327,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                         Faction f = persistentEmpireRepresentative1.GetFaction();
 
                         GameNetwork.BeginModuleEventAsServer(networkPeer);
-                        GameNetwork.WriteMessage(new SyncMember(player, persistentEmpireRepresentative1.GetFactionIndex(), f == null ? false : f.marshalls.Contains(player.VirtualPlayer.ToPlayerId()), FactionPollComponent.LordPollEnabled, FactionsBehavior.CanUseDiplomacy, AdminClientBehavior.CanUseSuicide, AdminClientBehavior.CanUseChangeColor));
+                        GameNetwork.WriteMessage(new SyncMember(player, persistentEmpireRepresentative1.GetFactionIndex(), f == null ? false : f.marshalls.Contains(player.VirtualPlayer.ToPlayerId()), FactionPollComponent.LordPollEnabled, FactionsBehavior.CanUseDiplomacy, CanUseSuicide, CanUseChangeColor));
                         GameNetwork.EndModuleEventAsServer();
                     }
                 }

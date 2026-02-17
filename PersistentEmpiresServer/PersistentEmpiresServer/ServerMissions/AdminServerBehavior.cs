@@ -44,7 +44,6 @@ namespace PersistentEmpiresServer.ServerMissions
         // Admin invisibility system
         public List<NetworkCommunicator> InvisibleAdmins = new List<NetworkCommunicator>();
         private object _invisibleAdminsLock = new object();
-
         public static AdminServerBehavior Instance { get; private set; }
 
         protected override void HandleLateNewClientAfterSynchronized(NetworkCommunicator networkPeer)
@@ -205,9 +204,10 @@ namespace PersistentEmpiresServer.ServerMissions
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();
+
             AdminServerBehavior.Instance = this;
-            this.AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
-            this.patreonRegistry = base.Mission.GetMissionBehavior<PatreonRegistryBehavior>();
+            AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
+            patreonRegistry = base.Mission.GetMissionBehavior<PatreonRegistryBehavior>();
             nameChangeGold = ConfigManager.GetIntConfig("NameChangeGold", 5000);
             cooldown = ConfigManager.GetIntConfig("NameChangeCooldownInSeconds", 3600);
 

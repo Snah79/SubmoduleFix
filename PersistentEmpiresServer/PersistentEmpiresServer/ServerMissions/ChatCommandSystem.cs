@@ -23,12 +23,16 @@ namespace PersistentEmpiresServer.ServerMissions
         public string CommandPrefix;
         internal string DefaultMessageColor = "#FFFDFDFD";
 
+        public ChatCommandSystem()
+        {
+            Instance = this;
+        }
+
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();
             commands = new Dictionary<string, Command>();
             Muted = new Dictionary<NetworkCommunicator, bool>();
-            Instance = this;
             PatchGlobalChat.OnClientEventPlayerMessageAll += PatchGlobalChat_OnClientEventPlayerMessageAll;
             PatchGlobalChat.OnClientEventPlayerMessageTeam += PatchGlobalChat_OnClientEventPlayerMessageTeam;
             LocalChatComponent localChat = base.Mission.GetMissionBehavior<LocalChatComponent>();
@@ -40,7 +44,7 @@ namespace PersistentEmpiresServer.ServerMissions
             Initialize();
         }
 
-        private bool OnPrefixHandleLocalChatFromClient(NetworkCommunicator Sender, string Message, bool shout)
+        public bool OnPrefixHandleLocalChatFromClient(NetworkCommunicator Sender, string Message, bool shout)
         {
             PersistentEmpireRepresentative persistentEmpireRepresentative = Sender.GetComponent<PersistentEmpireRepresentative>();
             if (Message.StartsWith(CommandPrefix))
@@ -54,7 +58,7 @@ namespace PersistentEmpiresServer.ServerMissions
             return true;
         }
 
-        private bool PatchGlobalChat_OnClientEventPlayerMessageAll(NetworkCommunicator networkPeer, PlayerMessageAll message)
+        public bool PatchGlobalChat_OnClientEventPlayerMessageAll(NetworkCommunicator networkPeer, PlayerMessageAll message)
         {
             var myTrace = new System.Diagnostics.StackTrace(0, true);
             try { 

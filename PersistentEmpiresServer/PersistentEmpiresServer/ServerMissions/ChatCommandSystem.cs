@@ -44,7 +44,7 @@ namespace PersistentEmpiresServer.ServerMissions
             Initialize();
         }
 
-        public bool OnPrefixHandleLocalChatFromClient(NetworkCommunicator Sender, string Message, bool shout)
+        private bool OnPrefixHandleLocalChatFromClient(NetworkCommunicator Sender, string Message, bool shout)
         {
             PersistentEmpireRepresentative persistentEmpireRepresentative = Sender.GetComponent<PersistentEmpireRepresentative>();
             if (Message.StartsWith(CommandPrefix))
@@ -100,7 +100,7 @@ namespace PersistentEmpiresServer.ServerMissions
             return true;
         }
 
-        private bool PatchGlobalChat_OnClientEventPlayerMessageTeam(NetworkCommunicator networkPeer, PlayerMessageTeam message)
+        public bool PatchGlobalChat_OnClientEventPlayerMessageTeam(NetworkCommunicator networkPeer, PlayerMessageTeam message)
         {
             PersistentEmpireRepresentative persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
             Faction f = persistentEmpireRepresentative.GetFaction();

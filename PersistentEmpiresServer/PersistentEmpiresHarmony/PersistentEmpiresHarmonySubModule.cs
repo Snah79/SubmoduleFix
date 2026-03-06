@@ -92,23 +92,22 @@ namespace PersistentEmpiresHarmony
             HarmonyHandle.Patch(original, postfix: new HarmonyMethod(postfix));
             Debug.Print("** Persistent Harmony ** Patched [MultiplayerOptionsExtensions::GetOptionProperty]", 0, Debug.DebugColor.Yellow);
 
-            original = typeof(ChatBox).GetMethod("OnPlayerMessageReceived", BindingFlags.NonPublic | BindingFlags.Instance);
-            var prefix = typeof(PatchGlobalChat).GetMethod("PrefixOnPlayerMessageReceived", BindingFlags.Public | BindingFlags.Static);
-            HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
-            Debug.Print("** Persistent Harmony ** Patched [ChatBox::OnPlayerMessageReceived]", 0, Debug.DebugColor.Yellow);
+            //original = typeof(ChatBox).GetMethod("OnPlayerMessageReceived", BindingFlags.NonPublic | BindingFlags.Instance);
+            //var prefix = typeof(PatchGlobalChat).GetMethod("PrefixOnPlayerMessageReceived", BindingFlags.Public | BindingFlags.Static);
+            //HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
+            //Debug.Print("** Persistent Harmony ** Patched [ChatBox::OnPlayerMessageReceived]", 0, Debug.DebugColor.Yellow);
             //original = typeof(ChatBox).GetMethod("HandleClientEventPlayerMessageAll", BindingFlags.NonPublic | BindingFlags.Instance);
             //prefix = typeof(PatchGlobalChat).GetMethod("PrefixClientEventPlayerMessageAll", BindingFlags.Public | BindingFlags.Static);
             //HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
-            Debug.Print("** Persistent Harmony ** Patched [ChatBox::HandleClientEventPlayerMessageAll]", 0, Debug.DebugColor.Yellow);
+            //Debug.Print("** Persistent Harmony ** Patched [ChatBox::HandleClientEventPlayerMessageAll]", 0, Debug.DebugColor.Yellow);
 
             //original = typeof(ChatBox).GetMethod("HandleClientEventPlayerMessageTeam", BindingFlags.NonPublic | BindingFlags.Instance);
             //prefix = typeof(PatchGlobalChat).GetMethod("PrefixClientEventPlayerMessageTeam", BindingFlags.Public | BindingFlags.Static);
             //HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
-            Debug.Print("** Persistent Harmony ** Patched [ChatBox::HandleClientEventPlayerMessageTeam]", 0, Debug.DebugColor.Yellow);
-
+            //Debug.Print("** Persistent Harmony ** Patched [ChatBox::HandleClientEventPlayerMessageTeam]", 0, Debug.DebugColor.Yellow);
 
             original = typeof(Managed).GetMethod("GetStackTraceRaw", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(StackTrace), typeof(int) }, null);
-            prefix = typeof(PatchStackTraceRaw).GetMethod("GetStackTraceRawDeep", BindingFlags.Public | BindingFlags.Static);
+            var prefix = typeof(PatchStackTraceRaw).GetMethod("GetStackTraceRawDeep", BindingFlags.Public | BindingFlags.Static);
             HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
             Debug.Print("** Persistent Harmony ** Patched [Managed::GetStackTraceRaw]", 0, Debug.DebugColor.Yellow);
 

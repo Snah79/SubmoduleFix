@@ -90,8 +90,8 @@ namespace PersistentEmpiresServer.ServerMissions
             base.OnBehaviorInitialize();
             commands = new Dictionary<string, Command>();
             Muted = new Dictionary<NetworkCommunicator, bool>();
-            PatchGlobalChat.OnClientEventPlayerMessageAll += PatchGlobalChat_OnClientEventPlayerMessageAll;
-            PatchGlobalChat.OnClientEventPlayerMessageTeam += PatchGlobalChat_OnClientEventPlayerMessageTeam;
+            //PatchGlobalChat.OnClientEventPlayerMessageAll += PatchGlobalChat_OnClientEventPlayerMessageAll;
+            //PatchGlobalChat.OnClientEventPlayerMessageTeam += PatchGlobalChat_OnClientEventPlayerMessageTeam;
             LocalChatComponent localChat = base.Mission.GetMissionBehavior<LocalChatComponent>();
             localChat.OnPrefixHandleLocalChatFromClient += this.OnPrefixHandleLocalChatFromClient;
             patreonRegistry = base.Mission.GetMissionBehavior<PatreonRegistryBehavior>();

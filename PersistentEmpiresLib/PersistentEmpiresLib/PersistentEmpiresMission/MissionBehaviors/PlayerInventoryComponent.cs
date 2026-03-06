@@ -565,7 +565,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
         }
 
-        private bool HandleRequestRevealItemBag(NetworkCommunicator player, RequestRevealItemBag message)
+        public bool HandleRequestRevealItemBag(NetworkCommunicator player, RequestRevealItemBag message)
         {
             if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return true;
 

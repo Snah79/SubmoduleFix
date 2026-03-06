@@ -15,11 +15,15 @@ using TaleWorlds.MountAndBlade;
 using System.Xml.Linq;
 using System.IO;
 using System.Reflection;
+using System.Windows.Forms;
+using PersistentEmpiresLib.Data;
+using PersistentEmpiresLib.Helpers;
 
 namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 {
     public class SaveSystemBehavior : MissionNetwork
     {
+        private static bool _inDebug = System.Diagnostics.Debugger.IsAttached;
         public long LastSaveAt = DateTimeOffset.Now.ToUnixTimeSeconds();
         public int SaveDuration = 600;
 
@@ -40,6 +44,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public delegate IEnumerable<DBInventory> GetAllInventories();
         public delegate DBInventory GetOrCreatePlayerInventory(NetworkCommunicator networkCommunicator, out bool created);
         public delegate DBInventory CreateOrSavePlayerInventory(NetworkCommunicator networkCommunicator);
+        public delegate DBInventory CreateOrSavePlayerInventory2(NetworkCommunicator networkCommunicator, PersistentEmpireRepresentative persistentEmpireRepresentative);
         public delegate void CreateOrSavePlayerInventories(List<NetworkCommunicator> networkCommunicators);
         public delegate DBInventory GetOrCreateInventory(string inventoryId);
         public delegate DBInventory CreateOrSaveInventory(string inventoryId);
@@ -93,6 +98,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static event GetOrCreatePlayerInventory OnGetOrCreatePlayerInventory;
         public static event CreateOrSavePlayerInventories OnCreateOrSavePlayerInventories;
         public static event CreateOrSavePlayerInventory OnCreateOrSavePlayerInventory;
+        public static event CreateOrSavePlayerInventory2 OnCreateOrSavePlayerInventory2;
         public static event GetOrCreateInventory OnGetOrCreateInventory;
         public static event CreateOrSaveInventory OnCreateOrSaveInventory;
         public static event GetAllInventories OnGetAllInventories;
@@ -124,21 +130,32 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             Debug.Print($"** Persistent Empires Auto Save ** Saving {peers.Count()} players", 0, Debug.DebugColor.Blue);
             // Run it on own thread so we dont block onTick.
             HandleCreateOrSavePlayers(peers);
-            HandleCreateOrSavePlayerInventories(peers);
+            if (!ConfigManager.GetBoolConfig("SaveOnChange", false))
+            {
+                HandleCreateOrSavePlayerInventories(peers);
+            }
         }
 
-        public static void LogQuery(string query)
+        private static void LogQuery(string query)
         {
-            // File.AppendAllText("save-logs.txt", query + "\n");
+            File.AppendAllText("save-logs.txt", query + "\n");
         }
 
         public static bool HandleIsPlayerWhitelisted(NetworkCommunicator player)
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnIsPlayerWhitelisted != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnIsPlayerWhitelisted(player.VirtualPlayer.Id.ToString());
+                    
+                    LogQuery(String.Format("OnIsPlayerWhitelisted Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, player?.VirtualPlayer?.ToPlayerId()));
+                    
+                    return result2;
+                }
                 var result = OnIsPlayerWhitelisted(player.VirtualPlayer.Id.ToString());
-                LogQuery(String.Format("OnIsPlayerWhitelisted Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+
                 return result;
             }
             return false;
@@ -146,33 +163,73 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public static void HandleDiscordRegister(NetworkCommunicator player, string id)
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            if (OnDiscordRegister != null) OnDiscordRegister(player, id);
-            LogQuery(String.Format("OnDiscordRegister Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+            if (OnDiscordRegister != null)
+            {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    
+                    OnDiscordRegister(player, id);
+                    LogQuery(String.Format("OnDiscordRegister Took {0} ms, {1}, {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, player?.VirtualPlayer?.ToPlayerId(), id));
+
+                    return;
+                }
+                OnDiscordRegister(player, id);
+            }
         }
+
         public static void HandleStartMigration()
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             TaleWorlds.Library.Debug.Print("[Save System] Is OnStartMigration null ? " + (OnStartMigration == null).ToString());
-            if (OnStartMigration != null) OnStartMigration();
-            LogQuery(String.Format("OnStartMigration Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+            
+            if (OnStartMigration != null)
+            {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    LogQuery(String.Format("OnStartMigration Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                    OnStartMigration();
+                    
+                    return;
+                }
+
+                OnStartMigration();
+            }
         }
 
         public static void HandleCreatePlayerNameIfNotExists(NetworkCommunicator player)
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            if (OnCreatePlayerNameIfNotExists != null) OnCreatePlayerNameIfNotExists(player);
-            LogQuery(String.Format("OnCreatePlayerNameIfNotExists Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+            if (OnCreatePlayerNameIfNotExists != null)
+            {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    
+                    OnCreatePlayerNameIfNotExists(player);
+                    LogQuery(String.Format("OnCreatePlayerNameIfNotExists Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, player?.VirtualPlayer?.ToPlayerId()));
 
+                    return;
+                }
+                OnCreatePlayerNameIfNotExists(player);
+            }
         }
 
         public static IEnumerable<DBHorseMarket> HandleGetAllHorseMarkets()
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnGetAllStockpileMarkets != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetAllHorseMarkets();
+
+                    LogQuery(String.Format("OnGetAllHorseMarkets Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+
+                    return result2;
+                }
                 var result = OnGetAllHorseMarkets();
-                LogQuery(String.Format("OnGetAllHorseMarkets Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -180,11 +237,19 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public static DBHorseMarket HandleGetHorseMarket(PE_HorseMarket market)
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnGetHorseMarket != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetHorseMarket(market);
+
+                    LogQuery(String.Format("OnGetHorseMarket Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, market.HorseId));
+
+                    return result2;
+                }
                 var result = OnGetHorseMarket(market);
-                LogQuery(String.Format("OnGetHorseMarket Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
 
@@ -193,11 +258,19 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public static DBHorseMarket HandleCreateOrSaveHorseMarket(PE_HorseMarket market)
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnCreateOrSaveHorseMarket != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnCreateOrSaveHorseMarket(market);
+
+                    LogQuery(String.Format("OnCreateOrSaveHorseMarket Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, market.HorseId));
+
+                    return result2;
+                }
                 var result = OnCreateOrSaveHorseMarket(market);
-                LogQuery(String.Format("OnCreateOrSaveHorseMarket Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
 
@@ -206,13 +279,21 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public static IEnumerable<DBStockpileMarket> HandleGetAllStockpileMarkets()
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
             TaleWorlds.Library.Debug.Print("[Save System] Is OnGetAllStockpileMarkets null ? " + (OnGetAllStockpileMarkets == null).ToString());
+            
             if (OnGetAllStockpileMarkets != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetAllStockpileMarkets();
+
+                    LogQuery(String.Format("OnGetAllStockpileMarkets Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+
+                    return result2;
+                }
                 var result = OnGetAllStockpileMarkets();
-                LogQuery(String.Format("OnGetAllStockpileMarkets Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
 
@@ -221,12 +302,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static DBStockpileMarket HandleGetStockpileMarket(PE_StockpileMarket market)
         {
             Debug.Print("[Save System] Is OnGetStockpileMarket null ? " + (OnGetStockpileMarket == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
             if (OnGetStockpileMarket != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetStockpileMarket(market);
+
+                    LogQuery(String.Format("OnGetStockpileMarket Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+
+                    return result2;
+                }
                 var result = OnGetStockpileMarket(market);
-                LogQuery(String.Format("OnGetStockpileMarket Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -244,11 +333,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static DBUpgradeableBuilding HandleCreateOrSaveUpgradebleBuilding(PE_UpgradeableBuildings building)
         {
             Debug.Print("[Save System] Is OnCreateOrSaveUpgradebleBuilding null ? " + (OnCreateOrSaveUpgradebleBuilding == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            
             if (OnCreateOrSaveUpgradebleBuilding != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnCreateOrSaveUpgradebleBuilding(building);
+
+                    LogQuery(String.Format("OnCreateOrSaveUpgradebleBuilding Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, building.BuildingName));
+
+                    return result2;
+                }
                 var result = OnCreateOrSaveUpgradebleBuilding(building);
-                LogQuery(String.Format("OnCreateOrSaveUpgradebleBuilding Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
 
@@ -258,11 +356,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static IEnumerable<DBUpgradeableBuilding> HandleGetAllUpgradeableBuildings()
         {
             Debug.Print("[Save System] Is OnGetAllUpgradeableBuildings null ? " + (OnGetAllUpgradeableBuildings == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            
             if (OnGetAllUpgradeableBuildings != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetAllUpgradeableBuildings();
+
+                    LogQuery(String.Format("OnGetAllUpgradeableBuildings Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+
+                    return result2;
+                }
                 var result = OnGetAllUpgradeableBuildings();
-                LogQuery(String.Format("OnGetAllUpgradeableBuildings Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -271,11 +378,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static DBUpgradeableBuilding HandleGetUpgradeableBuilding(PE_UpgradeableBuildings building)
         {
             Debug.Print("[Save System] Is OnGetUpgradeableBuilding null ? " + (OnGetUpgradeableBuilding == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            
             if (OnGetUpgradeableBuilding != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetUpgradeableBuilding(building);
+
+                    LogQuery(String.Format("OnGetUpgradeableBuilding Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, building.BuildingName));
+
+                    return result2;
+                }
                 var result = OnGetUpgradeableBuilding(building);
-                LogQuery(String.Format("OnGetUpgradeableBuilding Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -284,11 +400,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static DBPlayer HandleCreateOrSavePlayer(NetworkCommunicator peer)
         {
             Debug.Print("[Save System] Is OnCreateOrSavePlayer null ? " + (OnCreateOrSavePlayer == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            
             if (OnCreateOrSavePlayer != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnCreateOrSavePlayer(peer);
+
+                    LogQuery(String.Format("OnCreateOrSavePlayer Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, peer?.VirtualPlayer?.ToPlayerId()));
+
+                    return result2;
+                }
                 var result = OnCreateOrSavePlayer(peer);
-                LogQuery(String.Format("OnCreateOrSavePlayer Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -307,22 +432,36 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static void HandleSaveDefaultsForNewPlayer(NetworkCommunicator networkCommunicator, Equipment equipment)
         {
             Debug.Print("[Save System] Is OnSaveDefaultsForNewPlayerr null ? " + (OnSaveDefaultsForNewPlayer == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnSaveDefaultsForNewPlayer != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    
+                    OnSaveDefaultsForNewPlayer(networkCommunicator, equipment);
+                    LogQuery(String.Format("OnSaveDefaultsForNewPlayerr Took {0} ms, {1}, {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, networkCommunicator?.VirtualPlayer?.ToPlayerId(), equipment.CalculateEquipmentCode()));
+
+                    return;
+                }
                 OnSaveDefaultsForNewPlayer(networkCommunicator, equipment);
-                LogQuery(String.Format("OnSaveDefaultsForNewPlayerr Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
             }
         }
 
         public static void HandleCreateOrSavePlayers(List<NetworkCommunicator> peers)
         {
             Debug.Print("[Save System] Is OnCreateOrSavePlayers null ? " + (OnCreateOrSavePlayers == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnCreateOrSavePlayers != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    
+                    OnCreateOrSavePlayers(peers);
+                    LogQuery(String.Format("OnCreateOrSavePlayers Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+
+                    return;
+                }
                 OnCreateOrSavePlayers(peers);
-                LogQuery(String.Format("OnCreateOrSavePlayers Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
             }
         }
 
@@ -330,11 +469,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             Debug.Print("[Save System] Is OnGetOrCreatePlayer null ? " + (OnGetOrCreatePlayer == null).ToString());
             created = false;
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
             if (OnGetOrCreatePlayer != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetOrCreatePlayer(peer, out created);
+
+                    LogQuery(String.Format("OnGetOrCreatePlayer Took {0} ms, {1}, {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, peer?.VirtualPlayer?.ToPlayerId(), result2));
+
+                    return result2;
+                }
                 var result = OnGetOrCreatePlayer(peer, out created);
-                LogQuery(String.Format("OnGetOrCreatePlayer Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -342,11 +490,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static IEnumerable<DBInventory> HandleGetAllInventories()
         {
             Debug.Print("[Save System] Is OnGetAllInventories null ? " + (OnGetAllInventories == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            
             if (OnGetAllInventories != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetAllInventories();
+
+                    LogQuery(String.Format("OnGetAllInventories Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+
+                    return result2;
+                }
                 var result = OnGetAllInventories();
-                LogQuery(String.Format("OnGetAllInventories Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -355,23 +512,64 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             Debug.Print("[Save System] Is OnGetOrCreatePlayerInventory null ? " + (OnGetOrCreatePlayerInventory == null).ToString());
             created = false;
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            
             if (OnGetOrCreatePlayerInventory != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetOrCreatePlayerInventory(networkCommunicator, out created);
+
+                    LogQuery(String.Format("OnGetOrCreatePlayerInventory Took {0} ms, {1}, {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, networkCommunicator?.VirtualPlayer?.ToPlayerId(), result2));
+
+                    return result2;
+                }
                 var result = OnGetOrCreatePlayerInventory(networkCommunicator, out created);
-                LogQuery(String.Format("OnGetOrCreatePlayerInventory Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
         }
+
         public static DBInventory HandleCreateOrSavePlayerInventory(NetworkCommunicator networkCommunicator)
         {
             Debug.Print("[Save System] Is OnCreateOrSavePlayerInventory null ? " + (OnCreateOrSavePlayerInventory == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            
             if (OnCreateOrSavePlayerInventory != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnCreateOrSavePlayerInventory(networkCommunicator);
+
+                    LogQuery(String.Format("OnCreateOrSavePlayerInventory Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, networkCommunicator?.VirtualPlayer?.ToPlayerId()));
+
+                    return result2;
+                }
                 var result = OnCreateOrSavePlayerInventory(networkCommunicator);
-                LogQuery(String.Format("OnCreateOrSavePlayerInventory Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
+                return result;
+            }
+            return null;
+        }
+
+        public static DBInventory HandleCreateOrSavePlayerInventory(NetworkCommunicator networkCommunicator, PersistentEmpireRepresentative persistentEmpireRepresentative)
+        {
+            Debug.Print("[Save System] Is OnCreateOrSavePlayerInventory null ? " + (OnCreateOrSavePlayerInventory == null).ToString());
+
+            if (OnCreateOrSavePlayerInventory2 != null)
+            {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnCreateOrSavePlayerInventory2(networkCommunicator, persistentEmpireRepresentative);
+
+                    LogQuery(String.Format("OnCreateOrSavePlayerInventory2 Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, networkCommunicator?.VirtualPlayer?.ToPlayerId()));
+
+                    return result2;
+                }
+                var result = OnCreateOrSavePlayerInventory2(networkCommunicator, persistentEmpireRepresentative);
+
                 return result;
             }
             return null;
@@ -380,22 +578,38 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static void HandleCreateOrSavePlayerInventories(List<NetworkCommunicator> networkCommunicators)
         {
             Debug.Print("[Save System] Is OnCreateOrSavePlayerInventories null ? " + (OnCreateOrSavePlayerInventories == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnCreateOrSavePlayerInventories != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    OnCreateOrSavePlayerInventories(networkCommunicators);
+                    LogQuery(String.Format("OnCreateOrSavePlayerInventories Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+
+                    return;
+                }
                 OnCreateOrSavePlayerInventories(networkCommunicators);
-                LogQuery(String.Format("OnCreateOrSavePlayerInventory Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
             }
         }
 
         public static DBInventory HandleGetOrCreateInventory(string inventoryId)
         {
             Debug.Print("[Save System] Is OnGetOrCreateInventory null ? " + (OnGetOrCreateInventory == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            
             if (OnGetOrCreateInventory != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetOrCreateInventory(inventoryId);
+
+                    LogQuery(String.Format("OnGetOrCreateInventory Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, inventoryId));
+
+                    return result2;
+                }
                 var result = OnGetOrCreateInventory(inventoryId);
-                LogQuery(String.Format("OnGetOrCreateInventory Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -404,11 +618,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static DBInventory HandleCreateOrSaveInventory(string inventoryId)
         {
             Debug.Print("[Save System] Is OnCreateOrSaveInventory null ? " + (OnCreateOrSaveInventory == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            
             if (OnCreateOrSaveInventory != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnCreateOrSaveInventory(inventoryId);
+
+                    LogQuery(String.Format("OnCreateOrSaveInventory Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, inventoryId));
+
+                    return result2;
+                }
                 var result = OnCreateOrSaveInventory(inventoryId);
-                LogQuery(String.Format("OnCreateOrSaveInventory Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -416,11 +639,19 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public static IEnumerable<DBCastle> HandleGetCastles()
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnGetCastles != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetCastles();
+
+                    LogQuery(String.Format("OnGetCastles Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+
+                    return result2;
+                }
                 var result = OnGetCastles();
-                LogQuery(String.Format("OnGetCastles Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -428,11 +659,19 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public static DBCastle HandleCreateOrSaveCastle(int castleIndex, int factionIndex)
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnCreateOrSaveCastle != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnCreateOrSaveCastle(castleIndex, factionIndex);
+
+                    LogQuery(String.Format("OnCreateOrSaveCastle Took {0} ms, {1}, {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, castleIndex, factionIndex));
+
+                    return result2;
+                }
                 var result = OnCreateOrSaveCastle(castleIndex, factionIndex);
-                LogQuery(String.Format("OnCreateOrSaveCastle Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -441,11 +680,19 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static IEnumerable<DBFactions> HandleGetFactions()
         {
             Debug.Print("[Save System] Is OnGetFactions null ? " + (OnGetFactions == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnGetFactions != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetFactions();
+
+                    LogQuery(String.Format("OnGetFactions Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+
+                    return result2;
+                }
                 var result = OnGetFactions();
-                LogQuery(String.Format("OnGetFactions Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -454,11 +701,19 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static DBFactions HandleGetFaction(int factionIndex)
         {
             Debug.Print("[Save System] Is OnGetFaction null ? " + (OnGetFaction == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnGetFaction != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnGetFaction(factionIndex);
+
+                    LogQuery(String.Format("OnGetFaction Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, factionIndex));
+
+                    return result2;
+                }
                 var result = OnGetFaction(factionIndex);
-                LogQuery(String.Format("OnGetFaction Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -467,11 +722,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public static DBFactions HandleCreateOrSaveFaction(Faction faction, int factionIndex)
         {
             Debug.Print("[Save System] Is OnCreateOrSaveFaction null ? " + (OnCreateOrSaveFaction == null).ToString());
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            
             if (OnCreateOrSaveFaction != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnCreateOrSaveFaction(faction, factionIndex);
+
+                    LogQuery(String.Format("OnCreateOrSaveFaction Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, factionIndex));
+
+                    return result2;
+                }
                 var result = OnCreateOrSaveFaction(faction, factionIndex);
-                LogQuery(String.Format("OnCreateOrSaveFaction Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return null;
@@ -479,9 +743,26 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public static bool HandlePlayerUpdateCustomName(NetworkCommunicator peer, string customName)
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnPlayerUpdateCustomName != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var result2 = OnPlayerUpdateCustomName(peer, customName);
+                    if (result2)
+                    {
+                        peer.VirtualPlayer.GetType().GetProperty("UserName").SetValue(peer.VirtualPlayer, customName);
+
+                        var playerComponent = peer.GetComponent<PersistentEmpireRepresentative>();
+                        var inventory = playerComponent.GetInventory();
+                        inventory.InventoryId = $"{peer.VirtualPlayer.Id.ToString()}_{customName}";
+                        playerComponent.SetInventory(inventory);
+                    }
+                    LogQuery(String.Format("OnPlayerUpdateCustomName Took {0} ms, {1}, {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, peer?.VirtualPlayer?.ToPlayerId(), customName));
+
+                    return result2;
+                }
+
                 var result = OnPlayerUpdateCustomName(peer, customName);
                 if(result)
                 {
@@ -492,7 +773,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     inventory.InventoryId = $"{peer.VirtualPlayer.Id.ToString()}_{customName}";
                     playerComponent.SetInventory(inventory);
                 }
-                LogQuery(String.Format("OnPlayerUpdateCustomName Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
+                
                 return result;
             }
             return false;
@@ -500,11 +781,18 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         internal static void HandleUpdateWoundedUntil(NetworkCommunicator communicator, long woundTime)
         {
-            long rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (OnPlayerUpdateWoundedUntil != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    OnPlayerUpdateWoundedUntil(communicator, woundTime);
+                    LogQuery(String.Format("OnPlayerUpdateWoundedUntil Took {0} ms, {1}, {2}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, communicator?.VirtualPlayer?.ToPlayerId(), woundTime));
+
+                    return;
+                }
                 OnPlayerUpdateWoundedUntil(communicator, woundTime);
-                LogQuery(String.Format("OnPlayerUpdateWoundedUntil Took {0} ms", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow));
             }
         }
 
@@ -513,8 +801,16 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             long? woundedUntill = null;
             if (OnGetWoundedUntil != null)
             {
+                if (_inDebug)
+                {
+                    var rightNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    woundedUntill = OnGetWoundedUntil(communicator);
+                    LogQuery(String.Format("OnGetWoundedUntil Took {0} ms, {1}", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - rightNow, communicator?.VirtualPlayer?.ToPlayerId()));
+
+                    return woundedUntill;
+                }
                 woundedUntill = OnGetWoundedUntil(communicator);
-                LogQuery(String.Format("OnGetWoundedUntil Took {0} ms", woundedUntill));
             }
 
             return woundedUntill;
@@ -530,7 +826,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 if (peer.ControlledAgent != null && persistentEmpireRepresentative.IsFirstAgentSpawned)
                 {
                     HandleCreateOrSavePlayer(peer);
-                    HandleCreateOrSavePlayerInventory(peer);
+                    HandleCreateOrSavePlayerInventory(peer, persistentEmpireRepresentative);
                 }
             }
         }
@@ -568,7 +864,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 if (peer.ControlledAgent != null && persistentEmpireRepresentative.IsFirstAgentSpawned)
                 {
                     HandleCreateOrSavePlayer(peer);
-                    HandleCreateOrSavePlayerInventory(peer);
+                    HandleCreateOrSavePlayerInventory(peer, persistentEmpireRepresentative);
                 }
             }
         }

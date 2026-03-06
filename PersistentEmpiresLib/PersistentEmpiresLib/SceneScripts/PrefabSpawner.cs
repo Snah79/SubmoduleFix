@@ -166,7 +166,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 //TaleWorlds.Engine.GameEntity.Instantiate(Mission.Current.Scene, spawnableItem.PrefabName, bool callScriptCallbacks, bool createPhysics = true, string scriptInclusingTag = "")
                 this.SpawnedPrefabs.Add(mObject.GameEntity);
 
-                LoggerHelper.LogAnAction(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerSpawnedPrefab, null, new object[] {
+                LoggerHelper.LogAnActionNoDiscord(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerSpawnedPrefab, null, new object[] {
                 spawnableItem
             });
 
@@ -277,7 +277,7 @@ namespace PersistentEmpiresLib.SceneScripts
                         {
                             empireRepresentative.GetInventory().AddCountedItemSynced(sItem.SpawnerItem, 1, ItemHelper.GetMaximumAmmo(sItem.SpawnerItem));
                             this.DespawnSpawnedPrefab(spawnedEntity);
-                            LoggerHelper.LogAnAction(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerDespawnedPrefab, null, new object[] { sItem });
+                            LoggerHelper.LogAnActionNoDiscord(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerDespawnedPrefab, null, new object[] { sItem });
                         }
                         else
                         {

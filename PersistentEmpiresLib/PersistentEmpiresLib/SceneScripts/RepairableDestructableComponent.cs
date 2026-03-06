@@ -249,7 +249,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 {
                     this.SetHitPoint(this.MaxHitPoint, impactDirection, attackerScriptComponentBehavior);
                     InformationComponent.Instance.SendMessage((this.HitPoint + this.RepairDamage).ToString() + "/" + this.MaxHitPoint + ", repaired", 0x02ab89d9, player);
-                    LoggerHelper.LogAnAction(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerRepairesTheDestructable, null, new object[] { this.GetType().Name });
+                    LoggerHelper.LogAnActionNoDiscord(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerRepairesTheDestructable, null, new object[] { this.GetType().Name });
                     return false;
                 }
 
@@ -279,7 +279,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 this.SetHitPoint(this.HitPoint + this.RepairDamage, impactDirection, attackerScriptComponentBehavior);
                 if (GameNetwork.IsServer)
                 {
-                    LoggerHelper.LogAnAction(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerRepairesTheDestructable, null, new object[] { this.GetType().Name });
+                    LoggerHelper.LogAnActionNoDiscord(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerRepairesTheDestructable, null, new object[] { this.GetType().Name });
                 }
             }
             else
@@ -309,7 +309,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 this.lastHittedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 if (GameNetwork.IsServer)
                 {
-                    LoggerHelper.LogAnAction(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerHitToDestructable, null, new object[] { this.GetType().Name });
+                    LoggerHelper.LogAnActionNoDiscord(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerHitToDestructable, null, new object[] { this.GetType().Name });
                 }
             }
             finalDamage = damage;

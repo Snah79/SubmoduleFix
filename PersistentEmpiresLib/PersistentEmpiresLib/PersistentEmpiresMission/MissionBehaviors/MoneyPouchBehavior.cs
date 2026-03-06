@@ -95,7 +95,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     }
                 }
             }
-            LoggerHelper.LogAnAction(player, LogAction.PlayerRevealedMoneyPouch, affectedPlayers.ToArray(), new object[] {
+            LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerRevealedMoneyPouch, affectedPlayers.ToArray(), new object[] {
                 persistentEmpireRepresentative.Gold
             });
             return true;
@@ -189,7 +189,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             
             DropMoney(frame, message.Amount);
             LastDroppedMoney[peer] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            LoggerHelper.LogAnAction(peer, LogAction.PlayerDroppedGold, null, new object[] { message.Amount });
+            LoggerHelper.LogAnActionNoDiscord(peer, LogAction.PlayerDroppedGold, null, new object[] { message.Amount });
             
             return true;
         }

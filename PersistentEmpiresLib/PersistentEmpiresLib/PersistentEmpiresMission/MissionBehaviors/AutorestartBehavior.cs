@@ -47,6 +47,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             base.OnMissionTick(dt);
 
+            if(!IsActive)
+            {
+                return;
+            }
+
             if (++_counter < 5)
                 return;
             // Reset counter
@@ -71,7 +76,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     saveBehavior.LastSaveAt -= saveBehavior.SaveDuration;
                 }
             }
-            else if (IsActive && remainingSeconds <= 0)
+            else if (remainingSeconds <= 0)
             {
                 if (!SaveSystemBehavior.IsRunning)
                 {

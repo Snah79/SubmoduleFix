@@ -168,7 +168,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 var playerInventory = persistentEmpireRepresentative.GetInventory();
 
                 playerInventory.AddCountedItemSynced(DropsItemObject, DropCount, ItemHelper.GetMaximumAmmo(DropsItemObject));
-                LoggerHelper.LogAnAction(peer, LogAction.PlayerItemGathers, null, new object[] { DropsItemObject });
+                LoggerHelper.LogAnActionNoDiscord(peer, LogAction.PlayerItemGathers, null, new object[] { DropsItemObject });
                 if (CurrentCount == 0)
                 {
                     UpdateIsDestroyed(true);

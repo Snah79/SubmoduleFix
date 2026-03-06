@@ -6,6 +6,8 @@ using System;
 using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
+using System.Threading.Tasks;
+
 #if SERVER
 using PersistentEmpiresServer.ServerMissions;
 using static PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors.SaveSystemBehavior;
@@ -13,7 +15,7 @@ using static PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors.Save
 namespace PersistentEmpiresLib.Helpers
 {
     public static class LogAction
-    {   
+    {
         public static readonly string Wounds = "Wounds";// Done
         public static readonly string TeleportToPosition = "TeleportToPosition";// Done
         public static readonly string DiceCommand = "DiceCommand";// Done
@@ -343,7 +345,7 @@ namespace PersistentEmpiresLib.Helpers
             oParams = oParams ?? new object[] { };
 
             string logMessage = GenerateActionMessage(issuer, actionType, DateTime.UtcNow, affectedPlayers, oParams);
-            
+
             DBLog dbLog = new DBLog()
             {
                 ActionType = actionType,
@@ -357,7 +359,30 @@ namespace PersistentEmpiresLib.Helpers
 #if SERVER
             DiscordBehavior.NotifyLog(dbLog);
 #endif
-                if (OnLogAction != null)
+            if (OnLogAction != null)
+            {
+                OnLogAction(dbLog);
+            }
+        }
+
+        public static void LogAnActionNoDiscord(NetworkCommunicator issuer, string actionType, AffectedPlayer[] affectedPlayers = null, object[] oParams = null)
+        {
+            affectedPlayers = affectedPlayers ?? new AffectedPlayer[] { };
+            oParams = oParams ?? new object[] { };
+
+            var logMessage = GenerateActionMessage(issuer, actionType, DateTime.UtcNow, affectedPlayers, oParams);
+            var dbLog = new DBLog()
+            {
+                ActionType = actionType,
+                AffectedPlayers = new Json<AffectedPlayer[]>(affectedPlayers),
+                CreatedAt = DateTime.UtcNow,
+                IssuerCoordinates = GetCoordinatesOfPlayer(issuer),
+                IssuerPlayerId = issuer.VirtualPlayer.ToPlayerId(),
+                IssuerPlayerName = issuer.UserName.EncodeSpecialMariaDbChars(),
+                LogMessage = logMessage.EncodeSpecialMariaDbChars()
+            };
+
+            if (OnLogAction != null)
             {
                 OnLogAction(dbLog);
             }

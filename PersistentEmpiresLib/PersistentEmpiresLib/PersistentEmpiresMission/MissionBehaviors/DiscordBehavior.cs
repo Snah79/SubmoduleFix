@@ -19,7 +19,7 @@ namespace PersistentEmpiresServer.ServerMissions
         {
             get
             {
-                return  ConfigManager.GetBoolConfig("DiscordAdminMessageEnabled", true);
+                return ConfigManager.GetBoolConfig("DiscordAdminMessageEnabled", true);
             }
         }
         private static string DiscordAdminMessageUrl
@@ -99,13 +99,18 @@ namespace PersistentEmpiresServer.ServerMissions
 
         public static void NotifyLog(PersistentEmpiresLib.Database.DBEntities.DBLog dbLog)
         {
+            if (!DiscordBehavior.DiscordLogEnabled || string.IsNullOrEmpty(DiscordBehavior.DiscordLogUrl))
+            {
+                return;
+            }
+
+            InternalNotifyLog(dbLog);
+        }
+
+        private static void InternalNotifyLog(PersistentEmpiresLib.Database.DBEntities.DBLog dbLog)
+        {
             Task.Run(() =>
             {
-                if (!DiscordLogEnabled || string.IsNullOrEmpty(DiscordLogUrl))
-                {
-                    return;
-                }
-
                 var request = new
                 {
                     username = ServerName,
@@ -165,13 +170,18 @@ namespace PersistentEmpiresServer.ServerMissions
 
         public static void NotifyException(Exception ex)
         {
+            if (!DiscordExceptionEnabled || string.IsNullOrEmpty(DiscordExceptionUrl))
+            {
+                return;
+            }
+
+            InternalNotifyException(ex);
+        }
+
+        private static void InternalNotifyException(Exception ex)
+        {
             Task.Run(() =>
             {
-                if (!DiscordExceptionEnabled || string.IsNullOrEmpty(DiscordExceptionUrl))
-                {
-                    return;
-                }
-
                 var request = new
                 {
                     username = ServerName,
@@ -245,18 +255,23 @@ namespace PersistentEmpiresServer.ServerMissions
 
         public static void NotifyException(string ex)
         {
-            Task.Run(() =>
-            {
-                if (!DiscordExceptionEnabled || string.IsNullOrEmpty(DiscordExceptionUrl))
+            if (!DiscordExceptionEnabled || string.IsNullOrEmpty(DiscordExceptionUrl))
             {
                 return;
             }
 
-            var request = new
+            InternalNotifyException(ex);
+        }
+
+        private static void InternalNotifyException(string ex)
+        {
+            Task.Run(() =>
             {
-                username = ServerName,
-                content = "Exception Report",
-                embeds = new List<object>
+                var request = new
+                {
+                    username = ServerName,
+                    content = "Exception Report",
+                    embeds = new List<object>
                 {
                     new
                     {
@@ -279,25 +294,30 @@ namespace PersistentEmpiresServer.ServerMissions
                         }
                     },
                 }
-            };
+                };
 
-            Notify(request, DiscordExceptionUrl);
+                Notify(request, DiscordExceptionUrl);
             });
         }
 
         public static void NotifyServerStatus(string message, string color)
         {
-            Task.Run(() =>
-            {
-                if (!DiscordServeStatusEnabled || string.IsNullOrEmpty(DiscordServeStatusUrl))
+            if (!DiscordServeStatusEnabled || string.IsNullOrEmpty(DiscordServeStatusUrl))
             {
                 return;
             }
 
-            var request = new
+            InternalNotifyServerStatus(message, color);
+        }
+
+        private static void InternalNotifyServerStatus(string message, string color)
+        {
+            Task.Run(() =>
             {
-                username = ServerName,
-                embeds = new List<object>
+                var request = new
+                {
+                    username = ServerName,
+                    embeds = new List<object>
                 {
                     new
                     {
@@ -320,25 +340,31 @@ namespace PersistentEmpiresServer.ServerMissions
 
                     },
                 }
-            };
+                };
 
-            Notify(request, DiscordServeStatusUrl);
+                Notify(request, DiscordServeStatusUrl);
             });
         }
 
         public static void NotifyAdminMessage(NetworkCommunicator player, string message)
         {
-            Task.Run(() =>
-            {
-                if (!DiscordAdminMessageEnabled || string.IsNullOrEmpty(DiscordAdminMessageUrl))
+            if (!DiscordBehavior.DiscordAdminMessageEnabled || string.IsNullOrEmpty(DiscordBehavior.DiscordAdminMessageUrl))
             {
                 return;
             }
-            //DBPlayer dBPlayer = SaveSystemBehavior.GetDBPlayer(player.VirtualPlayer.ToPlayerId());
-            var request = new
+
+            InternalNotifyAdminMessage(player, message);
+        }
+
+        private static void InternalNotifyAdminMessage(NetworkCommunicator player, string message)
+        {
+            Task.Run(() =>
             {
-                username = ServerName,
-                embeds = new List<object>
+                //DBPlayer dBPlayer = SaveSystemBehavior.GetDBPlayer(player.VirtualPlayer.ToPlayerId());
+                var request = new
+                {
+                    username = ServerName,
+                    embeds = new List<object>
                 {
                     new
                     {
@@ -361,25 +387,30 @@ namespace PersistentEmpiresServer.ServerMissions
                         },
                     },
                 }
-            };
+                };
 
-            Notify(request, DiscordAdminMessageUrl);
+                Notify(request, DiscordAdminMessageUrl);
             });
         }
 
         public static void NotifyAnnounce(string user, string message)
         {
-            Task.Run(() =>
-            {
-                if (!DiscordAnnounceEnabled || string.IsNullOrEmpty(DiscordAnnounceUrl))
+            if (!DiscordBehavior.DiscordAnnounceEnabled || string.IsNullOrEmpty(DiscordBehavior.DiscordAnnounceUrl))
             {
                 return;
             }
 
-            var request = new
+            InternalNotifyAnnounce(user, message);
+        }
+
+        private static void InternalNotifyAnnounce(string user, string message)
+        {
+            Task.Run(() =>
             {
-                username = ServerName,
-                embeds = new List<object>
+                var request = new
+                {
+                    username = ServerName,
+                    embeds = new List<object>
                 {
                     new
                     {
@@ -401,9 +432,9 @@ namespace PersistentEmpiresServer.ServerMissions
                         },
                     },
                 }
-            };
+                };
 
-            Notify(request, DiscordAnnounceUrl);
+                Notify(request, DiscordAnnounceUrl);
             });
         }
 
@@ -418,7 +449,7 @@ namespace PersistentEmpiresServer.ServerMissions
                 {
                     HttpClient = new HttpClient();
                 }
-                
+
                 var response = HttpClient.PostAsync(url, content).Result;
             }
             catch (Exception ex)

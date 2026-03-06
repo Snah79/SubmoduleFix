@@ -44,7 +44,7 @@ namespace PersistentEmpiresServer.ChatCommands
                 logAction = LogAction.LocalChat;
             }
 
-            LoggerHelper.LogAnAction(player, logAction, affectedPlayers.ToArray(), new object[] { message });
+            LoggerHelper.LogAnActionNoDiscord(player, logAction, affectedPlayers.ToArray(), new object[] { message });
         }
 
         internal static void SendMessageToPlayer(this Command command, NetworkCommunicator player, string message, uint color, bool bubble, string logAction)
@@ -68,7 +68,7 @@ namespace PersistentEmpiresServer.ChatCommands
                 logAction = LogAction.LocalChat;
             }
 
-            LoggerHelper.LogAnAction(player, logAction, affectedPlayers.ToArray(), new object[] { message });
+            LoggerHelper.LogAnActionNoDiscord(player, logAction, affectedPlayers.ToArray(), new object[] { message });
         }
     }
 }

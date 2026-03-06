@@ -86,7 +86,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 if (BankingComponent.OnBankDeposit != null)
                 {
                     BankingComponent.OnBankDeposit(player, message.Amount);
-                    LoggerHelper.LogAnAction(player, LogAction.PlayerDepositedToBank, new Database.DBEntities.AffectedPlayer[] { }, new object[] { message.Amount });
+                    LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerDepositedToBank, new Database.DBEntities.AffectedPlayer[] { }, new object[] { message.Amount });
                 }
             }
             else if (BankingComponent.OnBankQuery(player) >= message.Amount)
@@ -95,8 +95,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 {
                     int amount = BankingComponent.OnBankWithdraw(player, message.Amount);
                     representative.GoldGain(amount);
-                    LoggerHelper.LogAnAction(player, LogAction.PlayerWithdrawToBank, new Database.DBEntities.AffectedPlayer[] { }, new object[] { amount });
-
+                    LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerWithdrawToBank, new Database.DBEntities.AffectedPlayer[] { }, new object[] { amount });
                 }
             }
 

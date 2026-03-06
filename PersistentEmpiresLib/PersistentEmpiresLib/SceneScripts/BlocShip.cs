@@ -340,7 +340,7 @@ namespace PersistentEmpiresLib.SceneScripts
 
                 if (GameNetwork.IsServer)
                 {
-                    LoggerHelper.LogAnAction(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerRepairesTheDestructable, null, new object[] { this.GetType().Name });
+                    LoggerHelper.LogAnActionNoDiscord(attackerAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerRepairesTheDestructable, null, new object[] { this.GetType().Name });
                 }
             }
             else

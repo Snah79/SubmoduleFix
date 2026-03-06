@@ -168,7 +168,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             if (StockpileMarketEntity != null && this.openedInventories.ContainsKey(StockpileMarketEntity) && this.openedInventories[StockpileMarketEntity].Contains(peer))
             {
-                LoggerHelper.LogAnAction(peer, LogAction.PlayerClosesStockpile, null, new object[] {
+                LoggerHelper.LogAnActionNoDiscord(peer, LogAction.PlayerClosesStockpile, null, new object[] {
                         (PE_StockpileMarket)StockpileMarketEntity
                  });
                 this.openedInventories[StockpileMarketEntity].Remove(peer);
@@ -180,7 +180,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             {
                 if (this.openedInventories[mObject].Contains(peer))
                 {
-                    LoggerHelper.LogAnAction(peer, LogAction.PlayerClosesStockpile, null, new object[] {
+                    LoggerHelper.LogAnActionNoDiscord(peer, LogAction.PlayerClosesStockpile, null, new object[] {
                         (PE_StockpileMarket)mObject
                     });
                     this.openedInventories[mObject].Remove(peer);
@@ -240,7 +240,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 GameNetwork.WriteMessage(new UpdateInventorySlot("PlayerInventory_" + i, persistentEmpireRepresentative.GetInventory().Slots[i].Item, persistentEmpireRepresentative.GetInventory().Slots[i].Count));
                 GameNetwork.EndModuleEventAsServer();
             }
-            LoggerHelper.LogAnAction(peer, LogAction.PlayerBuysStockpile, null, new object[] {
+            LoggerHelper.LogAnActionNoDiscord(peer, LogAction.PlayerBuysStockpile, null, new object[] {
                 marketItem
             });
             if (taxHandler != null && taxHandler.CastleId != -1) taxHandler.AddTaxFeeToMoneyChest((marketItem.BuyPrice() * taxHandler.TaxPercentage) / 100);
@@ -412,7 +412,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             GameNetwork.WriteMessage(new OpenStockpileMarket(entity, persistentEmpireRepresentative.GetInventory()));
             GameNetwork.EndModuleEventAsServer();
 
-            LoggerHelper.LogAnAction(networkCommunicator, LogAction.PlayerOpensStockpile, null, new object[] { entity });
+            LoggerHelper.LogAnActionNoDiscord(networkCommunicator, LogAction.PlayerOpensStockpile, null, new object[] { entity });
         }
     }
 }

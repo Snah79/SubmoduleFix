@@ -122,7 +122,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 {
                     affected = affectedAgent.RiderAgent.MissionPeer.GetNetworkPeer();
                 }
-                LoggerHelper.LogAnAction(issuer, LogAction.PlayerHitToAgent, affected == null ? new AffectedPlayer[] { } : new AffectedPlayer[] { new AffectedPlayer(affected) }, new object[] { affectorWeapon, affectedAgent });
+                LoggerHelper.LogAnActionNoDiscord(issuer, LogAction.PlayerHitToAgent, affected == null ? new AffectedPlayer[] { } : new AffectedPlayer[] { new AffectedPlayer(affected) }, new object[] { affectorWeapon, affectedAgent });
 
             }
             else if (GameNetwork.IsServer && affectorAgent != null && affectedAgent != affectorAgent && affectorAgent.IsMount && affectorAgent.RiderAgent != null && affectorAgent.IsActive())
@@ -137,7 +137,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 {
                     affected = affectedAgent.RiderAgent.MissionPeer.GetNetworkPeer();
                 }
-                LoggerHelper.LogAnAction(issuer, LogAction.PlayerBumpedWithHorse, affected == null ? new AffectedPlayer[] { } : new AffectedPlayer[] { new AffectedPlayer(affected) }, new object[] { affectorWeapon, affectedAgent });
+                LoggerHelper.LogAnActionNoDiscord(issuer, LogAction.PlayerBumpedWithHorse, affected == null ? new AffectedPlayer[] { } : new AffectedPlayer[] { new AffectedPlayer(affected) }, new object[] { affectorWeapon, affectedAgent });
             }
         }
 
@@ -227,9 +227,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             base.OnPlayerDisconnectedFromServer(networkPeer);
             networkPeer.QuitFromMission = true;
 
-            SaveSystemBehavior saveSystemBehavior = base.Mission.GetMissionBehavior<SaveSystemBehavior>();
+            var saveSystemBehavior = base.Mission.GetMissionBehavior<SaveSystemBehavior>();
+            var  persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
 
-            PersistentEmpireRepresentative persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
             if (persistentEmpireRepresentative != null)
             {
                 persistentEmpireRepresentative.DisconnectedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -243,7 +243,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             {
                 persistentEmpireRepresentative.IsFirstAgentSpawned = false;
                 SaveSystemBehavior.HandleCreateOrSavePlayer(networkPeer);
-                SaveSystemBehavior.HandleCreateOrSavePlayerInventory(networkPeer);
+                SaveSystemBehavior.HandleCreateOrSavePlayerInventory(networkPeer, persistentEmpireRepresentative);
 
             }
             if (networkPeer.ControlledAgent != null && networkPeer.ControlledAgent.MountAgent != null)

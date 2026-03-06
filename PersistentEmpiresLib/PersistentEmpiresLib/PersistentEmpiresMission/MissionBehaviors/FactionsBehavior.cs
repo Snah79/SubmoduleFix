@@ -648,7 +648,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             if (factionIndex != -1)
             {
-                LoggerHelper.LogAnAction(player, LogAction.PlayerFactionChange, null, new object[] { persistentEmpireRepresentative.GetFaction(), this.Factions[factionIndex] });
+                LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerFactionChange, null, new object[] { persistentEmpireRepresentative.GetFaction(), this.Factions[factionIndex] });
                 persistentEmpireRepresentative.SetFaction(this.Factions[factionIndex], factionIndex);
                 player.VirtualPlayer.BannerCode = this.Factions[factionIndex].banner.Serialize();
 

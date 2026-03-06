@@ -8,8 +8,11 @@ using PersistentEmpiresServer.ChatCommands.Commands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.MountAndBlade.Network.Messages;
 
 namespace PersistentEmpiresServer.ServerMissions
 {
@@ -22,10 +25,64 @@ namespace PersistentEmpiresServer.ServerMissions
         internal Dictionary<NetworkCommunicator, bool> Muted;
         public string CommandPrefix;
         internal string DefaultMessageColor = "#FFFDFDFD";
+        private GameNetworkMessage.ClientMessageHandlerDelegate<PlayerMessageAll> _messageAll;
+        private GameNetworkMessage.ClientMessageHandlerDelegate<PlayerMessageTeam> _messageTeam;
 
         public ChatCommandSystem()
         {
             Instance = this;
+        }
+
+        //bool _runMeOnce = true;
+        //public override void OnMissionTick(float dt)
+        //{
+        //    if (_runMeOnce)
+        //    {
+        //        _runMeOnce = false;
+        //        //var logger = Mission.Current.GetMissionBehavior<MultiplayerGameLogger>();
+        //        var chatBoxInstance = TaleWorlds.Core.Game.Current.GetGameHandler<ChatBox>();
+        //        if (chatBoxInstance != null)
+        //        {
+        //            /*
+        //            ChatBox
+
+        //            networkMessageHandlerRegisterer.Register<NetworkMessages.FromClient.PlayerMessageAll>(HandleClientEventPlayerMessageAll);
+        //    networkMessageHandlerRegisterer.Register<NetworkMessages.FromClient.PlayerMessageTeam>(HandleClientEventPlayerMessageTeam);
+        //            */
+        //            var handlerRegisterer = new GameNetwork.NetworkMessageHandlerRegisterer(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
+        //            var method = typeof(ChatBox).GetMethod("HandleClientEventPlayerMessageAll", BindingFlags.NonPublic | BindingFlags.Instance);
+        //            _messageAll = (GameNetworkMessage.ClientMessageHandlerDelegate<PlayerMessageAll>)Delegate.CreateDelegate(typeof(GameNetworkMessage.ClientMessageHandlerDelegate<PlayerMessageAll>), chatBoxInstance, method);
+        //            var method2 = typeof(ChatBox).GetMethod("HandleClientEventPlayerMessageTeam", BindingFlags.NonPublic | BindingFlags.Instance);
+        //            _messageTeam = (GameNetworkMessage.ClientMessageHandlerDelegate<PlayerMessageTeam>)Delegate.CreateDelegate(typeof(GameNetworkMessage.ClientMessageHandlerDelegate<PlayerMessageTeam>), chatBoxInstance, method2);
+
+        //            handlerRegisterer.Register<PlayerMessageAll>(_messageAll);
+        //            handlerRegisterer.Register<PlayerMessageTeam>(_messageTeam);
+
+        //            handlerRegisterer = new GameNetwork.NetworkMessageHandlerRegisterer(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
+        //            handlerRegisterer.Register<PlayerMessageAll>(PatchGlobalChat_OnClientEventPlayerMessageAll);
+        //            handlerRegisterer.Register<PlayerMessageTeam>(PatchGlobalChat_OnClientEventPlayerMessageTeam);
+        //        }
+        //    }
+        //}
+
+        public override void AfterStart()
+        {
+            var chatBoxInstance = TaleWorlds.Core.Game.Current.GetGameHandler<ChatBox>();
+            if (chatBoxInstance != null)
+            {
+                var handlerRegisterer = new GameNetwork.NetworkMessageHandlerRegisterer(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
+                var method = typeof(ChatBox).GetMethod("HandleClientEventPlayerMessageAll", BindingFlags.NonPublic | BindingFlags.Instance);
+                _messageAll = (GameNetworkMessage.ClientMessageHandlerDelegate<PlayerMessageAll>)Delegate.CreateDelegate(typeof(GameNetworkMessage.ClientMessageHandlerDelegate<PlayerMessageAll>), chatBoxInstance, method);
+                var method2 = typeof(ChatBox).GetMethod("HandleClientEventPlayerMessageTeam", BindingFlags.NonPublic | BindingFlags.Instance);
+                _messageTeam = (GameNetworkMessage.ClientMessageHandlerDelegate<PlayerMessageTeam>)Delegate.CreateDelegate(typeof(GameNetworkMessage.ClientMessageHandlerDelegate<PlayerMessageTeam>), chatBoxInstance, method2);
+
+                handlerRegisterer.Register<PlayerMessageAll>(_messageAll);
+                handlerRegisterer.Register<PlayerMessageTeam>(_messageTeam);
+
+                handlerRegisterer = new GameNetwork.NetworkMessageHandlerRegisterer(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
+                handlerRegisterer.Register<PlayerMessageAll>(PatchGlobalChat_OnClientEventPlayerMessageAll);
+                handlerRegisterer.Register<PlayerMessageTeam>(PatchGlobalChat_OnClientEventPlayerMessageTeam);
+            }
         }
 
         public override void OnBehaviorInitialize()
@@ -61,34 +118,36 @@ namespace PersistentEmpiresServer.ServerMissions
         public bool PatchGlobalChat_OnClientEventPlayerMessageAll(NetworkCommunicator networkPeer, PlayerMessageAll message)
         {
             var myTrace = new System.Diagnostics.StackTrace(0, true);
-            try { 
-            var persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
+            try
+            {
+                var persistentEmpireRepresentative = networkPeer.GetComponent<PersistentEmpireRepresentative>();
 
-            if (persistentEmpireRepresentative != null && persistentEmpireRepresentative.IsAdmin)
-            {
-                InformationComponent.Instance.BroadcastMessage("(Admin) " + networkPeer.GetComponent<MissionPeer>().DisplayedName + ": " + message.Message, Color.ConvertStringToColor("#FDD835FF").ToUnsignedInteger());
-                return false;
-            }
-            else if (this.DisableGlobalChat)
-            {
-                return false;
-            }
+                if (persistentEmpireRepresentative != null && persistentEmpireRepresentative.IsAdmin)
+                {
+                    InformationComponent.Instance.BroadcastMessage("(Admin) " + networkPeer.GetComponent<MissionPeer>().DisplayedName + ": " + message.Message, Color.ConvertStringToColor("#FDD835FF").ToUnsignedInteger());
+                    return true;
+                }
+                else if (DisableGlobalChat)
+                {
+                    return true;
+                }
 
-            if (message.Message.StartsWith(CommandPrefix))
-            {
-                string[] argsWithCommand = message.Message.Split(' ');
-                string command = argsWithCommand[0];
-                string[] args = argsWithCommand.Skip(1).ToArray();
-                this.Execute(networkPeer, command, args);
-                return false;
-            }
-            if (persistentEmpireRepresentative != null || persistentEmpireRepresentative.IsAdmin || this.patreonRegistry.IsPlayerPatreon(networkPeer)) return true;
-            
-            if (this.Muted.ContainsKey(networkPeer))
-            {
-                InformationComponent.Instance.SendMessage("You are muted.", Colors.Red.ToUnsignedInteger(), networkPeer);
-                return false;
-            }
+                if (message.Message.StartsWith(CommandPrefix))
+                {
+                    string[] argsWithCommand = message.Message.Split(' ');
+                    string command = argsWithCommand[0];
+                    string[] args = argsWithCommand.Skip(1).ToArray();
+                    this.Execute(networkPeer, command, args);
+
+                    return true;
+                }
+                if (persistentEmpireRepresentative != null || persistentEmpireRepresentative.IsAdmin || this.patreonRegistry.IsPlayerPatreon(networkPeer)) return true;
+
+                if (this.Muted.ContainsKey(networkPeer))
+                {
+                    InformationComponent.Instance.SendMessage("You are muted.", Colors.Red.ToUnsignedInteger(), networkPeer);
+                    return true;
+                }
             }
             catch (Exception ex)
             {
@@ -97,6 +156,12 @@ namespace PersistentEmpiresServer.ServerMissions
                 ex.HelpLink = tmp;
                 SaveSystemBehavior.RglExceptionThrown(myTrace, ex);
             }
+            /*
+            if(_messageAll != null)
+            {
+                _messageAll(networkPeer, message);
+            }
+            */
             return true;
         }
 
@@ -118,9 +183,9 @@ namespace PersistentEmpiresServer.ServerMissions
                         }
                     }
 
-                    LoggerHelper.LogAnAction(networkPeer, LogAction.PlayerMessageTeam, null, new object[] { f, message.Message });
+                    LoggerHelper.LogAnActionNoDiscord(networkPeer, LogAction.PlayerMessageTeam, null, new object[] { f, message.Message });
                     
-                    return false;
+                    return true;
                 }
                 else if (!DisableGlobalChat)
                 {
@@ -132,13 +197,18 @@ namespace PersistentEmpiresServer.ServerMissions
                         }
                     }
                     
-                    LoggerHelper.LogAnAction(networkPeer, LogAction.PlayerMessageTeam, null, new object[] { f, message.Message });
+                    LoggerHelper.LogAnActionNoDiscord(networkPeer, LogAction.PlayerMessageTeam, null, new object[] { f, message.Message });
                     
-                    return false;
+                    return true;
                 }
             }
-
-            return false;
+            /*
+            if (_messageTeam != null)
+            {
+                _messageTeam(networkPeer, message);
+            }
+            */
+            return true;
         }
 
         public bool Execute(NetworkCommunicator networkPeer, string command, string[] args)

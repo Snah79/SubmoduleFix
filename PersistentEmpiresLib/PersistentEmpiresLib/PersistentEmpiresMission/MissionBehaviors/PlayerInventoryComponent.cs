@@ -183,10 +183,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (GameNetwork.IsServer && affectedAgent.IsHuman && affectedAgent.IsPlayerControlled && agentState == AgentState.Killed)
             {
                 affectedAgent.TryToSheathWeaponInHand(Agent.HandIndex.MainHand, Agent.WeaponWieldActionType.Instant);
-                EquipmentIndex shieldIndex = affectedAgent.GetOffhandWieldedItemIndex();
+                
+                var shieldIndex = affectedAgent.GetOffhandWieldedItemIndex();
+                
                 if (shieldIndex != EquipmentIndex.None)
                 {
-                    MissionWeapon weapon = new MissionWeapon(affectedAgent.Equipment[shieldIndex].Item, null, null, affectedAgent.Equipment[shieldIndex].Ammo);
+                    var  weapon = new MissionWeapon(affectedAgent.Equipment[shieldIndex].Item, null, null, affectedAgent.Equipment[shieldIndex].Ammo);
                     affectedAgent.RemoveEquippedWeapon(shieldIndex);
                     affectedAgent.EquipWeaponWithNewEntity(shieldIndex, ref weapon);
                 }
@@ -194,7 +196,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             if (GameNetwork.IsServer && affectedAgent.MissionPeer != null && affectedAgent.IsHuman && affectedAgent.IsPlayerControlled)
             {
-                NetworkCommunicator player = affectedAgent.MissionPeer.GetNetworkPeer();
+                var player = affectedAgent.MissionPeer.GetNetworkPeer();
 
                 if (agentState == AgentState.Killed &&
                         player.QuitFromMission == false &&
@@ -331,7 +333,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     SaveSystemBehavior.HandleCreateOrSavePlayer(player);
                 }
 
-                LoggerHelper.LogAnAction(player, LogAction.PlayerDroppedLoot, null, new object[] { lootInventory });
+                LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerDroppedLoot, null, new object[] { lootInventory });
 
                 GameNetwork.BeginModuleEventAsServer(player);
                 GameNetwork.WriteMessage(new ForceCloseInventory());
@@ -404,14 +406,17 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private bool HandleRequestDropItemFromInventory(NetworkCommunicator player, RequestDropItemFromInventory message)
         {
             if (player.ControlledAgent == null || player.ControlledAgent.IsActive() == false) return false;
-            string[] dropTag = message.DropTag.Split('_');
-            string inventory = string.Join("_", dropTag.Take(dropTag.Length - 1));
-            int draggedIndex = int.Parse(dropTag.Last());
+            
+            var dropTag = message.DropTag.Split('_');
+            var inventory = string.Join("_", dropTag.Take(dropTag.Length - 1));
+            var draggedIndex = int.Parse(dropTag.Last());
             ItemObject droppedItem = null;
-            int droppedCount = 0;
-            int droppedAmmo = 0;
-            PersistentEmpireRepresentative persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
+            var droppedCount = 0;
+            var droppedAmmo = 0;
+            var persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
+
             if (persistentEmpireRepresentative == null) return false;
+
             if (inventory == "Equipment")
             {
                 Equipment currentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
@@ -423,10 +428,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 droppedItem = currentEquipment[draggedIndex].Item;
                 droppedCount = 1;
                 droppedAmmo = ItemHelper.GetMaximumAmmo(currentEquipment[draggedIndex].Item);
+                
                 if (droppedItem.ItemType == ItemObject.ItemTypeEnum.Arrows || droppedItem.ItemType == ItemObject.ItemTypeEnum.Bolts || droppedItem.ItemType == ItemObject.ItemTypeEnum.Bullets)
                 {
                     droppedAmmo = player.ControlledAgent.Equipment[draggedIndex].Amount;
                 }
+                
                 if (draggedIndex < (int)EquipmentIndex.NumAllWeaponSlots)
                 {
                     player.ControlledAgent.RemoveEquippedWeapon((EquipmentIndex)draggedIndex);
@@ -437,57 +444,78 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     currentEquipment[draggedIndex] = new EquipmentElement();
                     AgentHelpers.ResetAgentArmor(player.ControlledAgent, currentEquipment.Clone(false));
                 }
+
+                if (ConfigManager.GetBoolConfig("SaveOnChange", false))
+                {
+                    SaveSystemBehavior.HandleCreateOrSavePlayer(player);
+                }
+
                 GameNetwork.BeginModuleEventAsServer(player);
                 GameNetwork.WriteMessage(new UpdateInventorySlot("Equipment_" + draggedIndex, null, 0));
                 GameNetwork.EndModuleEventAsServer();
             }
             else if (inventory == "PlayerInventory")
             {
-                Inventory sourceInventory = persistentEmpireRepresentative.GetInventory();
-                InventorySlot slot = sourceInventory.Slots[draggedIndex];
+                var sourceInventory = persistentEmpireRepresentative.GetInventory();
+                var slot = sourceInventory.Slots[draggedIndex];
+                
                 if (slot.Item == null || slot.Count == 0)
                 {
                     return false;
                 }
+                
                 droppedItem = slot.Item;
                 droppedCount = slot.Count;
                 droppedAmmo = slot.Ammo;
                 slot.Count = 0;
                 slot.Item = null;
 
+                if (ConfigManager.GetBoolConfig("SaveOnChange", false))
+                {
+                    SaveSystemBehavior.HandleCreateOrSavePlayerInventory(player, persistentEmpireRepresentative);
+                }
+
                 GameNetwork.BeginModuleEventAsServer(player);
                 GameNetwork.WriteMessage(new UpdateInventorySlot("PlayerInventory_" + draggedIndex, slot.Item, slot.Count));
                 GameNetwork.EndModuleEventAsServer();
             }
-            else if (this.CustomInventories.ContainsKey(inventory))
+            else if (CustomInventories.ContainsKey(inventory))
             {
-                Inventory sourceInventory = this.CustomInventories[inventory];
-                InventorySlot slot = sourceInventory.Slots[draggedIndex];
+                var sourceInventory = this.CustomInventories[inventory];
+                var slot = sourceInventory.Slots[draggedIndex];
+                
                 if (slot.Item == null || slot.Count == 0)
                 {
                     return false;
                 }
+                
                 droppedItem = slot.Item;
                 droppedCount = slot.Count;
                 droppedAmmo = slot.Ammo;
                 slot.Count = 0;
                 slot.Item = null;
+                
                 if (!sourceInventory.GeneratedViaSpawner && !sourceInventory.IsConsumable)
                 {
                     SaveSystemBehavior.HandleCreateOrSaveInventory(sourceInventory.InventoryId);
                 }
+                
                 foreach (NetworkCommunicator otherPlayer in sourceInventory.CurrentlyOpenedBy)
                 {
                     if (otherPlayer.IsConnectionActive == false || !otherPlayer.ControlledAgent.IsActive()) continue;
+
                     GameNetwork.BeginModuleEventAsServer(otherPlayer);
                     GameNetwork.WriteMessage(new UpdateInventorySlot(sourceInventory.InventoryId + "_" + draggedIndex, slot.Item, slot.Count));
                     GameNetwork.EndModuleEventAsServer();
                 }
             }
+
             if (droppedItem == null || droppedCount == 0) return false;
             // Find or create a loot entity
+            
             PE_InventoryEntity droppedLoot = null;
-            foreach (PE_InventoryEntity entity in LootableObjects.Values.ToList())
+
+            foreach (var entity in LootableObjects.Values.ToList())
             {
                 if (!entity.GameEntity.TryGetEntity(out var tmpGameEntity))
                 {
@@ -502,6 +530,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     break;
                 }
             }
+            
             if (droppedLoot == null)
             {
                 String lootInventoryId = "Drop" + player.UserName + this.RandomString(6);
@@ -519,9 +548,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
                 droppedLoot.AddPhysicsSynchedPE(new Vec3(0, 0, 1), Vec3.Zero, "wood");
             }
-            this.CustomInventories[droppedLoot.InventoryId].ExpandInventoryWithItem(droppedItem, droppedCount, droppedAmmo);
+
+            CustomInventories[droppedLoot.InventoryId].ExpandInventoryWithItem(droppedItem, droppedCount, droppedAmmo);
             // player.ControlledAgent.Get
-            LoggerHelper.LogAnAction(player, LogAction.PlayerDroppedItem, null, new object[] {
+            LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerDroppedItem, null, new object[] {
                 droppedLoot.InventoryId,
                 inventory,
                 droppedItem,
@@ -585,7 +615,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     }
                 }
             }
-            LoggerHelper.LogAnAction(player, LogAction.PlayerRevealedItemBag, affectedPlayers.ToArray());
+            LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerRevealedItemBag, affectedPlayers.ToArray());
             return true;
         }
 #endif
@@ -889,10 +919,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             if (DroppedTag == DraggedTag) return false;
             if (player.ControlledAgent == null || player.ControlledAgent.IsActive() == false) return false;
 
-            string[] draggedTag = DraggedTag.Split('_');
-            string[] droppedTag = DroppedTag.Split('_');
-            string draggedFromInventory = string.Join("_", draggedTag.Take(draggedTag.Length - 1));
-            string droppedToInventory = string.Join("_", droppedTag.Take(droppedTag.Length - 1));
+            var draggedTag = DraggedTag.Split('_');
+            var droppedTag = DroppedTag.Split('_');
+            var draggedFromInventory = string.Join("_", draggedTag.Take(draggedTag.Length - 1));
+            var droppedToInventory = string.Join("_", droppedTag.Take(droppedTag.Length - 1));
             int draggedIndex = int.Parse(draggedTag.Last());
             int droppedIndex = int.Parse(droppedTag.Last());
             ItemObject draggedItem = null;
@@ -900,10 +930,9 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             int draggedAmmo = 0;
             int draggedCount = 0;
             var persistentEmpireRepresentative = player.GetComponent<PersistentEmpireRepresentative>();
-            
+
             if (persistentEmpireRepresentative == null) return false;
-            
-            if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
+            //if (player.ControlledAgent == null || !player.ControlledAgent.IsActive()) return false;
 
             if (CustomInventories.ContainsKey(draggedFromInventory) && CustomInventories[draggedFromInventory].TiedEntity != null)
             {
@@ -925,12 +954,14 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 var agentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
 
                 draggedItem = agentEquipment[draggedIndex].IsEmpty ? null : agentEquipment[draggedIndex].Item;
+
                 if (draggedItem.ItemType == ItemObject.ItemTypeEnum.Arrows ||
                     draggedItem.ItemType == ItemObject.ItemTypeEnum.Bolts ||
                     draggedItem.ItemType == ItemObject.ItemTypeEnum.Bullets)
                 {
                     draggedAmmo = player.ControlledAgent.Equipment[draggedIndex].Amount;
                 }
+
                 draggedCount = agentEquipment[draggedIndex].IsEmpty ? 0 : 1;
             }
             else if (draggedFromInventory == "PlayerInventory")
@@ -958,8 +989,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 {
                     // Equip Head Armor Re-Render Agent, Send Inventory Update Data.
                     itemAddedFrom.Count -= 1;
+
                     if (itemAddedFrom.Count == 0) itemAddedFrom.Item = null;
-                    Equipment currentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
+                    
+                    var currentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
+                    
                     currentEquipment[EquipmentIndex.Head] = new EquipmentElement(draggedItem);
                     AgentHelpers.ResetAgentArmor(player.ControlledAgent, currentEquipment.Clone(false));
                     GameNetwork.BeginModuleEventAsServer(player);
@@ -1081,20 +1115,21 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     }
                 }
 
-                if (this.CustomInventories.ContainsKey(draggedFromInventory))
+                if (CustomInventories.ContainsKey(draggedFromInventory))
                 {
-                    ItemObject item = draggedItem;
-                    LoggerHelper.LogAnAction(player, LogAction.PlayerEquipedItemFromChest, null, new object[] {
+                    var item = draggedItem;
+
+                    LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerEquipedItemFromChest, null, new object[] {
                         draggedFromInventory,
                         item,
                         1
                     });
                 }
-                else if (droppedToInventory.StartsWith("Equipment") && draggedFromInventory.StartsWith("PlayerInventory"))
+                else if (draggedFromInventory.StartsWith("PlayerInventory"))
                 {
+                    var item = draggedItem;
 
-                    ItemObject item = draggedItem;
-                    LoggerHelper.LogAnAction(player, LogAction.PlayerEquiptedFromInventory, null, new object[] {
+                    LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerEquiptedFromInventory, null, new object[] {
                         draggedFromInventory,
                         item,
                         1
@@ -1103,10 +1138,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
             else if (droppedToInventory == "PlayerInventory" || this.CustomInventories.ContainsKey(droppedToInventory))
             {
-                Inventory playerInventory = persistentEmpireRepresentative.GetInventory();
-                Inventory targetInventory = droppedToInventory == "PlayerInventory" ? playerInventory : this.CustomInventories[droppedToInventory];
+                var playerInventory = persistentEmpireRepresentative.GetInventory();
+                var targetInventory = droppedToInventory == "PlayerInventory" ? playerInventory : this.CustomInventories[droppedToInventory];
                 int returnedAmount = targetInventory.AddItem(droppedIndex, draggedItem, draggedCount, draggedAmmo, itemAddedFrom);
-                Equipment currentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
+                var currentEquipment = AgentHelpers.GetCurrentAgentEquipment(player.ControlledAgent);
+
                 if (draggedFromInventory == "Equipment")
                 {
                     if (draggedIndex < (int)EquipmentIndex.NumAllWeaponSlots && returnedAmount == 0)
@@ -1130,11 +1166,11 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     draggedFromInventory == "Equipment" ? returnedAmount : itemAddedFrom.Count, targetInventory.Slots[droppedIndex].Count));
                 GameNetwork.EndModuleEventAsServer();
 
-                if (this.CustomInventories.ContainsKey(droppedToInventory) && (draggedFromInventory.StartsWith("PlayerInventory") || draggedFromInventory.StartsWith("Equipment")))
+                if (CustomInventories.ContainsKey(droppedToInventory) && (draggedFromInventory.StartsWith("PlayerInventory") || draggedFromInventory.StartsWith("Equipment")))
                 {
                     ItemObject item = draggedItem;
 
-                    LoggerHelper.LogAnAction(player, LogAction.PlayerTransferredItemToChest, null, new object[] {
+                    LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerTransferredItemToChest, null, new object[] {
                         droppedToInventory,
                         item,
                         draggedCount - returnedAmount,
@@ -1145,7 +1181,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 {
 
                     ItemObject item = draggedItem;
-                    LoggerHelper.LogAnAction(player, LogAction.PlayerTransferredItemFromChest, null, new object[] {
+                    LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerTransferredItemFromChest, null, new object[] {
                         draggedFromInventory,
                         item,
                         draggedCount - returnedAmount
@@ -1155,21 +1191,36 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 {
 
                     ItemObject item = draggedItem;
-                    LoggerHelper.LogAnAction(player, LogAction.PlayerTransferredItemToInventory, null, new object[] {
+                    LoggerHelper.LogAnActionNoDiscord(player, LogAction.PlayerTransferredItemToInventory, null, new object[] {
                         draggedFromInventory,
                         item,
                         draggedCount - returnedAmount
                     });
                 }
             }
+
+            if(ConfigManager.GetBoolConfig("SaveOnChange", false))
+            {
+                if(draggedFromInventory.StartsWith("PlayerInventory") || droppedToInventory.StartsWith("PlayerInventory"))
+                {
+                    SaveSystemBehavior.HandleCreateOrSavePlayerInventory(player, persistentEmpireRepresentative);
+                }
+
+                if (draggedFromInventory.StartsWith("Equipment") || droppedToInventory.StartsWith("Equipment"))
+                {
+                    SaveSystemBehavior.HandleCreateOrSavePlayer(player);
+                }
+            }
+            
             // Update other peers
-            if (this.CustomInventories.ContainsKey(droppedToInventory))
+            if (CustomInventories.ContainsKey(droppedToInventory))
             {
                 Inventory targetInventory = this.CustomInventories[droppedToInventory];
                 if (!targetInventory.GeneratedViaSpawner && !targetInventory.IsConsumable && targetInventory.InventoryId != "PlayerInventory")
                 {
                     SaveSystemBehavior.HandleCreateOrSaveInventory(targetInventory.InventoryId);
                 }
+
                 foreach (NetworkCommunicator otherPlayer in targetInventory.CurrentlyOpenedBy)
                 {
                     if (otherPlayer.IsConnectionActive == false || !otherPlayer.ControlledAgent.IsActive()) continue;
@@ -1178,12 +1229,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     GameNetwork.WriteMessage(new UpdateInventorySlot(DroppedTag, targetInventory.Slots[droppedIndex].Item, targetInventory.Slots[droppedIndex].Count));
                     GameNetwork.EndModuleEventAsServer();
                 }
+
                 if (targetInventory.IsConsumable && targetInventory.IsInventoryEmpty())
                 {
                     LootableObjects[targetInventory.InventoryId].Remove(0);
                 }
-
             }
+
             if (CustomInventories.ContainsKey(draggedFromInventory))
             {
                 Inventory targetInventory = CustomInventories[draggedFromInventory];
@@ -1191,18 +1243,22 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 {
                     SaveSystemBehavior.HandleCreateOrSaveInventory(targetInventory.InventoryId);
                 }
+
                 foreach (NetworkCommunicator otherPlayer in targetInventory.CurrentlyOpenedBy)
                 {
                     if (otherPlayer == player || otherPlayer.IsConnectionActive == false || !otherPlayer.ControlledAgent.IsActive()) continue;
+
                     GameNetwork.BeginModuleEventAsServer(otherPlayer);
                     GameNetwork.WriteMessage(new UpdateInventorySlot(DraggedTag, targetInventory.Slots[draggedIndex].Item, targetInventory.Slots[draggedIndex].Count));
                     GameNetwork.EndModuleEventAsServer();
                 }
+
                 if (targetInventory.IsConsumable && targetInventory.IsInventoryEmpty())
                 {
                     LootableObjects[targetInventory.InventoryId].Remove(0);
                 }
             }
+
             return true;
         }
 #endif

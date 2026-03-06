@@ -198,7 +198,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     FactionsBehavior factionsBehavior = Mission.Current.GetMissionBehavior<FactionsBehavior>();
 
                     AgentHelpers.RespawnAgentOnPlaceForFaction(userAgent, joinedTo == -1 ? null : factionsBehavior.Factions[joinedTo], null, heroClass.HeroCharacter);
-                    LoggerHelper.LogAnAction(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerClassChange, null, new object[] { heroClass.HeroCharacter });
+                    LoggerHelper.LogAnActionNoDiscord(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerClassChange, null, new object[] { heroClass.HeroCharacter });
                     factionsBehavior.SetPlayerFaction(player, joinedTo, joinedFrom);
                 }
             }

@@ -9,7 +9,7 @@ namespace PersistentEmpiresSave.Database.Repositories
 {
     public class DBLogRepository
     {
-
+        
         public static void Initialize()
         {
             LoggerHelper.OnLogAction += SaveLogToSql;

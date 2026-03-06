@@ -215,7 +215,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 {
                     PersistentEmpireRepresentative representative = userAgent.MissionPeer.GetNetworkPeer().GetComponent<PersistentEmpireRepresentative>();
                     representative.GoldGain(_amount);
-                    LoggerHelper.LogAnAction(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerPickedUpGold, null, new object[] { _amount });
+                    LoggerHelper.LogAnActionNoDiscord(userAgent.MissionPeer.GetNetworkPeer(), LogAction.PlayerPickedUpGold, null, new object[] { _amount });
                     // Mission.Current.MakeSound(SoundEvent.GetEventIdFromString("event:/ui/notification/coins_positive"), userAgent.Frame.origin, false, true, -1, -1);
                 }
                 Remove(80);

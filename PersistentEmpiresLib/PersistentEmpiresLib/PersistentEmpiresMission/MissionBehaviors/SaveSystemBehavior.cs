@@ -127,6 +127,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         public static void AutoSaveJob(List<NetworkCommunicator> peers)
         {
+#if SERVER
             Debug.Print($"** Persistent Empires Auto Save ** Saving {peers.Count()} players", 0, Debug.DebugColor.Blue);
             // Run it on own thread so we dont block onTick.
             HandleCreateOrSavePlayers(peers);
@@ -134,6 +135,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             {
                 HandleCreateOrSavePlayerInventories(peers);
             }
+#endif
         }
 
         private static void LogQuery(string query)

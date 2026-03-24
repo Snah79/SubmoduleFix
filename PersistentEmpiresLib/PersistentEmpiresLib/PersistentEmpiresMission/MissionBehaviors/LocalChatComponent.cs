@@ -138,7 +138,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             networkMessageHandlerRegisterer.Register<CustomBubbleMessage>(this.HandleCustomBubbleMessageFromServer);
         }
 
-        private void HandleCustomBubbleMessageFromServer(CustomBubbleMessage message)
+        public void HandleCustomBubbleMessageFromServer(CustomBubbleMessage message)
         {
             InformationManager.DisplayMessage(new InformationMessage(message.Message, Color.ConvertStringToColor("#ab47bcFF")));
             if (this.OnCustomBubbleMessage != null)

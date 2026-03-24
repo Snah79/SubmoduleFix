@@ -192,7 +192,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 var missionWeapon = weapon;
                 var currentUsageItem = missionWeapon.CurrentUsageItem;
 
-                if (weapon.Item == null || RequiredItemId.Split(';').Any(x=> x == missionWeapon.Item.StringId)  || destructed)
+                if (weapon.Item == null || !RequiredItemId.Split(';').Any(x=> x == missionWeapon.Item.StringId)  || destructed)
                 {
                     reportDamage = false;
                     finalDamage = 0;

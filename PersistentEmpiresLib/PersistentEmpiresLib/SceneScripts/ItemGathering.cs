@@ -3,6 +3,7 @@ using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System;
+using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
@@ -214,18 +215,21 @@ namespace PersistentEmpiresLib.SceneScripts
             {
                 if (wieldedItemIndex == EquipmentIndex.None)
                 {
-                    ItemObject need = MBObjectManager.Instance.GetObject<ItemObject>(this.NeededItem);
-                    InformationComponent.Instance.SendMessage("You need a " + need.Name.ToString() + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                    var neededItems = NeededItem.Split(';');
+                    var tmps = neededItems.Select(x=> MBObjectManager.Instance.GetObject<ItemObject>(x));
+                    InformationComponent.Instance.SendMessage("You need a " + string.Join("or ", tmps.Select(x=> x.Name.ToString())) + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
                     userAgent.StopUsingGameObjectMT(false);
                     return;
                 }
                 else
                 {
-                    MissionWeapon wieldedItem = userAgent.Equipment[wieldedItemIndex];
-                    if (wieldedItem.Item.StringId != this.NeededItem)
+                    var wieldedItem = userAgent.Equipment[wieldedItemIndex];
+                    var neededItems = NeededItem.Split(';');
+
+                    if (!neededItems.Any(x=> x ==  wieldedItem.Item.StringId))
                     {
-                        ItemObject need = MBObjectManager.Instance.GetObject<ItemObject>(this.NeededItem);
-                        InformationComponent.Instance.SendMessage("You need a " + need.Name.ToString() + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                        var tmps = neededItems.Select(x => MBObjectManager.Instance.GetObject<ItemObject>(x));
+                        InformationComponent.Instance.SendMessage("You need a " + string.Join("or ", tmps.Select(x => x.Name.ToString())) + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
                         userAgent.StopUsingGameObjectMT(false);
                         return;
                     }

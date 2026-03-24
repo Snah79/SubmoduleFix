@@ -4,6 +4,7 @@ using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -191,7 +192,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 var missionWeapon = weapon;
                 var currentUsageItem = missionWeapon.CurrentUsageItem;
 
-                if (weapon.Item == null || weapon.Item.StringId != this.RequiredItemId || this.destructed)
+                if (weapon.Item == null || RequiredItemId.Split(';').Any(x=> x == missionWeapon.Item.StringId)  || destructed)
                 {
                     reportDamage = false;
                     finalDamage = 0;
@@ -199,7 +200,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     return false;
                 }
 
-                var requiredSkillObject = MBObjectManager.Instance.GetObject<SkillObject>(this.RequiredSkillId);
+                var requiredSkillObject = MBObjectManager.Instance.GetObject<SkillObject>(RequiredSkillId);
 
                 if (attackerAgent == null)
                 {
@@ -210,7 +211,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     return false;
                 }
 
-                if (attackerAgent.Character.GetSkillValue(requiredSkillObject) < this.RequiredSkillLevel)
+                if (attackerAgent.Character.GetSkillValue(requiredSkillObject) < RequiredSkillLevel)
                 {
                     reportDamage = false;
                     finalDamage = 0;

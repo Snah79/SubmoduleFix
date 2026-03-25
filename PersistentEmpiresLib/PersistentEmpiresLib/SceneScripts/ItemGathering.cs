@@ -217,7 +217,7 @@ namespace PersistentEmpiresLib.SceneScripts
                 {
                     var neededItems = NeededItem.Split(';');
                     var tmps = neededItems.Select(x=> MBObjectManager.Instance.GetObject<ItemObject>(x));
-                    InformationComponent.Instance.SendMessage("You need a " + string.Join("or ", tmps.Select(x=> x.Name.ToString())) + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                    InformationComponent.Instance.SendMessage("You need a " + string.Join(" or ", tmps.Select(x=> x.Name.ToString())) + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
                     userAgent.StopUsingGameObjectMT(false);
                     return;
                 }
@@ -229,7 +229,7 @@ namespace PersistentEmpiresLib.SceneScripts
                     if (!neededItems.Any(x=> x ==  wieldedItem.Item.StringId))
                     {
                         var tmps = neededItems.Select(x => MBObjectManager.Instance.GetObject<ItemObject>(x));
-                        InformationComponent.Instance.SendMessage("You need a " + string.Join("or ", tmps.Select(x => x.Name.ToString())) + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
+                        InformationComponent.Instance.SendMessage("You need a " + string.Join(" or ", tmps.Select(x => x.Name.ToString())) + " to do this.", new Color(1f, 0, 0).ToUnsignedInteger(), userAgent.MissionPeer.GetNetworkPeer());
                         userAgent.StopUsingGameObjectMT(false);
                         return;
                     }

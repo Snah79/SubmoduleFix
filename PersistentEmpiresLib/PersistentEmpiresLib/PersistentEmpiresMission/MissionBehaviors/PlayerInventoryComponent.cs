@@ -305,7 +305,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
                 playerInventory.EmptyInventory();
                 MatrixFrame frame = affectedAgent.Frame;
-                PE_InventoryEntity droppedLoot = (PE_InventoryEntity)base.Mission.CreateMissionObjectFromPrefab("pe_loot", frame, Default);
+                PE_InventoryEntity droppedLoot = (PE_InventoryEntity)base.Mission.CreateMissionObjectFromPrefab("pe_loot", frame, false, 0f, Default);
                 lootInventory.TiedEntity = droppedLoot;
                 droppedLoot.InventoryId = lootInventory.InventoryId;
                 droppedLoot.InventoryName = "Loot " + player.UserName + "'s Body";

@@ -179,11 +179,13 @@ namespace PersistentEmpiresLib.SceneScripts
             return new TextObject("Horse Market");
         }
 
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage, out float fireDamage, out float modifiedFireDamage)
         {
             reportDamage = false;
             finalDamage = 0;
-            
+            fireDamage = 0;
+            modifiedFireDamage = 0;
+
             if (attackerAgent == null || !attackerAgent.IsActive()) return false;
 
             var player = attackerAgent.MissionPeer.GetNetworkPeer();

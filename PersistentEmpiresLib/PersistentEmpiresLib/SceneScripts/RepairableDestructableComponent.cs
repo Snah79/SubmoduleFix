@@ -218,14 +218,17 @@ namespace PersistentEmpiresLib.SceneScripts
         public void TriggerOnHit(Agent attackerAgent, int inflictedDamage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, ScriptComponentBehavior attackerScriptComponentBehavior)
         {
             bool flag;
-            float flag2;
+            float flag2, flag3, flag4;
             
-            OnHit(attackerAgent, inflictedDamage, impactPosition, impactDirection, weapon, -1, attackerScriptComponentBehavior, out flag, out flag2);
+            OnHit(attackerAgent, inflictedDamage, impactPosition, impactDirection, weapon, -1, attackerScriptComponentBehavior, out flag, out flag2, out flag3, out flag4);
         }
 
-        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage)
+        protected override bool OnHit(Agent attackerAgent, int damage, Vec3 impactPosition, Vec3 impactDirection, in MissionWeapon weapon, int affectorWeaponSlotOrMissileIndex, ScriptComponentBehavior attackerScriptComponentBehavior, out bool reportDamage, out float finalDamage, out float fireDamage, out float modifiedFireDamage)
         {
             reportDamage = true;
+            finalDamage = 0;
+            fireDamage = 0;
+            modifiedFireDamage = 0;
             MissionWeapon missionWeapon = weapon;
             WeaponComponentData currentUsageItem = missionWeapon.CurrentUsageItem;
             if (

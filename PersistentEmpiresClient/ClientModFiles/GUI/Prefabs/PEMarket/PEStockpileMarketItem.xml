@@ -12,7 +12,7 @@
           <Children>
             <ImageIdentifierWidget HorizontalAlignment="Left" VerticalAlignment="Center" Id="ImageIdentifier" DataSource="{ImageIdentifier}" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="165" SuggestedHeight="70" ImageId="@Id" AdditionalArgs="@AdditionalArgs" ImageTypeCode="@ImageTypeCode" MarginBottom="10" TextureProviderName="@TextureProviderName"></ImageIdentifierWidget>
             <TextWidget Text="@ItemName" VerticalAlignment="Center" WidthSizePolicy="Fixed" SuggestedWidth="205"></TextWidget>
-            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" HorizontalAlignment="Center" StackLayout.LayoutMethod="VerticalBottomToTop">
+            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" HorizontalAlignment="Center" StackLayout.LayoutMethod="VerticalTopToBottom">
               <Children>
                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" HorizontalAlignment="Center" StackLayout.LayoutMethod="HorizontalLeftToRight">
                   <Children>

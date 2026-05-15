@@ -11,14 +11,14 @@
     <MultiplayerMissionMarkerListPanel WidthSizePolicy="CoverChildren"
       HeightSizePolicy="CoverChildren" Distance="@Distance"
       FarAlphaTarget="0.5" FarDistanceCutoff="30" IsMarkerEnabled="true"
-      StackLayout.LayoutMethod="VerticalBottomToTop" MarkerType="@MarkerType"
+      StackLayout.LayoutMethod="VerticalTopToBottom" MarkerType="@MarkerType"
       PeerWidget="PeerWidget" Position="@ScreenPosition" IsSpawnFlag="false">
       <Children>
         <Widget Id="PeerWidget" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
           HorizontalAlignment="Center" VerticalAlignment="Center">
           <Children>
             <ListPanel DataSource="{ChatMessages}" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-              StackLayout.LayoutMethod="VerticalBottomToTop">
+              StackLayout.LayoutMethod="VerticalTopToBottom">
               <ItemTemplate>
                 <TextWidget Id="NameTextWidget" WidthSizePolicy="Fixed" SuggestedWidth="400"
                   HeightSizePolicy="CoverChildren" HorizontalAlignment="Center"

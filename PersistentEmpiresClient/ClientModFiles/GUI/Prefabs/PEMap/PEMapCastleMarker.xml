@@ -6,7 +6,7 @@
     <MultiplayerMissionMarkerListPanel WidthSizePolicy="CoverChildren"
       HeightSizePolicy="CoverChildren" Distance="@Distance"
       FarAlphaTarget="1" FarDistanceCutoff="100" IsMarkerEnabled="true"
-      StackLayout.LayoutMethod="VerticalBottomToTop" MarkerType="@MarkerType"
+      StackLayout.LayoutMethod="VerticalTopToBottom" MarkerType="@MarkerType"
       PeerWidget="PeerWidget" Position="@ScreenPosition" IsSpawnFlag="false">
       <Children>
         <Widget Id="PeerWidget" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"

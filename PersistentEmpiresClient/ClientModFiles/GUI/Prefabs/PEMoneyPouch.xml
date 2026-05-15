@@ -9,7 +9,7 @@
       <Children>
         <Standard.Window Parameter.Title="Money Pouch">
           <Children>
-            <ListPanel StackLayout.LayoutMethod="VerticalBottomToTop" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
+            <ListPanel StackLayout.LayoutMethod="VerticalTopToBottom" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
               <Children>
                 <ListPanel MarginTop="65" StackLayout.LayoutMethod="HorizontalLeftToRight" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
                   <Children>
@@ -21,7 +21,7 @@
                     </Widget>
                   </Children>
                 </ListPanel>
-                <ListPanel StackLayout.LayoutMethod="VerticalBottomToTop" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="70">
+                <ListPanel StackLayout.LayoutMethod="VerticalTopToBottom" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="70">
                   <Children>
                     <ButtonWidget DoNotPassEventsToChildren="true" UpdateChildrenStates="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="100"  HorizontalAlignment="Center" Brush="WideButton.Flat" Command.Click="ExecuteDropMoney" IsEnabled="true">
                       <Children>

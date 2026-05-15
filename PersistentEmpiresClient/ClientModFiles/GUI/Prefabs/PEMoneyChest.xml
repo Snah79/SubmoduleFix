@@ -9,7 +9,7 @@
       <Children>
         <Standard.Window Parameter.Title="Money Chest">
           <Children>
-            <ListPanel StackLayout.LayoutMethod="VerticalBottomToTop" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
+            <ListPanel StackLayout.LayoutMethod="VerticalTopToBottom" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
               <Children>
                 <ListPanel MarginTop="65" StackLayout.LayoutMethod="HorizontalLeftToRight" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
                   <Children>
@@ -29,7 +29,7 @@
 
                   </Children>
                 </ListPanel>
-                <ListPanel StackLayout.LayoutMethod="VerticalBottomToTop" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="10">
+                <ListPanel StackLayout.LayoutMethod="VerticalTopToBottom" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="10">
                   <Children>
                     <ButtonWidget DoNotPassEventsToChildren="true" UpdateChildrenStates="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="100"  HorizontalAlignment="Center" Brush="WideButton.Flat" Command.Click="ExecuteDeposit" IsEnabled="true">
                       <Children>

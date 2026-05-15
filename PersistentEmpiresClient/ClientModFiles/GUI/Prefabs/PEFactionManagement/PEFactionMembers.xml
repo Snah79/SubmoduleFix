@@ -23,7 +23,7 @@
 						<ListPanel HeightSizePolicy="StretchToParent" WidthSizePolicy="StretchToParent" MarginTop="10" MarginBottom="10" MarginRight="10" MarginLeft="0">
 							<Children>
 
-								<ListPanel HeightSizePolicy="StretchToParent" WidthSizePolicy="StretchToParent" StackLayout.LayoutMethod="VerticalBottomToTop">
+								<ListPanel HeightSizePolicy="StretchToParent" WidthSizePolicy="StretchToParent" StackLayout.LayoutMethod="VerticalTopToBottom">
 									<Children>
 										<ListPanel MarginBottom="5" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
 											<Children>
@@ -44,7 +44,7 @@
 														<!--Leaderboard Entry Tuple-->
 
 
-														<ListPanel DataSource="{FilteredMembers}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalBottomToTop" Id="EntriesList">
+														<ListPanel DataSource="{FilteredMembers}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom" Id="EntriesList">
 															<ItemTemplate>
 																<ButtonWidget Command.Click="OnSelection" DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="60" MarginLeft="15" HorizontalAlignment="Left" VerticalAlignment="Center" Brush="PE.FactionMember.Button" IsSelected="@IsSelected">
 																	<Children>

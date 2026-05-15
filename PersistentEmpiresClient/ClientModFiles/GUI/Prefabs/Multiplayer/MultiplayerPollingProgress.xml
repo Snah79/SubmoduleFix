@@ -22,7 +22,7 @@
 
 								<Widget DataSource="{TargetPlayer}" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginTop="15"  MarginLeft="15" HorizontalAlignment="Center">
 									<Children>
-										<ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalBottomToTop">
+										<ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
 											<Children>
 												<ImageIdentifierWidget DataSource="{Avatar}" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="60" SuggestedHeight="60" HorizontalAlignment="Center" VerticalAlignment="Center" AdditionalArgs="@AdditionalArgs" ImageId="@Id" ImageTypeCode="@ImageTypeCode" MaterialAlphaFactor="0.7" TextureProviderName="@TextureProviderName"/>
 												<TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" Brush="MPHUD.Poll.InitiatorNameText" MarginTop="5" Text="@Name" />
@@ -40,7 +40,7 @@
 											<Children>
 												<ListPanel DataSource="{Keys}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center"  MarginLeft="15" StackLayout.LayoutMethod="HorizontalCentered">
 													<ItemTemplate>
-														<ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginLeft="55" MarginRight="55" StackLayout.LayoutMethod="VerticalBottomToTop">
+														<ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginLeft="55" MarginRight="55" StackLayout.LayoutMethod="VerticalTopToBottom">
 															<Children>
 																<InputKeyVisualWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="70" SuggestedHeight="70" HorizontalAlignment="Center" VerticalAlignment="Center" KeyID="@KeyID"/>
 																<TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="MPHUD.Poll.DescriptionText" Brush.FontSize="22" PositionYOffset="-12" Text="@KeyName"/>
@@ -54,7 +54,7 @@
 										<ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" MarginTop="15" MarginLeft="10" StackLayout.LayoutMethod="HorizontalCentered">
 											<Children>
 
-												<ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginLeft="20" MarginRight="20" MarginTop="10" StackLayout.LayoutMethod="VerticalBottomToTop">
+												<ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginLeft="20" MarginRight="20" MarginTop="10" StackLayout.LayoutMethod="VerticalTopToBottom">
 													<Children>
 														<Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="18" SuggestedHeight="20" HorizontalAlignment="Center" VerticalAlignment="Center" Sprite="MPHud\thumb" Color="#71C013FF"/>
 														<TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="MPHUD.Poll.Accepted.Text" IntText="@VotesAccepted" MarginTop="15" />
@@ -62,7 +62,7 @@
 												</ListPanel>
 
 
-												<ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginLeft="20" MarginRight="20" MarginTop="10" StackLayout.LayoutMethod="VerticalBottomToTop">
+												<ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginLeft="20" MarginRight="20" MarginTop="10" StackLayout.LayoutMethod="VerticalTopToBottom">
 													<Children>
 														<Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="18" SuggestedHeight="20" HorizontalAlignment="Center" VerticalAlignment="Center" Sprite="MPHud\thumb" VerticalFlip="true" Color="#ED1C24FF"/>
 														<TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" VerticalAlignment="Center" MarginTop="15" Brush="MPHUD.Poll.Rejected.Text" IntText="@VotesRejected" />

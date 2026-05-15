@@ -9,7 +9,7 @@
       <Children>
         <Standard.Window Parameter.Title="Admin Panel">
           <Children>
-            <ListPanel DataSource="{MenuItems}" Id="ButtonsContainer" MarginLeft="30" MarginRight="30" StackLayout.LayoutMethod="VerticalBottomToTop" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"  MinIndex="0" MaxIndex="100">
+            <ListPanel DataSource="{MenuItems}" Id="ButtonsContainer" MarginLeft="30" MarginRight="30" StackLayout.LayoutMethod="VerticalTopToBottom" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"  MinIndex="0" MaxIndex="100">
               <ItemTemplate>
 
                 <!-- buttons -->

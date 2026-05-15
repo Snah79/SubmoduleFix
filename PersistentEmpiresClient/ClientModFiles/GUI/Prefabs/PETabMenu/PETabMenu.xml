@@ -19,11 +19,11 @@
   <Window>
     <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" IsVisible="@IsActive">
       <Children>
-        <ListPanel StackLayout.LayoutMethod="VerticalBottomToTop" VerticalAlignment="Center" HorizontalAlignment="Center" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedHeight="900" SuggestedWidth="1450" Sprite="flat_panel_9" AlphaFactor="0.6">
+        <ListPanel StackLayout.LayoutMethod="VerticalTopToBottom" VerticalAlignment="Center" HorizontalAlignment="Center" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedHeight="900" SuggestedWidth="1450" Sprite="flat_panel_9" AlphaFactor="0.6">
           <Children>
             <Widget MarginLeft="80" MarginRight="80" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
               <Children>
-                <Listpanel MarginTop="10" MarginBottom="10" WidthSizePolicy="StretchToParent" StackLayout.LayoutMethod="VerticalBottomToTop" HeightSizePolicy="CoverChildren">
+                <Listpanel MarginTop="10" MarginBottom="10" WidthSizePolicy="StretchToParent" StackLayout.LayoutMethod="VerticalTopToBottom" HeightSizePolicy="CoverChildren">
                   <Children>
                     <ScrollablePanel ClipRect="ClipContent" InnerPanel="ClipContent\FactionPanel" HorizontalScrollbar="..\HorizontalScrollbar" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
                       <Children>
@@ -55,7 +55,7 @@
             </Widget>
             <ListPanel StackLayout.LayoutMethod="HorizontalLeftToRight" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="100" MarginLeft="100" MarginRight="50">
               <Children>
-                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" StackLayout.LayoutMethod="VerticalBottomToTop" MarginTop="20">
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" StackLayout.LayoutMethod="VerticalTopToBottom" MarginTop="20">
                   <Children>
                     <TextWidget DataSource="{SelectedFaction}" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Left" VerticalAlignment="Center" Text="@FactionName" Brush="Stage.Title.Text" />
                     <Widget DataSource="{SelectedFaction}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
@@ -81,7 +81,7 @@
 
             </ListPanel>
             <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="5" HorizontalAlignment="Center" VerticalAlignment="Top" MarginLeft="60" MarginTop="20" MarginRight="60" Sprite="GradientDivider_9" Color="#A18661FF" />
-            <ListPanel StackLayout.LayoutMethod="VerticalBottomToTop" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginTop="5">
+            <ListPanel StackLayout.LayoutMethod="VerticalTopToBottom" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginTop="5">
               <Children>
                 <ListPanel StackLayout.LayoutMethod="HorizontalLeftToRight" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginTop="5">
                   <Children>
@@ -89,7 +89,7 @@
                       <Children>
                         <Widget Id="ClipRect" DataSource="{SelectedFaction}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" ClipContents="true">
                           <Children>
-                            <ListPanel DataSource="{Members}" Id="PlayerList" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalBottomToTop" VerticalAlignment="Top" HorizontalAlignment="Left">
+                            <ListPanel DataSource="{Members}" Id="PlayerList" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom" VerticalAlignment="Top" HorizontalAlignment="Left">
                               <ItemTemplate>
                                 <Widget Brush="PE.FactionLord" HeightSizePolicy="CoverChildren" WidthSizePolicy="StretchToParent">
                                   <Children>
@@ -143,7 +143,7 @@
                 </ListPanel>
                 <Widget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" VerticalAlignment="Bottom" HorizontalAlignment="Center" MarginBottom="7" IsHidden="@IsMouseEnabled">
                   <Children>
-                    <ListPanel DataSource="{ShowMouseKey}" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalBottomToTop">
+                    <ListPanel DataSource="{ShowMouseKey}" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
                       <Children>
                         <InputKeyVisualWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="50" SuggestedHeight="50" VerticalAlignment="Center" HorizontalAlignment="Center" Color="#F4E1C4FF" KeyID="@KeyID"/>
                         <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="MPScoreboard.Info.Text" Text="@KeyName" />

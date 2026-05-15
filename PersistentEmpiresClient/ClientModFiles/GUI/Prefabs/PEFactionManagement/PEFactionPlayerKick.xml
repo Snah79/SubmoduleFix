@@ -24,7 +24,7 @@
                         <ListPanel HeightSizePolicy="StretchToParent" WidthSizePolicy="StretchToParent" MarginTop="10" MarginBottom="10" MarginRight="10" MarginLeft="0">
                             <Children>
 
-                                <ListPanel HeightSizePolicy="StretchToParent" WidthSizePolicy="StretchToParent" StackLayout.LayoutMethod="VerticalBottomToTop">
+                                <ListPanel HeightSizePolicy="StretchToParent" WidthSizePolicy="StretchToParent" StackLayout.LayoutMethod="VerticalTopToBottom">
                                     <Children>
                                         <ListPanel Id="SortButtons" DataSource="{SortController}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
                                             <Children>
@@ -50,7 +50,7 @@
                                                         <!--Leaderboard Entry Tuple-->
 
 
-                                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalBottomToTop" Id="EntriesList">
+                                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom" Id="EntriesList">
                                                             <Children>
                                                               <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="60" MarginLeft="15" HorizontalAlignment="Left" VerticalAlignment="Center" Brush="GameMenu.Button">
                                                                 <Children>

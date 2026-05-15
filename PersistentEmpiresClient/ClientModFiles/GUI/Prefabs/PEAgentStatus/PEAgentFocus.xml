@@ -1,7 +1,7 @@
 <Window>
   <Widget DataSource="{InteractionInterface}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" IsVisible="@IsActive">
     <Children>
-      <ListPanel DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" VerticalAlignment="Bottom" PositionYOffset="-40" StackLayout.LayoutMethod="VerticalBottomToTop">
+      <ListPanel DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" VerticalAlignment="Bottom" PositionYOffset="-40" StackLayout.LayoutMethod="VerticalTopToBottom">
         <Children>
           <ListPanel DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center">
             <Children>

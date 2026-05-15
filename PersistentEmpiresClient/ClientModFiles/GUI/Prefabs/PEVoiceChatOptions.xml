@@ -9,7 +9,7 @@
       <Children>
         <Standard.Window Parameter.Title="Voice Chat Options">
           <Children>
-            <ListPanel MarginLeft="30" MarginRight="30" MarginTop="50" StackLayout.LayoutMethod="VerticalBottomToTop" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"  MinIndex="0" MaxIndex="100">
+            <ListPanel MarginLeft="30" MarginRight="30" MarginTop="50" StackLayout.LayoutMethod="VerticalTopToBottom" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"  MinIndex="0" MaxIndex="100">
               <Children>
                 <TextWidget  WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" Brush="MPLobby.PlayButton.Text" Brush.FontSize="25" Brush.TextVerticalAlignment="Center" Text="Input Device" IsEnabled="true" />
 

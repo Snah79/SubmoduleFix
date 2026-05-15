@@ -22,7 +22,7 @@
         <Standard.Window Parameter.Title="Item Management">
           <Children>
             <ListPanel HeightSizePolicy="StretchToParent" WidthSizePolicy="StretchToParent"
-              MarginTop="70" MarginBottom="10" MarginRight="10" MarginLeft="0" StackLayout.LayoutMethod="VerticalBottomToTop">
+              MarginTop="70" MarginBottom="10" MarginRight="10" MarginLeft="0" StackLayout.LayoutMethod="VerticalTopToBottom">
               <Children>
                 <ListPanel Id="List" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" MarginLeft="20" MarginRight="20" MarginBottom="80" StackLayout.LayoutMethod="HorizontalLeftToRight">
                   <Children>

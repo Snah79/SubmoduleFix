@@ -8,7 +8,7 @@
     <Widget HorizontalAlignment="Center" HeightSizePolicy="Fixed" VerticalAlignment="Bottom" WidthSizePolicy="Fixed" SuggestedHeight="200" SuggestedWidth="750" MarginBottom="5" MarginTop="50" IsVisible="@IsActive">
       <Children>
 
-        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalBottomToTop">
+        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
           <Children>
             <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" Text="@ProgressTitle"></TextWidget>
             <FillBarWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedHeight="20" SuggestedWidth="230" HorizontalAlignment="Center" VerticalAlignment="Top" MarginTop="3" FillWidget="FillWidget" InitialAmount="@PastDuration" MaxAmount="@CountDownTime">

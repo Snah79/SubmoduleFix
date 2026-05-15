@@ -9,7 +9,7 @@
       <Children>
         <Standard.Window Parameter.Title="Diplomacy">
           <Children>
-            <ListPanel StackLayout.LayoutMethod="VerticalBottomToTop"  WidthSizePolicy = "CoverChildren" HeightSizePolicy = "CoverChildren">
+            <ListPanel StackLayout.LayoutMethod="VerticalTopToBottom"  WidthSizePolicy = "CoverChildren" HeightSizePolicy = "CoverChildren">
               <Children>
                 <!-- Clickable Faction Banners -->
                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" StackLayout.LayoutMethod="HorizontalLeftToRight">
@@ -22,7 +22,7 @@
                               <ItemTemplate>
                                 <ButtonWidget Brush="PE.FactionDiplomacy.FactionButton" Command.Click="ExecuteSelectFaction" IsSelected="@IsSelected" DoNotPassEventsToChildren="true" WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren" SuggestedWidth="220" SuggestedHeight="140" UpdateChildrenStates="true" GamepadNavigationIndex="0" MarginRight="50" HorizontalAlignment="Center">
                                   <Children>
-                                    <ListPanel StackLayout.LayoutMethod="VerticalBottomToTop" MarginTop="30"  WidthSizePolicy = "CoverChildren" HeightSizePolicy = "CoverChildren">
+                                    <ListPanel StackLayout.LayoutMethod="VerticalTopToBottom" MarginTop="30"  WidthSizePolicy = "CoverChildren" HeightSizePolicy = "CoverChildren">
                                       <Children>
                                         <MaskedTextureWidget DataSource="{BannerImage}" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="145" SuggestedHeight="166" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="PE.BannerButtonBrush" AdditionalArgs="@AdditionalArgs" ImageId="@Id" ImageTypeCode="@ImageTypeCode" OverlayTextureScale="1.8" TextureProviderName="@TextureProviderName"/>
                                         <TextWidget WidthSizePolicy="StretchToParent" Text="@FactionName" MarginTop="20"></TextWidget>

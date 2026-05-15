@@ -15,7 +15,7 @@
 			<Children>
 				<Standard.Window Parameter.Title="Player Management">
 					<Children>
-						<ListPanel StackLayout.LayoutMethod="VerticalTopToBottom" HeightSizePolicy="StretchToParent" WidthSizePolicy="StretchToParent" MarginTop="10" MarginBottom="40" MarginRight="10" MarginLeft="0">
+						<ListPanel HeightSizePolicy="StretchToParent" WidthSizePolicy="StretchToParent" MarginTop="10" MarginBottom="40" MarginRight="10" MarginLeft="0">
 							<Children>
 								<ListPanel HeightSizePolicy="StretchToParent" WidthSizePolicy="StretchToParent" StackLayout.LayoutMethod="VerticalTopToBottom">
 									<Children>

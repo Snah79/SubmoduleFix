@@ -141,13 +141,16 @@ namespace PersistentEmpiresServer.ServerMissions
 
                     return true;
                 }
-                if (persistentEmpireRepresentative != null || persistentEmpireRepresentative.IsAdmin || this.patreonRegistry.IsPlayerPatreon(networkPeer)) return true;
+                //if (persistentEmpireRepresentative != null || persistentEmpireRepresentative.IsAdmin || this.patreonRegistry.IsPlayerPatreon(networkPeer)) return true;
 
                 if (this.Muted.ContainsKey(networkPeer))
                 {
                     InformationComponent.Instance.SendMessage("You are muted.", Colors.Red.ToUnsignedInteger(), networkPeer);
                     return true;
                 }
+
+                // Let TW logic handle send message to all players
+                return false;
             }
             catch (Exception ex)
             {

@@ -25,6 +25,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public Dictionary<Agent, bool> IgnoreAgentDropLoot = new Dictionary<Agent, bool>();
 
         public int DropPercentage { get; private set; }
+        public int MoneyVanishTimeInSeconds { get; private set; }
 
         public override void OnBehaviorInitialize()
         {
@@ -32,7 +33,8 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             this.AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
 #if SERVER
 
-            this.DropPercentage = ConfigManager.GetIntConfig("DeathMoneyDropPercentage", 25);
+            DropPercentage = ConfigManager.GetIntConfig("DeathMoneyDropPercentage", 25);
+            MoneyVanishTimeInSeconds = ConfigManager.GetIntConfig("MoneyVanishTimeInSeconds", 600);
 #endif
         }
         public override void OnRemoveBehavior()
@@ -114,7 +116,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             foreach (PE_MoneyBag moneyBag in this.MoneyBagCreatedAt.Keys.ToList())
             {
-                if (MoneyBagCreatedAt[moneyBag] + 600 < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                if (MoneyBagCreatedAt[moneyBag] + MoneyVanishTimeInSeconds < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                 {
                     MoneyBagCreatedAt.Remove(moneyBag);
                     moneyBag.Remove(80);
@@ -123,7 +125,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         }
 #endif
 
-        private void DropMoney(MatrixFrame frame, int amount)
+        public void DropMoney(MatrixFrame frame, int amount)
         {
             PE_MoneyBag moneyBag = (PE_MoneyBag)base.Mission.CreateMissionObjectFromPrefab("pe_moneybag", frame, false, 0f, Default);
             this.MoneyBagCreatedAt[moneyBag] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

@@ -125,11 +125,12 @@ namespace PersistentEmpiresServer.ServerMissions
                 if (persistentEmpireRepresentative != null && persistentEmpireRepresentative.IsAdmin)
                 {
                     InformationComponent.Instance.BroadcastMessage("(Admin) " + networkPeer.GetComponent<MissionPeer>().DisplayedName + ": " + message.Message, Color.ConvertStringToColor("#FDD835FF").ToUnsignedInteger());
-                    return true;
+                    
+                    return false;
                 }
                 else if (DisableGlobalChat)
                 {
-                    return true;
+                    return false;
                 }
 
                 if (message.Message.StartsWith(CommandPrefix))
@@ -139,18 +140,19 @@ namespace PersistentEmpiresServer.ServerMissions
                     string[] args = argsWithCommand.Skip(1).ToArray();
                     this.Execute(networkPeer, command, args);
 
-                    return true;
+                    return false;
                 }
                 //if (persistentEmpireRepresentative != null || persistentEmpireRepresentative.IsAdmin || this.patreonRegistry.IsPlayerPatreon(networkPeer)) return true;
 
                 if (this.Muted.ContainsKey(networkPeer))
                 {
                     InformationComponent.Instance.SendMessage("You are muted.", Colors.Red.ToUnsignedInteger(), networkPeer);
-                    return true;
+                    
+                    return false;
                 }
 
                 // Let TW logic handle send message to all players
-                return false;
+                return true;
             }
             catch (Exception ex)
             {
@@ -188,7 +190,7 @@ namespace PersistentEmpiresServer.ServerMissions
 
                     LoggerHelper.LogAnActionNoDiscord(networkPeer, LogAction.PlayerMessageTeam, null, new object[] { f, message.Message });
                     
-                    return true;
+                    return false;
                 }
                 else if (!DisableGlobalChat)
                 {
@@ -202,7 +204,7 @@ namespace PersistentEmpiresServer.ServerMissions
                     
                     LoggerHelper.LogAnActionNoDiscord(networkPeer, LogAction.PlayerMessageTeam, null, new object[] { f, message.Message });
                     
-                    return true;
+                    return false;
                 }
             }
             /*

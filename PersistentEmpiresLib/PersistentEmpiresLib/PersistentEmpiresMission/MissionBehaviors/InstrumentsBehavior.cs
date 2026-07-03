@@ -34,12 +34,14 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             public Agent PlayerAgent;
             public Instrument Instrument;
             public long PlayingStartedAt;
+            public int InstrumentListIndex;
 
-            public PlayingAction(Agent player, Instrument instrument)
+            public PlayingAction(Agent player, Instrument instrument, int instrumentListIndex)
             {
                 PlayerAgent = player;
                 Instrument = instrument;
                 PlayingStartedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                InstrumentListIndex = instrumentListIndex;
             }
         }
 
@@ -53,7 +55,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             foreach (var item in AgentsPlaying)
             {
                 GameNetwork.BeginModuleEventAsServer(networkPeer);
-                GameNetwork.WriteMessage(new AgentPlayingInstrument(item.Key, item.Value.Instrument.SoundIndex, true));
+                GameNetwork.WriteMessage(new AgentPlayingInstrument(item.Key, item.Value.InstrumentListIndex, true));
                 GameNetwork.EndModuleEventAsServer();
             }
         }
@@ -174,7 +176,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
             if (instrumentWithIndex.Instrument.Item == null) return false;
 
-            PlayingAction playingAction = new PlayingAction(peer.ControlledAgent, instrumentWithIndex.Instrument);
+            PlayingAction playingAction = new PlayingAction(peer.ControlledAgent, instrumentWithIndex.Instrument, instrumentWithIndex.Index);
             AgentsPlaying[peer.ControlledAgent] = playingAction;
             // peer.ControlledAgent.SetActionChannel(0, instrumentWithIndex.Instrument.Animation, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
 

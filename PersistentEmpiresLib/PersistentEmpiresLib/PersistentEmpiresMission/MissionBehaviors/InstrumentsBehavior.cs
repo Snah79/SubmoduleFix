@@ -46,10 +46,22 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public List<Instrument> Instruments = new List<Instrument>();
 #if SERVER
         public Dictionary<Agent, PlayingAction> AgentsPlaying = new Dictionary<Agent, PlayingAction>();
+        protected override void HandleLateNewClientAfterSynchronized(NetworkCommunicator networkPeer)
+        {
+            base.OnPlayerConnectedToServer(networkPeer);
+
+            foreach (var item in AgentsPlaying)
+            {
+                GameNetwork.BeginModuleEventAsServer(networkPeer);
+                GameNetwork.WriteMessage(new AgentPlayingInstrument(item.Key, item.Value.Instrument.SoundIndex, true));
+                GameNetwork.EndModuleEventAsServer();
+            }
+        }
 #endif
 #if CLIENT
         public Dictionary<Agent, SoundEvent> AgentsPlayingSound = new Dictionary<Agent, SoundEvent>();
 #endif
+
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();

@@ -18,11 +18,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public ItemObject Item;
         public ActionIndexCache Animation;
         public int SoundIndex;
+        public string AnimationId;
 
         public Instrument(string itemId, string animation, string musicId)
         {
             Item = MBObjectManager.Instance.GetObject<ItemObject>(itemId);
             Animation = ActionIndexCache.Create(animation);
+            AnimationId = animation;
             SoundIndex = SoundEvent.GetEventIdFromString(musicId);
         }
     }
@@ -35,13 +37,18 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             public Instrument Instrument;
             public long PlayingStartedAt;
             public int InstrumentListIndex;
+            public string AnimationId;
 
-            public PlayingAction(Agent player, Instrument instrument, int instrumentListIndex)
+            public PlayingAction(Agent player, Instrument instrument, int instrumentListIndex, string animationId)
             {
+                if (!string.IsNullOrEmpty(AnimationId))
+                    instrument.AnimationId = animationId;
+
                 PlayerAgent = player;
                 Instrument = instrument;
                 PlayingStartedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 InstrumentListIndex = instrumentListIndex;
+                AnimationId = animationId;
             }
         }
 
@@ -57,6 +64,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 GameNetwork.BeginModuleEventAsServer(networkPeer);
                 GameNetwork.WriteMessage(new AgentPlayingInstrument(item.Key, item.Value.InstrumentListIndex, true));
                 GameNetwork.EndModuleEventAsServer();
+
+                if (!string.IsNullOrEmpty(item.Value.AnimationId))
+                {
+                    GameNetwork.BeginBroadcastModuleEvent();
+                    GameNetwork.WriteMessage(new SetAgentAnimation(item.Key, item.Value.AnimationId));
+                    GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
+                }
             }
         }
 #endif
@@ -162,21 +176,20 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         {
             if (peer.ControlledAgent == null || !peer.ControlledAgent.IsActive()) return false;
 
-            PersistentEmpireRepresentative persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
+            var persistentEmpireRepresentative = peer.GetComponent<PersistentEmpireRepresentative>();
 
             if (persistentEmpireRepresentative == null) return false;
 
-            EquipmentIndex index = peer.ControlledAgent.GetOffhandWieldedItemIndex();
+            var index = peer.ControlledAgent.GetOffhandWieldedItemIndex();
 
             if (index == EquipmentIndex.None) return false;
 
-            MissionWeapon equipmentElement = peer.ControlledAgent.Equipment[index];
-
+            var equipmentElement = peer.ControlledAgent.Equipment[index];
             var instrumentWithIndex = this.Instruments.Select((instr, instrIndex) => new { Instrument = instr, Index = instrIndex }).FirstOrDefault(f => f.Instrument.Item.Id == equipmentElement.Item.Id);
 
             if (instrumentWithIndex.Instrument.Item == null) return false;
 
-            PlayingAction playingAction = new PlayingAction(peer.ControlledAgent, instrumentWithIndex.Instrument, instrumentWithIndex.Index);
+            PlayingAction playingAction = new PlayingAction(peer.ControlledAgent, instrumentWithIndex.Instrument, instrumentWithIndex.Index, instrumentWithIndex.Instrument.AnimationId);
             AgentsPlaying[peer.ControlledAgent] = playingAction;
             // peer.ControlledAgent.SetActionChannel(0, instrumentWithIndex.Instrument.Animation, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
 

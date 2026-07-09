@@ -57,7 +57,7 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
                         MBInformationManager.ShowMultiSelectionInquiry(
                     new MultiSelectionInquiryData(GameTexts.FindText("PEAdminItemPanelInqCaption", null).ToString()
                     , GameTexts.FindText("PEAdminItemPanelInqText", null).ToString()
-                    , tmpFoundItems.OrderBy(x => x).Select(x => new InquiryElement(x, $"{x.StringId}", new ItemImageIdentifier(x, ""))).ToList()
+                    , tmpFoundItems.OrderBy(x => x.StringId).Select(x => new InquiryElement(x, $"{x.StringId}", new ItemImageIdentifier(x, ""))).ToList()
                     , true
                     , 1
                     , 1
@@ -82,9 +82,9 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
 
         private void DoSelectItem(List<InquiryElement> list)
         {
-            var itemId = list.FirstOrDefault().Identifier as string;
+            var itemId = list.FirstOrDefault().Identifier as ItemObject;
 
-            ItemId = itemId;
+            ItemId = itemId.StringId;
             RefreshValues();
         }        
 

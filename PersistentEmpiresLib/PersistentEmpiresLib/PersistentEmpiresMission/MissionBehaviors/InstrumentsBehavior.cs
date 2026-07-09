@@ -67,9 +67,10 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
                 if (!string.IsNullOrEmpty(item.Value.AnimationId))
                 {
-                    GameNetwork.BeginBroadcastModuleEvent();
-                    GameNetwork.WriteMessage(new SetAgentAnimation(item.Key, item.Value.AnimationId));
-                    GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.None);
+                    AnimationBehavior.Instance.PlayAnimation(item.Key, item.Value.AnimationId);
+                    //GameNetwork.BeginModuleEventAsServer(networkPeer);
+                    //GameNetwork.WriteMessage(new SetAgentAnimation(item.Key, item.Value.AnimationId));
+                    //GameNetwork.EndModuleEventAsServer();
                 }
             }
         }
@@ -141,7 +142,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
 
-#if SERVER        
+#if SERVER
         public override void OnAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow blow)
         {
             if (affectedAgent == null) return;

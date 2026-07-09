@@ -127,18 +127,31 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
                 return;
             }
-            if (this.ActionSetDictionary.ContainsKey(actionIndexCache) == false)
+            
+                var actionSet = MBActionSet.InvalidActionSet;
+
+            if (ActionSetDictionary.ContainsKey(actionIndexCache))
             {
-                return;
+                actionSet = this.ActionSetDictionary[actionIndexCache];
             }
-            Agent.ActionCodeType actionCodeType = agent.GetCurrentActionType(1);
+            
+            if(!actionSet.IsValid)
+            {
+                actionSet = MBGlobals.GetActionSet(animationId);
+                
+                if (!actionSet.IsValid)
+                {
+                    actionSet = MBGlobals.GetActionSet("as_human_musician");
+                }
+            }
+
+            var actionCodeType = agent.GetCurrentActionType(1);
             /*if (actionCodeType >= Agent.ActionCodeType.JumpAllBegin || actionCodeType <= Agent.ActionCodeType.JumpAllEnd)
             {
                 return;
             }*/
+            var asd = agent.Monster.FillAnimationSystemData(actionSet, agent.Character.GetStepSize(), agent.IsFemale);
 
-            MBActionSet actionSet = this.ActionSetDictionary[actionIndexCache];
-            AnimationSystemData asd = agent.Monster.FillAnimationSystemData(actionSet, agent.Character.GetStepSize(), agent.IsFemale);
             agent.SetActionSet(ref asd);
             agent.SetActionChannel(0, actionIndexCache, true, 0UL, 0.0f, 1f, -0.2f, 0.4f, 0f, false, -0.2f, 0, true);
 

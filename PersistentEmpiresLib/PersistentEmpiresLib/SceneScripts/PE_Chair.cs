@@ -36,17 +36,7 @@ namespace PersistentEmpiresLib.SceneScripts
         // Token: 0x060001C2 RID: 450 RVA: 0x0000C530 File Offset: 0x0000A730
         public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            switch (this.ChairType)
-            {
-                case PE_Chair.SittableType.Log:
-                    return new TextObject("{=9pgOGq7X}Log", null);
-                case PE_Chair.SittableType.Sofa:
-                    return new TextObject("{=GvLZKQ1U}Sofa", null);
-                case PE_Chair.SittableType.Ground:
-                    return new TextObject("{=L7ZQtIuM}Ground", null);
-                default:
-                    return new TextObject("{=OgTUrRlR}Chair", null);
-            }
+            return new TextObject("{=OgTUrRlR}Chair", null);
         }
 
         // Token: 0x060001C3 RID: 451 RVA: 0x0000C5A0 File Offset: 0x0000A7A0
@@ -82,20 +72,5 @@ namespace PersistentEmpiresLib.SceneScripts
             return OrderType.None;
         }
 
-        // Token: 0x040000B8 RID: 184
-        public PE_Chair.SittableType ChairType;
-
-        // Token: 0x02000102 RID: 258
-        public enum SittableType
-        {
-            // Token: 0x04000507 RID: 1287
-            Chair,
-            // Token: 0x04000508 RID: 1288
-            Log,
-            // Token: 0x04000509 RID: 1289
-            Sofa,
-            // Token: 0x0400050A RID: 1290
-            Ground
-        }
     }
 }

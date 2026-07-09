@@ -144,12 +144,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     actionSet = MBGlobals.GetActionSet("as_human_musician");
                 }
             }
-            Agent.ActionCodeType actionCodeType = agent.GetCurrentActionType(1);
+
+            var actionCodeType = agent.GetCurrentActionType(1);
             /*if (actionCodeType >= Agent.ActionCodeType.JumpAllBegin || actionCodeType <= Agent.ActionCodeType.JumpAllEnd)
             {
                 return;
             }*/
-
             var asd = agent.Monster.FillAnimationSystemData(actionSet, agent.Character.GetStepSize(), agent.IsFemale);
 
             agent.SetActionSet(ref asd);

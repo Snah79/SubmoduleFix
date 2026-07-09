@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Core;
+using TaleWorlds.Core.ImageIdentifiers;
+using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
 using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
 
@@ -11,7 +13,6 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
     public class PEAdminItemPanelVM : ViewModel
     {
         private string _itemId;
-
         private Action _onCancel;
         private Action<string, int> _onApply;
         private int _count = 1;
@@ -23,10 +24,10 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
         }
 
         string tmp = "";
-        List<string> tmpFoundItems;
+        List<ItemObject> tmpFoundItems;
         private bool Find(ItemObject item)
         {
-            return item.StringId.ToLower().Contains(tmp) && !tmpFoundItems.Contains(item.StringId);
+            return item.StringId.ToLower().Contains(tmp) && !tmpFoundItems.Contains(item);
         }
 
         private void TryToFindItem()
@@ -35,8 +36,8 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
             {
                 var items = MBObjectManager.Instance.GetObjects<ItemObject>(Find);
 
-                tmpFoundItems = new List<string>();
-                tmpFoundItems.AddRange(items.Select(x => x.StringId));
+                tmpFoundItems = new List<ItemObject>();
+                tmpFoundItems.AddRange(items.Select(x => x));
                 //if (item != null)
                 //{
                 //    tmpFoundItems.Add(item.StringId);
@@ -48,7 +49,7 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
                 {
                     if (tmpFoundItems.Count() == 1)
                     {
-                        ItemId = tmpFoundItems[0];
+                        ItemId = tmpFoundItems[0].StringId;
                         RefreshValues();
                     }
                     else
@@ -56,7 +57,7 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
                         MBInformationManager.ShowMultiSelectionInquiry(
                     new MultiSelectionInquiryData(GameTexts.FindText("PEAdminItemPanelInqCaption", null).ToString()
                     , GameTexts.FindText("PEAdminItemPanelInqText", null).ToString()
-                    , tmpFoundItems.OrderBy(x => x).Select(x => new InquiryElement(x, $"{x}", null)).ToList()
+                    , tmpFoundItems.OrderBy(x => x).Select(x => new InquiryElement(x, $"{x.StringId}", new ItemImageIdentifier(x, ""))).ToList()
                     , true
                     , 1
                     , 1
@@ -103,14 +104,14 @@ namespace PersistentEmpires.Views.ViewsVM.AdminPanel
                         tmp = _itemId?.TrimEnd('*')?.ToLower();
                         if (_itemId.Length > 3)
                         {
-                            tmpFoundItems = new List<string>();
+                            tmpFoundItems = new List<ItemObject>();
 
                             TryToFindItem();
                         }
                     }
                 }
             }
-        }        
+        }
 
         [DataSourceProperty]
         public int Count

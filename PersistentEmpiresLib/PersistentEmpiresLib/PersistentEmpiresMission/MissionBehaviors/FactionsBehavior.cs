@@ -100,9 +100,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             outlaws.team.SetIsEnemyOf(commoners.team, true);
             commoners.team.SetIsEnemyOf(commoners.team, true);
 
-            this.AddFaction(0, commoners);
-            this.AddFaction(1, outlaws);
-
             List<GameEntity> _gameEntites = new List<GameEntity>();
             base.Mission.Scene.GetAllEntitiesWithScriptComponent<PEFactionBanner>(ref _gameEntites);
             List<DBFactions> dbFactions = SaveSystemBehavior.HandleGetFactions().ToList();
@@ -111,6 +108,15 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             {
                 savedFactions[dbFaction.FactionIndex] = dbFaction;
             }
+            if(!savedFactions.ContainsKey(0))
+            {
+                this.AddFaction(0, commoners);
+            }
+            if (!savedFactions.ContainsKey(1))
+            {
+                this.AddFaction(1, outlaws);
+            }
+
             if (_gameEntites.Count > 0)
             {
                 foreach (GameEntity _factionBanner in _gameEntites)

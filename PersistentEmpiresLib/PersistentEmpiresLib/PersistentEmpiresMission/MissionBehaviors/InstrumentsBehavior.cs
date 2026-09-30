@@ -286,7 +286,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             {
                 AgentsPlayingSound[agent].Stop();
 
-                if (agent.IsHuman)
+                if (agent.IsHuman && !agent.IsAIControlled)
                 {
                     AnimationSystemData animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_warrior"), agent.Character.GetStepSize(), false);
                     agent.SetActionSet(ref animationSystemData);

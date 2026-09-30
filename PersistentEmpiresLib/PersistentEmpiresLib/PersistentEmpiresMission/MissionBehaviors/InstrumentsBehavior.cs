@@ -305,7 +305,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             eventRef.Play();
             AgentsPlayingSound[agent] = eventRef;
 
-            if (agent.IsHuman)
+            if (agent.IsHuman && !agent.IsAIControlled)
             {
                 var animationSystemData = agent.Monster.FillAnimationSystemData(MBGlobals.GetActionSet("as_human_musician"), agent.Character.GetStepSize(), false);
 

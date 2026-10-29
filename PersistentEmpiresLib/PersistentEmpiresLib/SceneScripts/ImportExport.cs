@@ -70,7 +70,7 @@ namespace PersistentEmpiresLib.SceneScripts
         {
             return this.goodItems;
         }
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("Import/Export");
         }

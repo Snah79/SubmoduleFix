@@ -124,7 +124,7 @@ namespace PersistentEmpiresLib.SceneScripts
             this.craftingComponent = Mission.Current.GetMissionBehavior<CraftingComponent>();
             this.LoadCraftables();
         }
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("Crafting Station Named As " + this.StationName);
         }

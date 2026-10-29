@@ -173,7 +173,7 @@ namespace PersistentEmpiresLib.SceneScripts
             this.AttachedTo = attachableAgent;
         }
 
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("Attach");
         }

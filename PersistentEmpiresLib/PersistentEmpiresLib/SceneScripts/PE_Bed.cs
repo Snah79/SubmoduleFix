@@ -87,7 +87,7 @@ namespace PersistentEmpiresLib.SceneScripts
 #endif
         }
 
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("Bed");
         }

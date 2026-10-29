@@ -789,7 +789,7 @@ namespace PersistentEmpiresLib.SceneScripts
             ShootingDirection.Normalize();
         }
 
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             if (!gameEntity.HasTag(AmmoPickUpTag))
             {

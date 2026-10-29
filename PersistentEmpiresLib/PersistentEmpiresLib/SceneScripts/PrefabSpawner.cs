@@ -111,7 +111,7 @@ namespace PersistentEmpiresLib.SceneScripts
             this.SpawnedPrefabs = new List<WeakGameEntity>();
             this.StrayEntity = new Dictionary<WeakGameEntity, IStray>();
         }
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("Siege Workshop");
         }

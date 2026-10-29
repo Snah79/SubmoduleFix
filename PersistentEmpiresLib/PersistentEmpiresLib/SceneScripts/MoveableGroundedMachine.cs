@@ -109,7 +109,7 @@ namespace PersistentEmpiresLib.SceneScripts
             return forStandingPoint;
         }
 
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("{=}" + this.Name);
         }

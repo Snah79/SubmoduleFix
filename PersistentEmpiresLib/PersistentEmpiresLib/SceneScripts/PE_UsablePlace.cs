@@ -7,7 +7,7 @@ namespace PersistentEmpiresLib.SceneScripts
     public class PE_UsablePlace : UsableMachine
     {
         // Token: 0x060001EA RID: 490 RVA: 0x0000D2D9 File Offset: 0x0000B4D9
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             StandingPoint pilotStandingPoint = base.PilotStandingPoint;
             if (pilotStandingPoint == null)

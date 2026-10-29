@@ -614,7 +614,7 @@ namespace PersistentEmpiresLib.SceneScripts
         }
 
         // Token: 0x06002BAA RID: 11178 RVA: 0x000A9856 File Offset: 0x000A7A56
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("{=MaBSSg7I}Battering Ram", null);
         }

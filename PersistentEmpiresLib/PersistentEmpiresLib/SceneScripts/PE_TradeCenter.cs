@@ -105,7 +105,7 @@ namespace PersistentEmpiresLib.SceneScripts
             return this.castlesBehavior.castles[this.CastleIndex].CastleName;
         }
 
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("Trading Center");
         }

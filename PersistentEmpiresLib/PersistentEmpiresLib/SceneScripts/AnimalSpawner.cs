@@ -72,7 +72,7 @@ namespace PersistentEmpiresLib.SceneScripts
             this.NeededReceipt = this.ParseReceipts(this.NeededItemRecipies);
             this.DropReceipt = this.ParseReceipts(this.DropItemRecipies);
         }
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("Animal Spawner");
         }

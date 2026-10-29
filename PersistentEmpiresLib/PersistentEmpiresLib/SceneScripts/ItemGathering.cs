@@ -280,7 +280,7 @@ namespace PersistentEmpiresLib.SceneScripts
             base.OnUse(userAgent, agentBoneIndex);
         }
 
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("Item Gathering");
         }

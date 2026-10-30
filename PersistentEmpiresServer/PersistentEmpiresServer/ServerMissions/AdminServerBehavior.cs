@@ -811,7 +811,7 @@ namespace PersistentEmpiresServer.ServerMissions
 
             return true;
         }
-        
+
         private void MakeAdminInvisible(NetworkCommunicator admin)
         {
             lock (_invisibleAdminsLock)

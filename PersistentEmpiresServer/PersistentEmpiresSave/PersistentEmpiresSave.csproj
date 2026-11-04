@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net472</TargetFramework>
+		<TargetFramework>netstandard2.0</TargetFramework>
 		<RootNamespace>PersistentEmpiresSave</RootNamespace>
 		<AssemblyName>PersistentEmpiresSave</AssemblyName>
 		<TaleworldsReferencePath>..\..\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences</TaleworldsReferencePath>
@@ -22,9 +22,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Reference Include="System.Windows.Forms" />
-		<Reference Include="System.IdentityModel" />
-		<Reference Include="System.Transactions" />
 		<Reference Include="TaleWorlds.Core">
 			<HintPath>$(TaleworldsReferencePath)\TaleWorlds.Core.dll</HintPath>
 			<Private>False</Private>

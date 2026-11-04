@@ -12,9 +12,7 @@ using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.ModuleManager;
 using TaleWorlds.MountAndBlade;
-using TaleWorlds.MountAndBlade.DedicatedCustomServer;
 using TaleWorlds.ObjectSystem;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
 
 namespace PersistentEmpiresLib.SceneScripts
 {

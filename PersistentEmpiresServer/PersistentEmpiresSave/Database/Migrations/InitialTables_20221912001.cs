@@ -1,25 +1,5 @@
 ﻿using FluentMigrator;
-using Org.BouncyCastle.Utilities;
-using PersistentEmpiresLib;
-using PersistentEmpiresLib.Data;
-using PersistentEmpiresLib.Database.DBEntities;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
-using PersistentEmpiresLib.SceneScripts.Interfaces;
-using static System.Net.Mime.MediaTypeNames;
-using static TaleWorlds.MountAndBlade.MultiplayerOptions;
-using System.Text.RegularExpressions;
-using System.Windows.Forms;
-using System;
-using TaleWorlds.Core;
-using TaleWorlds.PlayerServices;
-using PersistentEmpiresLib.NetworkMessages.Client;
-using System.Security.AccessControl;
-using System.Xml.Linq;
-using PersistentEmpiresLib.Factions;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
-using System.Runtime.InteropServices;
-using FluentMigrator.Runner.Versioning;
-using static PersistentEmpiresSave.Database.Repositories.DBWhitelistRepository;
 
 namespace PersistentEmpiresSave.Database.Migrations
 {

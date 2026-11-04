@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <TaleworldsReferencePath>..\..\PersistentEmpiresLib\PersistentEmpiresLib\ServerReferences</TaleworldsReferencePath>
-        <TargetFramework>net5.0</TargetFramework>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
         <TargetFramework>net8.0</TargetFramework>

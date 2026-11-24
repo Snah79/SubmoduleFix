@@ -1,7 +1,7 @@
 ﻿using PersistentEmpires.Views.Views;
-using PersistentEmpiresHarmony.Patches;
 using PersistentEmpiresLib;
 using PersistentEmpiresLib.Helpers;
+using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System.Collections.Generic;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -33,7 +33,7 @@ namespace PersistentEmpires.Views
             BannerRenderer.OnRequestRenderBanner += OnRequestRenderBanner;
             AgentHelpers.OnResetAgentMeshRequested += OnResetAgentMeshRequested;
             AgentHelpers.OnResetAgentArmorMeshRequested += OnResetAgentArmorMeshRequested;
-            PatchGameNetwork.OnHandleServerEventCreatePlayer += PatchGameNetwork_OnHandleServerEventCreatePlayer;
+            PersistentEmpireClientBehavior.OnHandleServerEventCreatePlayer += PatchGameNetwork_OnHandleServerEventCreatePlayer;
             RenderQueue = new Queue<BannerRender>();
         }
 

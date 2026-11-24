@@ -333,7 +333,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
 
                 GameNetwork.BeginModuleEventAsServer(networkPeer);
-                GameNetwork.WriteMessage(new AgentLabelConfig(this.agentLabelEnabled));
+                GameNetwork.WriteMessage(new ClientSideConfig(this.agentLabelEnabled));
                 GameNetwork.EndModuleEventAsServer();
 
             }

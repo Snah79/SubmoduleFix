@@ -35,6 +35,29 @@ namespace PersistentEmpiresLib.Helpers
             }
             return PlayerInventory;
         }
+       
+        public static void WriteCustomInventory(Inventory RequestedInventory)
+        {
+            GameNetworkMessage.WriteIntToPacket(RequestedInventory.Slots.Count, new CompressionInfo.Integer(0, 256, true));
+        }
+
+        public static void WriteInventorySlots(Inventory RequestedInventory, NetworkCommunicator peer)
+        {
+            for (int i = 0; i < RequestedInventory.Slots.Count; i++)
+            {
+                if (RequestedInventory.Slots[i].Item == null || RequestedInventory.Slots[i].Count == 0) continue;
+                GameNetwork.BeginModuleEventAsServer(peer);
+                GameNetwork.WriteMessage(new UpdateInventorySlot(RequestedInventory.InventoryId + "_" + i, RequestedInventory.Slots[i].Item, RequestedInventory.Slots[i].Count));
+                GameNetwork.EndModuleEventAsServer();
+            }
+        }
+
+        public static Inventory ReadCustomInventory(string InventoryId, ref bool result)
+        {
+            int requestedInventorySlot = GameNetworkMessage.ReadIntFromPacket(new CompressionInfo.Integer(0, 256, true), ref result);
+            Inventory RequestedInventory = new Inventory(requestedInventorySlot, 100, InventoryId);
+            return RequestedInventory;
+        }
 
         public static void WriteBannerCodeToPacket(string bannerCode)
         {
@@ -92,29 +115,6 @@ namespace PersistentEmpiresLib.Helpers
             }
             return String.Join(".", result);
 
-        }
-
-        public static void WriteCustomInventory(Inventory RequestedInventory)
-        {
-            GameNetworkMessage.WriteIntToPacket(RequestedInventory.Slots.Count, new CompressionInfo.Integer(0, 256, true));
-        }
-
-        public static void WriteInventorySlots(Inventory RequestedInventory, NetworkCommunicator peer)
-        {
-            for (int i = 0; i < RequestedInventory.Slots.Count; i++)
-            {
-                if (RequestedInventory.Slots[i].Item == null || RequestedInventory.Slots[i].Count == 0) continue;
-                GameNetwork.BeginModuleEventAsServer(peer);
-                GameNetwork.WriteMessage(new UpdateInventorySlot(RequestedInventory.InventoryId + "_" + i, RequestedInventory.Slots[i].Item, RequestedInventory.Slots[i].Count));
-                GameNetwork.EndModuleEventAsServer();
-            }
-        }
-
-        public static Inventory ReadCustomInventory(string InventoryId, ref bool result)
-        {
-            int requestedInventorySlot = GameNetworkMessage.ReadIntFromPacket(new CompressionInfo.Integer(0, 256, true), ref result);
-            Inventory RequestedInventory = new Inventory(requestedInventorySlot, 100, InventoryId);
-            return RequestedInventory;
         }
     }
 }

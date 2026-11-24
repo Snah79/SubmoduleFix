@@ -1,5 +1,4 @@
-﻿using PersistentEmpiresHarmony.Patches;
-using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
+﻿using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
@@ -18,11 +17,11 @@ namespace PersistentEmpires.Views.Views
         public override void OnMissionScreenInitialize()
         {
             patreonRegistryBehavior = base.Mission.GetMissionBehavior<PatreonRegistryBehavior>();
-            this.IsActive = patreonRegistryBehavior != null;
+            IsActive = patreonRegistryBehavior != null;
 
-            if (this.IsActive)
+            if (IsActive)
             {
-                PatchGlobalChat.OnGlobalChatReceived += this.OnGlobalChatReceived;
+                PersistentEmpireClientBehavior.OnGlobalChatReceived += this.OnGlobalChatReceived;
             }
         }
 

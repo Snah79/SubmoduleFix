@@ -69,6 +69,15 @@
 		  <HintPath>..\..\..\..\..\Desktop\FTP\Mount &amp; Blade II Dedicated Server\bin\Win64_Shipping_Server\System.Numerics.Vectors.dll</HintPath>
 		</Reference>
 		<Reference Include="Microsoft.CSharp" />
+		<Reference Include="TaleWorlds.Engine.GauntletUI">
+		  <HintPath>ClientReferences\TaleWorlds.Engine.GauntletUI.dll</HintPath>
+		</Reference>
+		<Reference Include="TaleWorlds.MountAndBlade.ViewModelCollection">
+		  <HintPath>ClientReferences\TaleWorlds.MountAndBlade.ViewModelCollection.dll</HintPath>
+		</Reference>
+		<Reference Include="TaleWorlds.ScreenSystem">
+		  <HintPath>ClientReferences\TaleWorlds.ScreenSystem.dll</HintPath>
+		</Reference>
 		<Reference Include="WindowsBase" />
 		<Reference Include="TaleWorlds.MountAndBlade.DedicatedCustomServer">
 			<HintPath>$(ReferenceFolder)\TaleWorlds.MountAndBlade.DedicatedCustomServer.dll</HintPath>

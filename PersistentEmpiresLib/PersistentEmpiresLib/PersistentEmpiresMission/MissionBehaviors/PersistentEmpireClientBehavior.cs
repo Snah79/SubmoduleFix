@@ -5,15 +5,13 @@ using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
+using System.Reflection;
 using System.Xml;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.Network.Messages;
-using static TaleWorlds.MountAndBlade.GameNetwork;
 
 namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 {
@@ -21,6 +19,12 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
     {
         public event Action<bool> OnAgentLabelConfig;
         public event Action<GoldGain> OnGoldGainEvent;
+        public delegate void HandleServerEventCreatePlayerHandler(CreatePlayer message);
+        public static event HandleServerEventCreatePlayerHandler OnHandleServerEventCreatePlayer;
+        public delegate void AddNewPlayerOnServerHandler(ref PlayerConnectionInfo playerConnectionInfo, bool serverPeer, bool isAdmin);
+        public static event AddNewPlayerOnServerHandler OnAddNewPlayerOnServer;
+        public delegate bool PlayerGlobalChatHandler(NetworkCommunicator peer, string message, bool teamOnly);
+        public static event PlayerGlobalChatHandler OnGlobalChatReceived;
         public event Action OnSynchronized;
         public override bool IsGameModeUsingGold => true;
         public override bool IsGameModeTactical => false;
@@ -90,9 +94,13 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 registerer.Register<SyncMember>(this.HandleSyncMember);
                 registerer.Register<AddMarshallIdToFaction>(this.HandleAddMarshallIdToFactionServer);
                 registerer.Register<ServerHandshake>(this.HandleServerHandshakeFromServer);
-                registerer.Register<AgentLabelConfig>(this.HandleServerAgentLabelConfig);
+                registerer.Register<ClientSideConfig>(this.HandleServerAgentLabelConfig);
                 registerer.Register<ExistingObjectsEnd>(this.HandleFromServerExistingObjectsEnd);
                 registerer.Register<SendRulesToNewClientMessage>(this.HandleFromServerSendRulesToNewClientMessage);
+                registerer.Register<CreatePlayer>(HandleServerEventCreatePlayer);
+
+                var chatBox = Game.Current.GetGameHandler<ChatBox>();
+                chatBox.PlayerMessageReceived += this.HandlePlayerMessageReceived;
             }
             else
             {
@@ -149,11 +157,44 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             }
         }
 
-        private void HandleServerAgentLabelConfig(AgentLabelConfig message)
+        private void HandleServerAgentLabelConfig(ClientSideConfig message)
         {
+
+            var returnedValue = MultiplayerOptions.OptionType.MapTimeLimit.GetOptionProperty();
+            if (returnedValue != null)
+            {
+                var field = typeof(MultiplayerOptionsProperty).GetField("BoundsMax", BindingFlags.Public | BindingFlags.Instance);
+                field.SetValue(returnedValue, message.MapTimeLimit);
+                MultiplayerOptions.OptionType.MapTimeLimit.SetValue(message.MapTimeLimit);
+            }            
+
             if (this.OnAgentLabelConfig != null)
             {
-                this.OnAgentLabelConfig(message.Enabled);
+                this.OnAgentLabelConfig(message.AgentLabelConfigEnabled);
+            }
+        }        
+
+        private void HandleServerEventCreatePlayer(CreatePlayer message)
+        {
+            if (OnHandleServerEventCreatePlayer != null)
+                OnHandleServerEventCreatePlayer(message);
+        }
+
+        public override void OnPlayerConnectedToServer(NetworkCommunicator networkPeer)
+        {
+            base.OnPlayerConnectedToServer(networkPeer);
+            //public delegate void AddNewPlayerOnServerHandler(ref PlayerConnectionInfo playerConnectionInfo, bool serverPeer, bool isAdmin);
+            var playerConnectionInfo = networkPeer.PlayerConnectionInfo;
+            
+            if (OnAddNewPlayerOnServer != null)
+                OnAddNewPlayerOnServer(ref playerConnectionInfo, networkPeer.IsServerPeer, networkPeer.IsAdmin);
+        }
+
+        private void HandlePlayerMessageReceived(NetworkCommunicator player, string message, bool toTeamOnly)
+        {
+            if (OnGlobalChatReceived != null)
+            {
+                OnGlobalChatReceived(player, message, toTeamOnly);
             }
         }
 
@@ -263,6 +304,15 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private void HandleAdminOrErrorMessage(AdminOrErrorMessage adminOrErrorMessage)
         {
+
+            if(adminOrErrorMessage.Message == "debug;")
+            {
+                var tmp = MultiplayerOptionsExtensions.GetValueText(MultiplayerOptions.OptionType.MapTimeLimit);
+                InformationManager.DisplayMessage(new InformationMessage($"MapTimeLimit: {tmp}"));
+
+                return;
+            }
+
             InformationManager.AddSystemNotification(adminOrErrorMessage.Message);
         }
 

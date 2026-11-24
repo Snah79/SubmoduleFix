@@ -44,11 +44,9 @@ namespace PersistentEmpiresClient
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
-            HarmonyLibClient.Create();
             PEItemTooltips.FillTooltipTypes();
             ViewHandler.Initialize();
             SentryForView.InitializeSentry();
-            Whitelister.Initialize();
         }
     }
 }

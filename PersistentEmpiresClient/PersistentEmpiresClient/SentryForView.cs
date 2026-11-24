@@ -1,13 +1,7 @@
-﻿using PersistentEmpiresClient;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using TaleWorlds.DotNet;
-using TaleWorlds.Engine;
-using TaleWorlds.MountAndBlade;
-using TaleWorlds.MountAndBlade.View.MissionViews;
-using TaleWorlds.ScreenSystem;
 
 namespace PersistentEmpires.Views
 {
@@ -17,16 +11,6 @@ namespace PersistentEmpires.Views
         public static void InitializeSentry()
         {
             AppDomain.CurrentDomain.UnhandledException += HandleExceptionalExit;
-            HarmonyLibClient.OnRglExceptionThrown += RglExceptionThrown;
-            HarmonyLibClient.OnExceptionThrown += OnExceptionThrown;
-            HarmonyLibClient.Instance.PatchFinalizer(typeof(Managed).GetMethod("ApplicationTick", BindingFlags.NonPublic | BindingFlags.Static));
-            HarmonyLibClient.Instance.PatchFinalizer(typeof(ScriptComponentBehavior).GetMethod("OnTick", BindingFlags.NonPublic | BindingFlags.Instance));
-            HarmonyLibClient.Instance.PatchFinalizer(typeof(TaleWorlds.MountAndBlade.Module).GetMethod("OnApplicationTick", BindingFlags.NonPublic | BindingFlags.Instance));
-            HarmonyLibClient.Instance.PatchFinalizer(typeof(Mission).GetMethod("Tick", BindingFlags.NonPublic | BindingFlags.Instance));
-            HarmonyLibClient.Instance.PatchFinalizer(typeof(MissionBehavior).GetMethod("OnMissionTick", BindingFlags.Public | BindingFlags.Instance));
-            HarmonyLibClient.Instance.PatchFinalizer(typeof(MBSubModuleBase).GetMethod("OnSubModuleLoad", BindingFlags.NonPublic | BindingFlags.Instance));
-            HarmonyLibClient.Instance.PatchFinalizer(typeof(MissionView).GetMethod("OnMissionScreenTick", BindingFlags.Public | BindingFlags.Instance));
-            HarmonyLibClient.Instance.PatchFinalizer(typeof(ScreenManager).GetMethod("Tick", BindingFlags.Public | BindingFlags.Static));
         }
 
         public static void OnExceptionThrown(Exception e)

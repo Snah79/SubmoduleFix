@@ -79,6 +79,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
             IsVisible = true;
             AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
         }
+
         public override void OnRemoveBehavior()
         {
 #if CLIENT

@@ -28,13 +28,13 @@ namespace PersistentEmpiresLib.NetworkMessages.Client
         protected override bool OnRead()
         {
             bool result = true;
-            this.BannerCode = PENetworkModule.ReadBannerCodeFromPacket(ref result);
+            this.BannerCode = ReadBannerCodeFromPacket(ref result);
             return result;
         }
 
         protected override void OnWrite()
         {
-            PENetworkModule.WriteBannerCodeToPacket(this.BannerCode);
+            WriteBannerCodeToPacket(this.BannerCode);
         }
     }
 }

@@ -7,7 +7,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
     public sealed class ClientSideConfig : GameNetworkMessage
     {
         public bool AgentLabelConfigEnabled = true;
-        public int MapTimeLimit = 100000;
+        public int MapTimeLimit = 50;
 
         public ClientSideConfig()
         {
@@ -17,7 +17,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
             AgentLabelConfigEnabled = agentLabelConfigEnabled;
             MapTimeLimit = mapTimeLimit;
         }
-        
+
         protected override MultiplayerMessageFilter OnGetLogFilter()
         {
             return MultiplayerMessageFilter.All;
@@ -31,17 +31,18 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
         protected override bool OnRead()
         {
             bool result = true;
-            
+
             AgentLabelConfigEnabled = GameNetworkMessage.ReadBoolFromPacket(ref result);
-            MapTimeLimit = GameNetworkMessage.ReadIntFromPacket(new CompressionInfo.Integer(0, 100000, true), ref result);
+            var tmp = GameNetworkMessage.ReadStringFromPacket(ref result);
+            MapTimeLimit = int.Parse(tmp);
 
             return result;
         }
 
         protected override void OnWrite()
         {
-            GameNetworkMessage.WriteBoolToPacket(this.AgentLabelConfigEnabled);
-            GameNetworkMessage.WriteIntToPacket(this.MapTimeLimit, new CompressionInfo.Integer(0, 100000, true));
+            GameNetworkMessage.WriteBoolToPacket(AgentLabelConfigEnabled);
+            GameNetworkMessage.WriteStringToPacket(MapTimeLimit.ToString());
         }
     }
 }

@@ -33,7 +33,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
             bool result = true;
             this.FactionIndex = GameNetworkMessage.ReadIntFromPacket(new CompressionInfo.Integer(-1, 200, true), ref result);
             this.Name = GameNetworkMessage.ReadStringFromPacket(ref result);
-            this.BannerCode = PENetworkModule.ReadBannerCodeFromPacket(ref result);
+            this.BannerCode = ReadBannerCodeFromPacket(ref result);
             return result;
         }
 
@@ -41,7 +41,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
         {
             GameNetworkMessage.WriteIntToPacket(this.FactionIndex, new CompressionInfo.Integer(-1, 200, true));
             GameNetworkMessage.WriteStringToPacket(this.Name);
-            PENetworkModule.WriteBannerCodeToPacket(this.BannerCode);
+            WriteBannerCodeToPacket(this.BannerCode);
         }
     }
 }

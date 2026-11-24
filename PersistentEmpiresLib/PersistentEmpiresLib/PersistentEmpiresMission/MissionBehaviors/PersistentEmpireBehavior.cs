@@ -38,6 +38,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         private long lastPolledAt = 0;
         private bool registered = false;
         public bool agentLabelEnabled = true;
+        public static readonly int _maxTimeLimit = 100000;
         public override bool IsGameModeHidingAllAgentVisuals => true;
 
         public override bool IsGameModeUsingOpposingTeams => false;
@@ -333,7 +334,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 }
 
                 GameNetwork.BeginModuleEventAsServer(networkPeer);
-                GameNetwork.WriteMessage(new ClientSideConfig(this.agentLabelEnabled));
+                GameNetwork.WriteMessage(new ClientSideConfig(agentLabelEnabled, _maxTimeLimit));
                 GameNetwork.EndModuleEventAsServer();
 
             }
@@ -437,7 +438,7 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 #if SERVER
             Instanse = this;
             ConfigManager.Initialize();
-            this.agentLabelEnabled = ConfigManager.GetBoolConfig("AgentLabelEnabled", true);
+            agentLabelEnabled = ConfigManager.GetBoolConfig("AgentLabelEnabled", true);
 #endif
 
             int maxPlayer = MultiplayerOptions.OptionType.MaxNumberOfPlayers.GetIntValue(MultiplayerOptions.MultiplayerOptionsAccessMode.CurrentMapOptions);
@@ -492,6 +493,29 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                     horseMarket.UpdateReserve(savedHorseMarket[horseMarket.GetMissionObjectHash()].Stock);
                 }
             }
+            runOnce = false;
+        }
+
+        private bool runOnce = false;
+        public override void OnMissionTick(float dt)
+        {
+            var timerComponent = Mission.Current.GetMissionBehavior<MultiplayerTimerComponent>();
+
+            if (!runOnce && timerComponent.IsTimerRunning)
+            {
+                RestartMatchTimer(int.MaxValue);
+                runOnce = true;
+            }
+        }
+
+        public static void RestartMatchTimer(float duration)
+        {
+            var timerComponent = Mission.Current.GetMissionBehavior<MultiplayerTimerComponent>();
+
+            if (timerComponent == null)
+                return;
+
+            timerComponent.StartTimerAsServer(duration);
         }
     }
 }

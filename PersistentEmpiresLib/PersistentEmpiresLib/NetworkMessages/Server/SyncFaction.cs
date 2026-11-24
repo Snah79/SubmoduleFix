@@ -34,7 +34,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
             this.FactionIndex = GameNetworkMessage.ReadIntFromPacket(new CompressionInfo.Integer(-1, 200, true), ref result);
             String name = GameNetworkMessage.ReadStringFromPacket(ref result);
             Team team = Mission.MissionNetworkHelper.GetTeamFromTeamIndex(GameNetworkMessage.ReadTeamIndexFromPacket(ref result));
-            string BannerKey = PENetworkModule.ReadBannerCodeFromPacket(ref result);
+            string BannerKey = ReadBannerCodeFromPacket(ref result);
             string LordId = GameNetworkMessage.ReadStringFromPacket(ref result);
             this.Faction = new Faction(new Banner(BannerKey), name);
             this.Faction.lordId = LordId;
@@ -53,7 +53,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
             GameNetworkMessage.WriteIntToPacket(this.FactionIndex, new CompressionInfo.Integer(-1, 200, true));
             GameNetworkMessage.WriteStringToPacket(this.Faction.name);
             GameNetworkMessage.WriteTeamIndexToPacket(this.Faction.team.TeamIndex);
-            PENetworkModule.WriteBannerCodeToPacket(this.Faction.banner.Serialize());
+            WriteBannerCodeToPacket(this.Faction.banner.Serialize());
             GameNetworkMessage.WriteStringToPacket(this.Faction.lordId);
             int warDeclerationLength = this.Faction.warDeclaredTo.Count;
             GameNetworkMessage.WriteIntToPacket(warDeclerationLength, new CompressionInfo.Integer(0, 200, true));

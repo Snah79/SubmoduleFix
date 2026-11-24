@@ -85,12 +85,12 @@ namespace PersistentEmpiresHarmony
             base.OnSubModuleLoad();
             Instance = this;
             HarmonyHandle = new HarmonyLib.Harmony("mentalrob.persistentempires.bannerlord");
-            Debug.Print("** Persistent Harmony ** Harmony Handle Created.", 0, Debug.DebugColor.Yellow);
-            var original = typeof(MultiplayerOptionsExtensions).GetMethod("GetOptionProperty", BindingFlags.Public | BindingFlags.Static);
-            Debug.Print("** Persistent Harmony ** Patched [MultiplayerOptionsExtensions::GetOptionProperty] " + original.FullDescription(), 0, Debug.DebugColor.Yellow);
-            var postfix = typeof(PatchMapTimeLimit).GetMethod("Postfix");
-            HarmonyHandle.Patch(original, postfix: new HarmonyMethod(postfix));
-            Debug.Print("** Persistent Harmony ** Patched [MultiplayerOptionsExtensions::GetOptionProperty]", 0, Debug.DebugColor.Yellow);
+            //Debug.Print("** Persistent Harmony ** Harmony Handle Created.", 0, Debug.DebugColor.Yellow);
+            //var original = typeof(MultiplayerOptionsExtensions).GetMethod("GetOptionProperty", BindingFlags.Public | BindingFlags.Static);
+            //Debug.Print("** Persistent Harmony ** Patched [MultiplayerOptionsExtensions::GetOptionProperty] " + original.FullDescription(), 0, Debug.DebugColor.Yellow);
+            //var postfix = typeof(PatchMapTimeLimit).GetMethod("Postfix");
+            //HarmonyHandle.Patch(original, postfix: new HarmonyMethod(postfix));
+            //Debug.Print("** Persistent Harmony ** Patched [MultiplayerOptionsExtensions::GetOptionProperty]", 0, Debug.DebugColor.Yellow);
 
             //original = typeof(ChatBox).GetMethod("OnPlayerMessageReceived", BindingFlags.NonPublic | BindingFlags.Instance);
             //var prefix = typeof(PatchGlobalChat).GetMethod("PrefixOnPlayerMessageReceived", BindingFlags.Public | BindingFlags.Static);
@@ -106,7 +106,7 @@ namespace PersistentEmpiresHarmony
             //HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
             //Debug.Print("** Persistent Harmony ** Patched [ChatBox::HandleClientEventPlayerMessageTeam]", 0, Debug.DebugColor.Yellow);
 
-            original = typeof(Managed).GetMethod("GetStackTraceRaw", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(StackTrace), typeof(int) }, null);
+            var original = typeof(Managed).GetMethod("GetStackTraceRaw", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(StackTrace), typeof(int) }, null);
             var prefix = typeof(PatchStackTraceRaw).GetMethod("GetStackTraceRawDeep", BindingFlags.Public | BindingFlags.Static);
             HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
             Debug.Print("** Persistent Harmony ** Patched [Managed::GetStackTraceRaw]", 0, Debug.DebugColor.Yellow);
@@ -145,13 +145,13 @@ namespace PersistentEmpiresHarmony
             HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
             Debug.Print("** Persistent Harmony ** Patched [GameNetwork::SendExistingObjectsToPeer]", 0, Debug.DebugColor.Yellow);
 
-            original = typeof(GameNetworkMessage).GetMethod("WriteBannerCodeToPacket", BindingFlags.Public | BindingFlags.Static);
-            prefix = typeof(PatchReadBannerCodeFromPacket).GetMethod("PrefixWriteBannerCodeToPacket", BindingFlags.Public | BindingFlags.Static);
-            HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
+            //original = typeof(GameNetworkMessage).GetMethod("WriteBannerCodeToPacket", BindingFlags.Public | BindingFlags.Static);
+            //prefix = typeof(PatchReadBannerCodeFromPacket).GetMethod("PrefixWriteBannerCodeToPacket", BindingFlags.Public | BindingFlags.Static);
+            //HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
 
-            original = typeof(GameNetworkMessage).GetMethod("ReadBannerCodeFromPacket", BindingFlags.Public | BindingFlags.Static);
-            prefix = typeof(PatchReadBannerCodeFromPacket).GetMethod("PrefixReadBannerCodeFromPacket", BindingFlags.Public | BindingFlags.Static);
-            HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
+            //original = typeof(GameNetworkMessage).GetMethod("ReadBannerCodeFromPacket", BindingFlags.Public | BindingFlags.Static);
+            //prefix = typeof(PatchReadBannerCodeFromPacket).GetMethod("PrefixReadBannerCodeFromPacket", BindingFlags.Public | BindingFlags.Static);
+            //HarmonyHandle.Patch(original, prefix: new HarmonyMethod(prefix));
 
             // Temp
              //original = typeof(MissionNetworkComponent).GetMethod("HandleClientEventRequestUseObject", BindingFlags.NonPublic | BindingFlags.Instance);

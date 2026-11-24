@@ -110,7 +110,7 @@ namespace PersistentEmpiresHarmony.Patches
             {
                 agent2 = null;
             }
-            GameNetwork.BeginModuleEventAsServer(networkPeer);
+            
             int index = agent.Index;
             BasicCharacterObject character = agent.Character;
             Monster monster = agent.Monster;
@@ -138,6 +138,7 @@ namespace PersistentEmpiresHarmony.Patches
                 MissionPeer owningAgentMissionPeer = agent.OwningAgentMissionPeer;
                 networkCommunicator = ((owningAgentMissionPeer != null) ? owningAgentMissionPeer.GetNetworkPeer() : null);
             }
+            GameNetwork.BeginModuleEventAsServer(networkPeer);
             GameNetwork.WriteMessage(new CreateAgent(index, character, monster, spawnEquipment, equipment, bodyPropertiesValue, bodyPropertiesSeed, isFemale, num, num2, clothingColor, clothingColor2, num3, equipment2, flag, position, movementDirection, networkCommunicator));
             GameNetwork.EndModuleEventAsServer();
             agent.LockAgentReplicationTableDataWithCurrentReliableSequenceNo(networkPeer);

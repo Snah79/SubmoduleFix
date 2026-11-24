@@ -40,7 +40,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
             BasicCultureObject bco = (BasicCultureObject)GameNetworkMessage.ReadObjectReferenceFromPacket(MBObjectManager.Instance, CompressionBasic.GUIDCompressionInfo, ref result);
             String name = GameNetworkMessage.ReadStringFromPacket(ref result);
             Team team = Mission.MissionNetworkHelper.GetTeamFromTeamIndex(GameNetworkMessage.ReadTeamIndexFromPacket(ref result));
-            string BannerKey = PENetworkModule.ReadBannerCodeFromPacket(ref result);
+            string BannerKey = ReadBannerCodeFromPacket(ref result);
             int memberLength = GameNetworkMessage.ReadIntFromPacket(new CompressionInfo.Integer(0, 500, true), ref result);
             this.faction = new Faction(bco, new Banner(BannerKey), name);
             this.faction.team = team;
@@ -60,7 +60,7 @@ namespace PersistentEmpiresLib.NetworkMessages.Server
             GameNetworkMessage.WriteObjectReferenceToPacket(faction.basicCultureObject, CompressionBasic.GUIDCompressionInfo);
             GameNetworkMessage.WriteStringToPacket(faction.name);
             GameNetworkMessage.WriteTeamIndexToPacket(faction.team.TeamIndex);
-            PENetworkModule.WriteBannerCodeToPacket(faction.banner.Serialize());
+            WriteBannerCodeToPacket(faction.banner.Serialize());
             int memberLength = faction.members.Count;
             GameNetworkMessage.WriteIntToPacket(memberLength, new CompressionInfo.Integer(0, 500, true));
             for (int i = 0; i < memberLength; i++)

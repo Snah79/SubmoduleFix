@@ -11,7 +11,9 @@ using System.Xml;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.MountAndBlade.Multiplayer.NetworkComponents;
 using TaleWorlds.MountAndBlade.Network.Messages;
+using static TaleWorlds.MountAndBlade.MultiplayerOptions;
 
 namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 {
@@ -77,7 +79,29 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
         public override void AfterStart()
         {
             base.Mission.SetMissionMode(MissionMode.Battle, true);
+            runOnce = false;
+        }
 
+        private bool runOnce = false;
+        public override void OnMissionTick(float dt)
+        {
+            var timerComponent = Mission.Current.GetMissionBehavior<MultiplayerTimerComponent>();
+
+            if (!runOnce && timerComponent.IsTimerRunning)
+            {
+                RestartMatchTimer(int.MaxValue);
+                runOnce = true;
+            }
+        }
+
+        public static void RestartMatchTimer(float duration)
+        {
+            var timerComponent = Mission.Current.GetMissionBehavior<MultiplayerTimerComponent>();
+
+            if (timerComponent == null)
+                return;
+
+            timerComponent.StartTimerAsServer(duration);
         }
 
         protected override void AddRemoveMessageHandlers(GameNetwork.NetworkMessageHandlerRegistererContainer registerer)
@@ -98,7 +122,6 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
                 registerer.Register<ExistingObjectsEnd>(this.HandleFromServerExistingObjectsEnd);
                 registerer.Register<SendRulesToNewClientMessage>(this.HandleFromServerSendRulesToNewClientMessage);
                 registerer.Register<CreatePlayer>(HandleServerEventCreatePlayer);
-
                 var chatBox = Game.Current.GetGameHandler<ChatBox>();
                 chatBox.PlayerMessageReceived += this.HandlePlayerMessageReceived;
             }
@@ -159,20 +182,19 @@ namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 
         private void HandleServerAgentLabelConfig(ClientSideConfig message)
         {
-
             var returnedValue = MultiplayerOptions.OptionType.MapTimeLimit.GetOptionProperty();
+
             if (returnedValue != null)
             {
-                var field = typeof(MultiplayerOptionsProperty).GetField("BoundsMax", BindingFlags.Public | BindingFlags.Instance);
+                var field = returnedValue.GetType().GetField("BoundsMax", BindingFlags.Public | BindingFlags.Instance);
                 field.SetValue(returnedValue, message.MapTimeLimit);
-                MultiplayerOptions.OptionType.MapTimeLimit.SetValue(message.MapTimeLimit);
-            }            
+            }
 
             if (this.OnAgentLabelConfig != null)
             {
                 this.OnAgentLabelConfig(message.AgentLabelConfigEnabled);
             }
-        }        
+        }
 
         private void HandleServerEventCreatePlayer(CreatePlayer message)
         {

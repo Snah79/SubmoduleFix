@@ -1,4 +1,6 @@
-﻿using TaleWorlds.Core;
+﻿using System.Reflection;
+using TaleWorlds.Core;
+using TaleWorlds.Diamond;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.Diamond;
 

@@ -58,7 +58,6 @@ namespace PersistentEmpires.Views
             list.Add(new PEAdminGoldView());
             list.Add(new PEBannerRenderConsumer());
             list.Add(new PEMarkersView());
-            list.Add(new PEDiscordView());
             list.Add(new PEWhitelistServer());
             list.Add(new PEFactionAssignMarshall());
             list.Add(new PEFactionTransferLordship());

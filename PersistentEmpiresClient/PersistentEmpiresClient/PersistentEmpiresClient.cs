@@ -1,11 +1,15 @@
-﻿using PersistentEmpires.Views;
+﻿using NetworkMessages.FromServer;
+using PersistentEmpires.Views;
 using PersistentEmpiresLib;
 using PersistentEmpiresLib.GameModes;
 using PersistentEmpiresLib.PersistentEmpiresGameModels;
 using System;
+using System.Reflection;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.MountAndBlade.Multiplayer;
+using static TaleWorlds.MountAndBlade.MultiplayerOptions;
 
 namespace PersistentEmpiresClient
 {
@@ -47,6 +51,49 @@ namespace PersistentEmpiresClient
             PEItemTooltips.FillTooltipTypes();
             ViewHandler.Initialize();
             SentryForView.InitializeSentry();
+        }
+
+        public override void OnGameLoaded(Game game, object initializerObject)
+        {
+            base.OnGameLoaded(game, initializerObject);
+            GameNetwork.Initialize(new GameNetworkHandler());
+        }
+
+        public override void OnGameInitializationFinished(Game game)// load
+        {
+            base.OnGameInitializationFinished(game);
+            try
+            {
+                var field = typeof(MultiplayerOptionsProperty).GetField("BoundsMax", BindingFlags.Public | BindingFlags.Instance);
+                Apply();
+                var max = MultiplayerOptions.OptionType.MapTimeLimit.GetOptionProperty().BoundsMax;
+                var max2 = MultiplayerOptions.OptionType.MapTimeLimit.GetMaximumValue();
+                System.Diagnostics.Debug.Print($"MapTimeLimit max: {max}");
+            }
+            catch (Exception ex)
+            {
+            }
+        }
+
+        public static void Apply()
+        {
+            var optionField = typeof(MultiplayerOptions.OptionType)
+                .GetField("MapTimeLimit");
+
+            var attribute = (MultiplayerOptionsProperty)
+                Attribute.GetCustomAttribute(
+                    optionField,
+                    typeof(MultiplayerOptionsProperty)
+                );
+
+            typeof(MultiplayerOptionsProperty)
+                .GetField("BoundsMax")
+                .SetValue(attribute, 100000);
+
+            Debug.Print(
+                "[MapTimeLimit] Client maximum: " +
+                MultiplayerOptions.OptionType.MapTimeLimit.GetMaximumValue()
+            );
         }
     }
 }

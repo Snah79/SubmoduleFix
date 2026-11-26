@@ -1,8 +1,4 @@
-﻿using NAudio.Wave;
-using System;
-using System.Data;
-using System.Xml;
-using TaleWorlds.Library;
+﻿using TaleWorlds.Library;
 
 namespace PersistentEmpires.Views.ViewsVM
 {

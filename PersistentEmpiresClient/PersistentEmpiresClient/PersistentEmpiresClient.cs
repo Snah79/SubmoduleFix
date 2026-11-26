@@ -1,5 +1,4 @@
-﻿using NetworkMessages.FromServer;
-using PersistentEmpires.Views;
+﻿using PersistentEmpires.Views;
 using PersistentEmpiresLib;
 using PersistentEmpiresLib.GameModes;
 using PersistentEmpiresLib.PersistentEmpiresGameModels;
@@ -8,8 +7,6 @@ using System.Reflection;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
-using TaleWorlds.MountAndBlade.Multiplayer;
-using static TaleWorlds.MountAndBlade.MultiplayerOptions;
 
 namespace PersistentEmpiresClient
 {

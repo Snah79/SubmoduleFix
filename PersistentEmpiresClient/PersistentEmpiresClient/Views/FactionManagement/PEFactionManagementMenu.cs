@@ -5,7 +5,6 @@ using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System.Collections.Generic;
 using TaleWorlds.Engine.GauntletUI;
 using TaleWorlds.Library;
-using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
 using PersistentEmpiresLib.Helpers;

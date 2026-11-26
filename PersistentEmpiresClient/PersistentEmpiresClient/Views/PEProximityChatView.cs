@@ -3,7 +3,6 @@ using NAudio;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using PersistentEmpires.Views.ViewsVM;
-using PersistentEmpiresLib;
 using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System;
@@ -83,7 +82,7 @@ namespace PersistentEmpires.Views.Views
 
         private void InitializeVoiceChatComponents()
         {
-            opusEncoder = OpusEncoder.Create(48000, 1, Concentus.Enums.OpusApplication.OPUS_APPLICATION_VOIP);
+            opusEncoder = new OpusEncoder(48000, 1, Concentus.Enums.OpusApplication.OPUS_APPLICATION_VOIP);
             opusEncoder.Bitrate = 16 * 1024;
 
             // opusDecoder = OpusDecoder.Create(48000, 1);

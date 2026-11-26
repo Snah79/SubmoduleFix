@@ -1,6 +1,4 @@
-﻿using PersistentEmpiresLib.NetworkMessages.Client;
-using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
-using System.Linq;
+﻿using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using TaleWorlds.InputSystem;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;

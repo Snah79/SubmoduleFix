@@ -1,19 +1,18 @@
 ﻿using PersistentEmpires.Views.ViewsVM;
 using PersistentEmpires.Views.ViewsVM.PETabMenu;
 using PersistentEmpiresLib.Factions;
+using PersistentEmpiresLib.Helpers;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using PersistentEmpiresLib.SceneScripts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TaleWorlds.Core;
+using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
 using TaleWorlds.Engine.GauntletUI;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View.MissionViews;
-using PersistentEmpiresLib.Helpers;
-using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
 
 namespace PersistentEmpires.Views.Views
 {

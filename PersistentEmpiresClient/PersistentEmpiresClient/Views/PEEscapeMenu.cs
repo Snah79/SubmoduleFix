@@ -13,8 +13,6 @@ using TaleWorlds.MountAndBlade.Multiplayer.ViewModelCollection;
 using TaleWorlds.MountAndBlade.Source.Missions;
 using TaleWorlds.MountAndBlade.ViewModelCollection.EscapeMenu;
 using PersistentEmpiresLib.Helpers;
-using PersistentEmpires.Views.Views;
-using TaleWorlds.Core.ViewModelCollection.Information;
 using System.Linq;
 using TaleWorlds.Core.ImageIdentifiers;
 

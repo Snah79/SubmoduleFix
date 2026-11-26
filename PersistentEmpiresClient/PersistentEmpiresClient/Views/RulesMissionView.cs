@@ -1,9 +1,5 @@
 ﻿using PersistentEmpires.Views.ViewsVM;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
-using System;
-using System.Text.RegularExpressions;
-using System.Xml;
-using TaleWorlds.Core;
 using TaleWorlds.Engine.GauntletUI;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;

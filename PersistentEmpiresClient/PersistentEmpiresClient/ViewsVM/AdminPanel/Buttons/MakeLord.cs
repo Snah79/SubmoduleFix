@@ -1,13 +1,10 @@
-﻿using PersistentEmpires.Views.Views;
-using PersistentEmpiresLib;
-using PersistentEmpiresLib.NetworkMessages.Client;
+﻿using PersistentEmpiresLib.NetworkMessages.Client;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System.Collections.Generic;
 using System;
 using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
-using PersistentEmpiresLib.Factions;
 
 namespace PersistentEmpiresClient.ViewsVM.AdminPanel.Buttons
 {

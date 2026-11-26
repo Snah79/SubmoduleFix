@@ -158,9 +158,9 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-		<PackageReference Include="Concentus" Version="1.1.7" />
+		<PackageReference Include="Concentus" Version="2.2.3" />
 		<PackageReference Include="NAudio" Version="2.2.1" />
-		<PackageReference Include="RestSharp.Newtonsoft.Json" Version="1.5.1" />
+		<!--<PackageReference Include="RestSharp.Newtonsoft.Json" Version="1.5.1" />-->
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Release'">

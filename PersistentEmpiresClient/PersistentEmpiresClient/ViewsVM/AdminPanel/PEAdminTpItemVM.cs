@@ -1,8 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
-using PersistentEmpires.Views.Views.AdminPanel;
-using PersistentEmpiresLib.SceneScripts;
+﻿using PersistentEmpiresLib.SceneScripts;
 using System;
-using System.Collections.Generic;
 using TaleWorlds.Library;
 
 namespace PersistentEmpires.Views.ViewsVM.AdminPanel

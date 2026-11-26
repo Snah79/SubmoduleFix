@@ -1,7 +1,4 @@
-﻿using NAudio.Wave;
-using System;
-using System.Data;
-using System.Xml;
+﻿using System.Xml;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 

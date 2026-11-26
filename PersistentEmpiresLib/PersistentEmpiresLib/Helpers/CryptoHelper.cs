@@ -1,8 +1,4 @@
-﻿using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.OpenSsl;
-using Org.BouncyCastle.Security;
-using System;
+﻿using System;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -26,34 +22,33 @@ namespace PersistentEmpiresLib.Helpers
             return sb.ToString();
         }
 
-        public static string CreateMD5(string input)
-        {
-            // Use input string to calculate MD5 hash
-            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
-            {
-                byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
-                byte[] hashBytes = md5.ComputeHash(inputBytes);
+        //public static string CreateMD5(string input)
+        //{
+        //    // Use input string to calculate MD5 hash
+        //    using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
+        //    {
+        //        byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+        //        byte[] hashBytes = md5.ComputeHash(inputBytes);
 
-                return Convert.ToBase64String(hashBytes); // .NET 5 +
-            }
-        }
+        //        return Convert.ToBase64String(hashBytes); // .NET 5 +
+        //    }
+        //}
 
-        public static bool VerifySignature(string pubKey, string data, string signature)
-        {
-            var rsa = ImportPublicKey(pubKey);
-            return rsa.VerifyData(Encoding.UTF8.GetBytes(data), CryptoConfig.MapNameToOID("SHA256"), Convert.FromBase64String(signature));
-        }
+        //public static bool VerifySignature(string pubKey, string data, string signature)
+        //{
+        //    var rsa = ImportPublicKey(pubKey);
+        //    return rsa.VerifyData(Encoding.UTF8.GetBytes(data), CryptoConfig.MapNameToOID("SHA256"), Convert.FromBase64String(signature));
+        //}
 
-        public static RSACryptoServiceProvider ImportPublicKey(string pem)
-        {
-            PemReader pr = new PemReader(new System.IO.StringReader(pem));
-            AsymmetricKeyParameter publicKey = (AsymmetricKeyParameter)pr.ReadObject();
-            RSAParameters rsaParams = DotNetUtilities.ToRSAParameters((RsaKeyParameters)publicKey);
+        //public static RSACryptoServiceProvider ImportPublicKey(string pem)
+        //{
+        //    PemReader pr = new PemReader(new System.IO.StringReader(pem));
+        //    AsymmetricKeyParameter publicKey = (AsymmetricKeyParameter)pr.ReadObject();
+        //    RSAParameters rsaParams = DotNetUtilities.ToRSAParameters((RsaKeyParameters)publicKey);
 
-            RSACryptoServiceProvider csp = new RSACryptoServiceProvider();// cspParams);
-            csp.ImportParameters(rsaParams);
-            return csp;
-        }
-
+        //    RSACryptoServiceProvider csp = new RSACryptoServiceProvider();// cspParams);
+        //    csp.ImportParameters(rsaParams);
+        //    return csp;
+        //}
     }
 }

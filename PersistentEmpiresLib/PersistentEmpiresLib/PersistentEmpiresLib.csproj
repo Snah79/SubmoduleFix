@@ -58,12 +58,18 @@
 		<WarningLevel>4</WarningLevel>
 	</PropertyGroup>
 
-	<ItemGroup>
+	<ItemGroup Condition="'$(Configuration)' == 'ReleaseServer'">
 		<PackageReference Include="BouncyCastle" Version="1.8.9" />
 		<PackageReference Include="RestSharp.Newtonsoft.Json" Version="1.5.1" />
 		<PackageReference Include="Websocket.Client" Version="4.7.0" />
 	</ItemGroup>
 
+	<ItemGroup Condition=" '$(Configuration)' == 'RunAsServerDebug' ">
+		<PackageReference Include="BouncyCastle" Version="1.8.9" />
+		<PackageReference Include="RestSharp.Newtonsoft.Json" Version="1.5.1" />
+		<PackageReference Include="Websocket.Client" Version="4.7.0" />
+	</ItemGroup>
+	
 	<ItemGroup>
 		<Reference Include="System.Numerics.Vectors">
 		  <HintPath>..\..\..\..\..\Desktop\FTP\Mount &amp; Blade II Dedicated Server\bin\Win64_Shipping_Server\System.Numerics.Vectors.dll</HintPath>
@@ -71,14 +77,17 @@
 		<Reference Include="Microsoft.CSharp" />
 		<Reference Include="TaleWorlds.Engine.GauntletUI">
 		  <HintPath>ClientReferences\TaleWorlds.Engine.GauntletUI.dll</HintPath>
+		  <Private>False</Private>
 		</Reference>
 		<Reference Include="TaleWorlds.MountAndBlade.ViewModelCollection">
 		  <HintPath>ClientReferences\TaleWorlds.MountAndBlade.ViewModelCollection.dll</HintPath>
+		  <Private>False</Private>
 		</Reference>
 		<Reference Include="TaleWorlds.ScreenSystem">
 		  <HintPath>ClientReferences\TaleWorlds.ScreenSystem.dll</HintPath>
+		  <Private>False</Private>
 		</Reference>
-		<Reference Include="WindowsBase" />
+		<!--<Reference Include="WindowsBase" />-->
 		<Reference Include="TaleWorlds.MountAndBlade.DedicatedCustomServer">
 			<HintPath>$(ReferenceFolder)\TaleWorlds.MountAndBlade.DedicatedCustomServer.dll</HintPath>
 			<Private>False</Private>

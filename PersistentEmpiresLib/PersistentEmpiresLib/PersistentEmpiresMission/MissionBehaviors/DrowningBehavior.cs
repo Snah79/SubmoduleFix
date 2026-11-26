@@ -1,12 +1,10 @@
-﻿using RestSharp.Extensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
-using static TaleWorlds.MountAndBlade.Agent;
 
 namespace PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors
 {

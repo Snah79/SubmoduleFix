@@ -5,7 +5,7 @@
 		<AssemblyTitle>PersistentEmpiresClient</AssemblyTitle>
 		<Product>PersistentEmpiresClient</Product>
 		<Copyright>Copyright © 2023</Copyright>
-		<TargetFramework>net472</TargetFramework>
+		<TargetFramework>net481</TargetFramework>
 		<OutputPath>bin\$(Configuration)\</OutputPath>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<DebugType>full</DebugType>
@@ -159,7 +159,7 @@
 	
 	<ItemGroup>
 		<PackageReference Include="Concentus" Version="2.2.3" />
-		<PackageReference Include="NAudio" Version="2.2.1" />
+		<PackageReference Include="NAudio" Version="2.4.0" />
 		<!--<PackageReference Include="RestSharp.Newtonsoft.Json" Version="1.5.1" />-->
 	</ItemGroup>
 

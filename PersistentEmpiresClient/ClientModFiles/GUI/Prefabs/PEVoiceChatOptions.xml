@@ -1,48 +1,4 @@
 <Prefab>
-	<Window>
-		<Widget HorizontalAlignment="Center" HeightSizePolicy="StretchToParent" SuggestedWidth="650" MarginBottom="50" MarginTop="50">
-			<Children>
-				<Standard.Window Parameter.Title="Voice Chat Options">
-					<Children>
-						<ListPanel MarginLeft="30" MarginRight="30" MarginTop="50" StackLayout.LayoutMethod="VerticalTopToBottom" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
-							<Children>
-								<TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" Brush="MPLobby.PlayButton.Text" Brush.FontSize="25" Text="Microphone Input Gain" />
-								<Standard.Slider HorizontalAlignment="Left" VerticalAlignment="Center" MarginTop="15" WidthSizePolicy="Fixed" SuggestedWidth="300" ValueInt="@InputGain" />
-								<TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginTop="8" Text="Microphone and output devices are managed by Bannerlord audio settings." />
-								<ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" StackLayout.LayoutMethod="HorizontalLeftToRight" MarginTop="35">
-									<Children>
-										<ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="40" SuggestedHeight="40" Brush="SPOptions.Checkbox.Empty.Button" ButtonType="Toggle" IsSelected="@VoiceChatEnabled" ToggleIndicator="ToggleIndicator" UpdateChildrenStates="true">
-											<Children>
-												<ImageWidget Id="ToggleIndicator" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="SPOptions.Checkbox.Full.Button" />
-											</Children>
-										</ButtonWidget>
-										<TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" MarginLeft="5" Text="Enable Voice Chat" />
-									</Children>
-								</ListPanel>
-								<ListPanel MarginTop="50" StackLayout.LayoutMethod="HorizontalLeftToRight" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
-									<Children>
-										<ButtonWidget DoNotPassEventsToChildren="true" UpdateChildrenStates="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="80" Brush="WideButton.Flat" Command.Click="ExecuteApply">
-											<Children>
-												<TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" Brush="MPLobby.PlayButton.Text" Brush.FontSize="25" Text="Apply" />
-											</Children>
-										</ButtonWidget>
-										<ButtonWidget DoNotPassEventsToChildren="true" UpdateChildrenStates="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="80" Brush="WideButton.Flat" Command.Click="ExecuteClose">
-											<Children>
-												<TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" Brush="MPLobby.PlayButton.Text" Brush.FontSize="25" Text="Close" />
-											</Children>
-										</ButtonWidget>
-									</Children>
-								</ListPanel>
-							</Children>
-						</ListPanel>
-					</Children>
-				</Standard.Window>
-			</Children>
-		</Widget>
-	</Window>
-</Prefab>
-
-<!--<Prefab>
   <Constants>
     <Constant Name="TypingArea.Height" Value="40" />
     <Constant Name="TypingArea.Width" Value="350" />
@@ -112,4 +68,4 @@
       </Children>
     </Widget>
   </Window>
-</Prefab>-->
+</Prefab>

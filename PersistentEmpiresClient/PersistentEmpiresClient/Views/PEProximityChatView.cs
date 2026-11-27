@@ -3,6 +3,7 @@ using PersistentEmpiresLib.NetworkMessages.Server;
 using PersistentEmpiresLib.PersistentEmpiresMission.MissionBehaviors;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TaleWorlds.Engine;
 using TaleWorlds.Engine.GauntletUI;
 using TaleWorlds.Library;
@@ -18,7 +19,7 @@ namespace PersistentEmpires.Views.Views
         private bool _hasReceivedVoicePacket;
         public NetworkCommunicator Player { get; private set; }
         public int VoiceEventIndex { get; private set; }
-        public int RecordedMs { get; set; }
+        public int RecordedMs { get; set; }        
 
         // Kept as a property because PEAgentLabelUI uses it to show the speaking indicator.
         public bool HasVoiceData
@@ -31,6 +32,11 @@ namespace PersistentEmpires.Views.Views
             Player = player;
             VoiceEventIndex = voiceEventIndex;
             _lastVoicePacketUtc = DateTime.MinValue;
+        }
+
+        public void SetVoiceEventIndex(int index)
+        {
+            VoiceEventIndex = index;
         }
 
         public void MarkVoicePacketReceived()
@@ -49,6 +55,7 @@ namespace PersistentEmpires.Views.Views
         private bool _isActive;
         private bool _isRecording;
         private bool _voiceChatEnabled = true;
+        private bool ServerVoiceChatEnabled = false;
         private bool _voicePlayEventsInitialized;
         private int _nextVoiceEventIndex;
         private float _inputGain = 1f;
@@ -65,6 +72,7 @@ namespace PersistentEmpires.Views.Views
             base.OnBehaviorInitialize();
 
             var registerer = new GameNetwork.NetworkMessageHandlerRegisterer(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Add);
+            
             registerer.RegisterBaseHandler<EnableVoiceChat>(new GameNetworkMessage.ServerMessageHandlerDelegate<GameNetworkMessage>(HandleEnableVoiceChat));
         }
 
@@ -75,6 +83,7 @@ namespace PersistentEmpires.Views.Views
             DestroyVoicePlayback();
 
             var registerer = new GameNetwork.NetworkMessageHandlerRegisterer(GameNetwork.NetworkMessageHandlerRegisterer.RegisterMode.Remove);
+            
             registerer.RegisterBaseHandler<EnableVoiceChat>(new GameNetworkMessage.ServerMessageHandlerDelegate<GameNetworkMessage>(HandleEnableVoiceChat));
 
             base.OnRemoveBehavior();
@@ -83,18 +92,25 @@ namespace PersistentEmpires.Views.Views
         private void HandleEnableVoiceChat(GameNetworkMessage networkMessage)
         {
             EnableVoiceChat message = networkMessage as EnableVoiceChat;
+            
             if (message == null)
                 return;
 
-            _voiceChatEnabled = message.Enabled;
-            if (!message.Enabled)
+            ServerVoiceChatEnabled = message.Enabled;
+
+            if(!ServerVoiceChatEnabled)
+                InformationManager.DisplayMessage(new InformationMessage("Server doesn't allow voice chat", Color.ConvertStringToColor("#FF0000FF")));
+
+            if (!ServerVoiceChatEnabled || !_voiceChatEnabled)
             {
                 StopRecording();
                 _isActive = false;
+
                 return;
             }
 
             _proximityChatComponent = Mission.GetMissionBehavior<ProximityChatComponent>();
+            
             if (_proximityChatComponent == null)
                 return;
 
@@ -114,7 +130,7 @@ namespace PersistentEmpires.Views.Views
                 return;
             }
 
-            _dataSource = new PEVoiceChatOptionsVM(_voiceChatEnabled, CloseOptions, ApplyOptions);
+            _dataSource = new PEVoiceChatOptionsVM(ServerVoiceChatEnabled && _voiceChatEnabled, CloseOptions, ApplyOptions);
         }
 
         private void AttachToProximityChat()
@@ -162,23 +178,36 @@ namespace PersistentEmpires.Views.Views
 
         private void AddVoicePlayer(NetworkCommunicator peer)
         {
-            if (peer == null || _playerVoiceData.ContainsKey(peer) || !_voicePlayEventsInitialized)
+            if (peer == null || peer.IsMine || _playerVoiceData.ContainsKey(peer) || !_voicePlayEventsInitialized)
                 return;
 
-            int voiceEventIndex = _nextVoiceEventIndex++;
+            int voiceEventIndex = _playerVoiceData.Count;
+
             SoundManager.CreateVoiceEvent();
+            SoundManager.AddSoundClientWithId((ulong)peer.Index);
             _playerVoiceData.Add(peer, new PlayerVoiceData(peer, voiceEventIndex));
         }
 
         private void RemoveVoicePlayer(NetworkCommunicator peer)
         {
-            PlayerVoiceData voiceData;
-            if (peer == null || !_playerVoiceData.TryGetValue(peer, out voiceData))
+            if (peer == null || !_playerVoiceData.TryGetValue(peer, out PlayerVoiceData voiceData))
                 return;
 
+            int removedIndex = voiceData.VoiceEventIndex;
+
+            SoundManager.DeleteSoundClientWithId((ulong)peer.Index);
+            SoundManager.DestroyVoiceEvent(removedIndex);
             _playerVoiceData.Remove(peer);
-            if (_voicePlayEventsInitialized)
-                SoundManager.DestroyVoiceEvent(voiceData.VoiceEventIndex);
+
+            foreach (PlayerVoiceData playerData in _playerVoiceData.Values.OrderBy(x => x.VoiceEventIndex))
+            {
+                if (playerData.VoiceEventIndex > removedIndex)
+                {
+                    playerData.SetVoiceEventIndex(playerData.VoiceEventIndex - 1);
+                }
+            }
+
+            _nextVoiceEventIndex = _playerVoiceData.Count;
         }
 
         private void DestroyVoicePlayback()
@@ -190,7 +219,10 @@ namespace PersistentEmpires.Views.Views
             }
 
             foreach (PlayerVoiceData voiceData in _playerVoiceData.Values)
+            {
+                SoundManager.DeleteSoundClientWithId((ulong)voiceData.Player.Index);
                 SoundManager.DestroyVoiceEvent(voiceData.VoiceEventIndex);
+            }
 
             _playerVoiceData.Clear();
             SoundManager.FinalizeVoicePlayEvent();
@@ -208,72 +240,126 @@ namespace PersistentEmpires.Views.Views
             RemoveVoicePlayer(player);
         }
 
+        private const int MaxDecodedVoiceSize = 8640;
         private void HandleVoicePlayMessage(SendBatchVoiceToPlay message)
         {
-            if (!_isActive || !_voiceChatEnabled || message == null || message.Peer == null)
+            if (!_isActive || !ServerVoiceChatEnabled || !_voiceChatEnabled || message?.Peer == null || message.BufferLens == null || message.PackedBuffer == null)
                 return;
 
-            PlayerVoiceData voiceData;
-            if (!_playerVoiceData.TryGetValue(message.Peer, out voiceData))
+            if (!_playerVoiceData.TryGetValue(message.Peer, out PlayerVoiceData voiceData))
                 return;
 
             MissionPeer missionPeer = message.Peer.GetComponent<MissionPeer>();
+
             if (missionPeer != null && missionPeer.IsMutedFromGameOrPlatform)
                 return;
 
             int sourceOffset = 0;
+
             for (int i = 0; i < message.BufferLens.Length; i++)
             {
                 int packetLength = message.BufferLens[i];
-                if (packetLength <= 0 || packetLength > MaxEncodedPacketSize ||
-                    sourceOffset + packetLength > message.PackedBuffer.Length)
+
+                if (packetLength <= 0 || packetLength > MaxEncodedPacketSize || sourceOffset + packetLength > message.PackedBuffer.Length)
                     break;
 
-                byte[] packet = new byte[packetLength];
-                Buffer.BlockCopy(message.PackedBuffer, sourceOffset, packet, 0, packetLength);
+                byte[] decodedBuffer = new byte[MaxDecodedVoiceSize];
+                int decodedLength;
+
+                SoundManager.DecompressData(message.Peer.Index, message.PackedBuffer, packetLength, decodedBuffer, out decodedLength);
                 sourceOffset += packetLength;
 
-                // Bannerlord performs native Opus decoding and playback for this voice event.
-                SoundManager.UpdateVoiceToPlay(packet, packetLength, voiceData.VoiceEventIndex);
-                voiceData.MarkVoicePacketReceived();
+                if (decodedLength <= 0 || decodedLength > decodedBuffer.Length || (decodedLength & 1) != 0)
+                    continue;
 
-                if (OnPeerVoiceStatusUpdated != null)
-                    OnPeerVoiceStatusUpdated(voiceData, message.Peer);
+                SoundManager.UpdateVoiceToPlay(decodedBuffer, decodedLength, voiceData.VoiceEventIndex);
+                voiceData.MarkVoicePacketReceived();
+                OnPeerVoiceStatusUpdated?.Invoke(voiceData, message.Peer);
             }
         }
 
-        public override void OnPreMissionTick(float dt)
+        public override void OnPreDisplayMissionTick(float dt)
         {
-            base.OnPreMissionTick(dt);
+            base.OnPreDisplayMissionTick(dt);
 
-            if (!_isActive || !_voiceChatEnabled || !_isRecording || _proximityChatComponent == null)
+            if (!_isVoiceRecording)
                 return;
 
             ReadAndSendVoiceFrames();
         }
 
+        public override void OnMissionScreenTick(float dt)
+        {
+            base.OnMissionScreenTick(dt);
+
+            if (!_isActive || !ServerVoiceChatEnabled || !_voiceChatEnabled)
+                return;
+
+            try
+            {
+                if (Input.IsKeyPressed(TaleWorlds.InputSystem.InputKey.V))
+                    StartRecording();
+
+                if (Input.IsKeyReleased(TaleWorlds.InputSystem.InputKey.V))
+                    StopRecording();
+            }
+            catch (InvalidOperationException exception)
+            {
+                InformationManager.DisplayMessage(new InformationMessage("Bannerlord voice recording error: " + exception.Message, Color.ConvertStringToColor("#FF0000FF")));
+                StopRecording();
+            }
+        }
+        
+        private bool _isVoiceRecording;
+        private void StartRecording()
+        {
+            if (_isVoiceRecording)
+                return;
+
+            SoundManager.StartVoiceRecording();
+            _isVoiceRecording = true;
+        }
+
+        private void StopRecording()
+        {
+            if (!_isVoiceRecording)
+                return;
+
+            // Prevent OnPreDisplayMissionTick from reading more voice data.
+            _isVoiceRecording = false;
+
+            SoundManager.StopVoiceRecording();
+        }
+
         private void ReadAndSendVoiceFrames()
         {
+            if (!_isVoiceRecording)
+                return;
+
             var encodedPackets = new List<byte[]>(MaxPacketsPerBatch);
             var packetLengths = new List<int>(MaxPacketsPerBatch);
 
             for (int i = 0; i < MaxPacketsPerBatch; i++)
             {
+                if (!_isVoiceRecording)
+                    break;
+
                 int readBytesLength;
+
                 SoundManager.GetVoiceData(_rawVoiceBuffer, _rawVoiceBuffer.Length, out readBytesLength);
 
                 if (readBytesLength <= 0)
                     break;
 
                 if (readBytesLength > _rawVoiceBuffer.Length)
-                    readBytesLength = _rawVoiceBuffer.Length;
+                    throw new InvalidOperationException($"Invalid voice data length: {readBytesLength}");
 
                 ApplyInputGain(_rawVoiceBuffer, readBytesLength, _inputGain);
 
                 byte[] compressedBuffer = new byte[MaxEncodedPacketSize];
                 int compressedLength;
-                SoundManager.CompressData(EncoderClientId, _rawVoiceBuffer, readBytesLength,
-                    compressedBuffer, out compressedLength);
+
+                SoundManager.CompressData(EncoderClientId, _rawVoiceBuffer, readBytesLength, compressedBuffer, out compressedLength);
 
                 if (compressedLength <= 0 || compressedLength > MaxEncodedPacketSize)
                     continue;
@@ -283,7 +369,9 @@ namespace PersistentEmpires.Views.Views
             }
 
             if (packetLengths.Count > 0)
+            {
                 _proximityChatComponent.SendEncodedVoiceToServer(encodedPackets.ToArray(), packetLengths.ToArray());
+            }
         }
 
         private static void ApplyInputGain(byte[] pcmBuffer, int length, float gain)
@@ -301,56 +389,11 @@ namespace PersistentEmpires.Views.Views
                 pcmBuffer[i] = (byte)(scaled & 0xFF);
                 pcmBuffer[i + 1] = (byte)((scaled >> 8) & 0xFF);
             }
-        }
-
-        public override void OnMissionScreenTick(float dt)
-        {
-            base.OnMissionScreenTick(dt);
-
-            if (!_isActive || !_voiceChatEnabled)
-                return;
-
-            try
-            {
-                if (Input.IsKeyPressed(TaleWorlds.InputSystem.InputKey.V))
-                    StartRecording();
-
-                if (Input.IsKeyReleased(TaleWorlds.InputSystem.InputKey.V))
-                    StopRecording();
-            }
-            catch (InvalidOperationException exception)
-            {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "Bannerlord voice recording error: " + exception.Message,
-                    Color.ConvertStringToColor("#FF0000FF")));
-                StopRecording();
-            }
-        }
-
-        private void StartRecording()
-        {
-            if (_isRecording || !_isActive || !_voiceChatEnabled)
-                return;
-
-            SoundManager.StartVoiceRecording();
-            _isRecording = true;
-        }
-
-        private void StopRecording()
-        {
-            if (!_isRecording)
-                return;
-
-            _isRecording = false;
-            SoundManager.StopVoiceRecording();
-            // Drain any final captured frame before the native recorder is stopped.
-            if (_isActive && _voiceChatEnabled && _proximityChatComponent != null)
-                ReadAndSendVoiceFrames();
-        }
+        }        
 
         private void ApplyOptions(bool voiceChatEnabled, int inputGain)
         {
-            _voiceChatEnabled = voiceChatEnabled;
+            _voiceChatEnabled = ServerVoiceChatEnabled && voiceChatEnabled;
             _inputGain = Math.Max(0, Math.Min(200, inputGain)) / 100f;
 
             if (!_voiceChatEnabled)
